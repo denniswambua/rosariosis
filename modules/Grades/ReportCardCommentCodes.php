@@ -2,100 +2,103 @@
 
 //echo '<pre>'; var_dump($_REQUEST); echo '</pre>';
 
-DrawHeader(ProgramTitle());
+DrawHeader( ProgramTitle() );
 
-if ( $_REQUEST['modfunc']=='update')
+if ( $_REQUEST['modfunc'] === 'update' )
 {
-	if ( $_REQUEST['values'] && $_POST['values'] && AllowEdit())
+	if ( $_REQUEST['values']
+		&& $_POST['values']
+		&& AllowEdit()
+		&& $_REQUEST['tab_id'] )
 	{
-		if ( $_REQUEST['tab_id'])
+		foreach ( (array) $_REQUEST['values'] as $id => $columns)
 		{
-			foreach ( (array) $_REQUEST['values'] as $id => $columns)
+			// FJ fix SQL bug invalid sort order.
+			if (empty($columns['SORT_ORDER']) || is_numeric($columns['SORT_ORDER']))
 			{
-		//FJ fix SQL bug invalid sort order
-				if (empty($columns['SORT_ORDER']) || is_numeric($columns['SORT_ORDER']))
+				if ( $id!='new')
 				{
-					if ( $id!='new')
+					if ( $_REQUEST['tab_id']!='new')
+						$sql = "UPDATE REPORT_CARD_COMMENT_CODES SET ";
+					else
+						$sql = "UPDATE REPORT_CARD_COMMENT_CODE_SCALES SET ";
+
+					foreach ( (array) $columns as $column => $value)
+						$sql .= DBEscapeIdentifier( $column ) . "='" . $value . "',";
+
+					if ( $_REQUEST['tab_id']!='new')
+						$sql = mb_substr($sql,0,-1) . " WHERE ID='".$id."'";
+					else
+						$sql = mb_substr($sql,0,-1) . " WHERE ID='".$id."'";
+					DBQuery($sql);
+				}
+				// New: check for Title
+				elseif ( $columns['TITLE'] )
+				{
+					if ( $_REQUEST['tab_id']!='new')
 					{
-						if ( $_REQUEST['tab_id']!='new')
-							$sql = "UPDATE REPORT_CARD_COMMENT_CODES SET ";
-						else
-							$sql = "UPDATE REPORT_CARD_COMMENT_CODE_SCALES SET ";
-
-						foreach ( (array) $columns as $column => $value)
-							$sql .= $column."='".$value."',";
-
-						if ( $_REQUEST['tab_id']!='new')
-							$sql = mb_substr($sql,0,-1) . " WHERE ID='".$id."'";
-						else
-							$sql = mb_substr($sql,0,-1) . " WHERE ID='".$id."'";
-						DBQuery($sql);
+						$sql = 'INSERT INTO REPORT_CARD_COMMENT_CODES ';
+						$fields = 'ID,SCHOOL_ID,SCALE_ID,';
+						$values = db_seq_nextval('REPORT_CARD_COMMENT_CODES_SEQ').',\''.UserSchool().'\',\''.$_REQUEST['tab_id'].'\',';
 					}
 					else
 					{
-						if ( $_REQUEST['tab_id']!='new')
-						{
-							$sql = 'INSERT INTO REPORT_CARD_COMMENT_CODES ';
-							$fields = 'ID,SCHOOL_ID,SCALE_ID,';
-							$values = db_seq_nextval('REPORT_CARD_COMMENT_CODES_SEQ').',\''.UserSchool().'\',\''.$_REQUEST['tab_id'].'\',';
-						}
-						else
-						{
-							$sql = 'INSERT INTO REPORT_CARD_COMMENT_CODE_SCALES ';
-							$fields = 'ID,SCHOOL_ID,';
-							$values = db_seq_nextval('REPORT_CARD_COMMENT_CODE_SCALES_SEQ').',\''.UserSchool().'\',';
-						}
-
-						$go = false;
-						foreach ( (array) $columns as $column => $value)
-							if ( !empty($value) || $value=='0')
-							{
-								$fields .= $column.',';
-								$values .= '\''.$value.'\',';
-								$go = true;
-							}
-						$sql .= '(' . mb_substr($fields,0,-1) . ') values(' . mb_substr($values,0,-1) . ')';
-
-						if ( $go)
-							DBQuery($sql);
+						$sql = 'INSERT INTO REPORT_CARD_COMMENT_CODE_SCALES ';
+						$fields = 'ID,SCHOOL_ID,';
+						$values = db_seq_nextval('REPORT_CARD_COMMENT_CODE_SCALES_SEQ').',\''.UserSchool().'\',';
 					}
+
+					$go = false;
+					foreach ( (array) $columns as $column => $value)
+						if ( !empty($value) || $value=='0')
+						{
+							$fields .= DBEscapeIdentifier( $column ) . ',';
+							$values .= "'" . $value . "',";
+							$go = true;
+						}
+					$sql .= '(' . mb_substr( $fields, 0, -1 ) . ') values(' . mb_substr( $values, 0, -1 ) . ')';
+
+					if ( $go)
+						DBQuery($sql);
 				}
-				else
-					$error[] = _('Please enter a valid Sort Order.');
 			}
+			else
+				$error[] = _('Please enter a valid Sort Order.');
 		}
 	}
-	unset($_REQUEST['modfunc']);
+
+	// Unset modfunc & redirect URL.
+	RedirectURL( 'modfunc' );
 }
 
-if ( $_REQUEST['modfunc']=='remove' && AllowEdit())
+if ( $_REQUEST['modfunc'] === 'remove'
+	&& AllowEdit() )
 {
-	if ( $_REQUEST['tab_id']!='new')
+	if ( $_REQUEST['tab_id'] != 'new' )
 	{
 		if ( DeletePrompt( _( 'Report Card Comment' ) ) )
 		{
 			DBQuery( "DELETE FROM REPORT_CARD_COMMENT_CODES
 				WHERE ID='" . $_REQUEST['id'] . "'" );
 
-			$_REQUEST['modfunc'] = false;
+			// Unset modfunc & ID & redirect URL.
+			RedirectURL( array( 'modfunc', 'id' ) );
 		}
 	}
-	else
+	elseif ( DeletePrompt( _( 'Report Card Grading Scale' ) ) )
 	{
-		if ( DeletePrompt( _( 'Report Card Grading Scale' ) ) )
-		{
-			DBQuery( "UPDATE REPORT_CARD_COMMENTS
-				SET SCALE_ID=NULL
-				WHERE SCALE_ID='" . $_REQUEST['id'] . "'" );
+		DBQuery( "UPDATE REPORT_CARD_COMMENTS
+			SET SCALE_ID=NULL
+			WHERE SCALE_ID='" . $_REQUEST['id'] . "'" );
 
-			DBQuery( "DELETE FROM REPORT_CARD_COMMENT_CODES
-				WHERE SCALE_ID='" . $_REQUEST['id'] . "'" );
+		DBQuery( "DELETE FROM REPORT_CARD_COMMENT_CODES
+			WHERE SCALE_ID='" . $_REQUEST['id'] . "'" );
 
-			DBQuery( "DELETE FROM REPORT_CARD_COMMENT_CODE_SCALES
-				WHERE ID='" . $_REQUEST['id'] . "'" );
+		DBQuery( "DELETE FROM REPORT_CARD_COMMENT_CODE_SCALES
+			WHERE ID='" . $_REQUEST['id'] . "'" );
 
-			$_REQUEST['modfunc'] = false;
-		}
+		// Unset modfunc & ID & redirect URL.
+		RedirectURL( array( 'modfunc', 'id' ) );
 	}
 }
 
@@ -122,16 +125,16 @@ if ( ! $_REQUEST['modfunc'] )
 	if ( $_REQUEST['tab_id']!='new')
 	{
 		$sql = 'SELECT * FROM REPORT_CARD_COMMENT_CODES WHERE SCALE_ID=\''.$_REQUEST['tab_id'].'\' AND SCHOOL_ID=\''.UserSchool().'\' ORDER BY SORT_ORDER,ID';
-		$functions = array('TITLE' => 'makeCommentsInput','SHORT_NAME' => 'makeCommentsInput','COMMENT' => 'makeCommentsInput','SORT_ORDER' => 'makeCommentsInput');
+		$functions = array('TITLE' => '_makeCommentsInput','SHORT_NAME' => '_makeCommentsInput','COMMENT' => '_makeCommentsInput','SORT_ORDER' => '_makeCommentsInput');
 		$LO_columns = array('TITLE' => _('Title'),'SHORT_NAME' => _('Short Name'),'COMMENT' => _('Comment'),'SORT_ORDER' => _('Sort Order'));
 
 		if (User('PROFILE')=='admin' && AllowEdit())
 		{
-			$functions += array('SCALE_ID' => 'makeCommentsInput');
+			$functions += array('SCALE_ID' => '_makeCommentsInput');
 			$LO_columns += array('SCALE_ID' => _('Comment Scale'));
 		}
 
-		$link['add']['html'] = array('TITLE'=>makeCommentsInput('','TITLE'),'SHORT_NAME'=>makeCommentsInput('','SHORT_NAME'),'COMMENT'=>makeCommentsInput('','COMMENT'),'SORT_ORDER'=>makeCommentsInput('','SORT_ORDER'));
+		$link['add']['html'] = array('TITLE'=>_makeCommentsInput('','TITLE'),'SHORT_NAME'=>_makeCommentsInput('','SHORT_NAME'),'COMMENT'=>_makeCommentsInput('','COMMENT'),'SORT_ORDER'=>_makeCommentsInput('','SORT_ORDER'));
 		$link['remove']['link'] = 'Modules.php?modname='.$_REQUEST['modname'].'&modfunc=remove&tab_id='.$_REQUEST['tab_id'];
 		$link['remove']['variables'] = array('id' => _('ID'));
 		$link['add']['html']['remove'] = button('add');
@@ -144,10 +147,10 @@ if ( ! $_REQUEST['modfunc'] )
 	else
 	{
 		$sql = 'SELECT * FROM REPORT_CARD_COMMENT_CODE_SCALES WHERE SCHOOL_ID=\''.UserSchool().'\' ORDER BY SORT_ORDER,ID';
-		$functions = array('TITLE' => 'makeTextInput','COMMENT' => 'makeTextInput','SORT_ORDER' => 'makeTextInput');
+		$functions = array('TITLE' => '_makeTextInput','COMMENT' => '_makeTextInput','SORT_ORDER' => '_makeTextInput');
 		$LO_columns = array('TITLE' => _('Comment Scale'),'COMMENT' => _('Comment'),'SORT_ORDER' => _('Sort Order'));
 
-		$link['add']['html'] = array('TITLE'=>makeTextInput('','TITLE'),'COMMENT'=>makeTextInput('','COMMENT'),'HHR_GPA_VALUE'=>makeCommentsInput('','HHR_GPA_VALUE'),'HR_GPA_VALUE'=>makeCommentsInput('','HR_GPA_VALUE'),'SORT_ORDER'=>makeTextInput('','SORT_ORDER'));
+		$link['add']['html'] = array('TITLE'=>_makeTextInput('','TITLE'),'COMMENT'=>_makeTextInput('','COMMENT'),'HHR_GPA_VALUE'=>_makeCommentsInput('','HHR_GPA_VALUE'),'HR_GPA_VALUE'=>_makeCommentsInput('','HR_GPA_VALUE'),'SORT_ORDER'=>_makeTextInput('','SORT_ORDER'));
 		$link['remove']['link'] = 'Modules.php?modname='.$_REQUEST['modname'].'&modfunc=remove&tab_id=new';
 		$link['remove']['variables'] = array('id' => _('ID'));
 		$link['add']['html']['remove'] = button('add');
@@ -173,15 +176,21 @@ if ( ! $_REQUEST['modfunc'] )
 	echo '</td></tr></table></form>';
 }
 
-function makeCommentsInput($value,$name)
-{	global $THIS_RET,$comment_scale_select;
+function _makeCommentsInput( $value, $name )
+{
+	global $THIS_RET,
+		$comment_scale_select;
 
-	if ( $THIS_RET['ID'])
+	if ( $THIS_RET['ID'] )
+	{
 		$id = $THIS_RET['ID'];
+	}
 	else
+	{
 		$id = 'new';
+	}
 
-	if ( $name=='SCALE_ID')
+	if ( $name === 'SCALE_ID' )
 	{
 		return SelectInput(
 			$value,
@@ -191,14 +200,29 @@ function makeCommentsInput($value,$name)
 			false
 		);
 	}
-	elseif ( $name=='COMMENT')
+	elseif ( $name === 'COMMENT' )
+	{
 		$extra = 'size=15 maxlength=100';
-	elseif ( $name=='SHORT_NAME')
+	}
+	elseif ( $name === 'SHORT_NAME' )
+	{
 		$extra = 'size=15 maxlength=100';
-	elseif ( $name=='SORT_ORDER')
+	}
+	elseif ( $name === 'SORT_ORDER' )
+	{
 		$extra = 'size=5 maxlength=5';
+	}
 	else
+	{
 		$extra = 'size=5 maxlength=5';
+	}
+
+	if ( $name === 'TITLE'
+		&& $id !== 'new' )
+	{
+		$extra .= ' required';
+	}
+
 
 	return TextInput(
 		$value,
@@ -208,20 +232,36 @@ function makeCommentsInput($value,$name)
 	);
 }
 
-function makeTextInput($value,$name)
-{	global $THIS_RET;
+function _makeTextInput( $value, $name )
+{
+	global $THIS_RET;
 
-	if ( $THIS_RET['ID'])
+	if ( $THIS_RET['ID'] )
+	{
 		$id = $THIS_RET['ID'];
+	}
 	else
+	{
 		$id = 'new';
+	}
 
-	if ( $name=='TITLE')
+	if ( $name === 'TITLE' )
+	{
 		$extra = 'size=15 maxlength=25';
-	elseif ( $name=='COMMENT')
+
+		if ( $id !== 'new' )
+		{
+			$extra .= ' required';
+		}
+	}
+	elseif ( $name === 'COMMENT' )
+	{
 		$extra = 'size=15 maxlength=100';
+	}
 	else
+	{
 		$extra = 'size=5 maxlength=5';
+	}
 
 	return TextInput(
 		$value,

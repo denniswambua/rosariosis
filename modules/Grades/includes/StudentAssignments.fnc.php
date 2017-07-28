@@ -63,17 +63,35 @@ function StudentAssignmentSubmit( $assignment_id, &$error )
 
 	$timestamp = date( 'Y-m-d His' );
 
+	$assignments_path = GetAssignmentsFilesPath( $assignment['STAFF_ID'] );
+
 	// Check if file submitted.
 	if ( isset( $_FILES[ 'submission_file' ] ) )
 	{
 		$file_attached_ext_white_list = array(
+			/**
+			 * Extensions white list.
+			 *
+			 * Common file types.
+			 * Obviously, we won't include executable types
+			 * .php, .sql, .js, .exe...
+			 * If you file type is not white listed,
+			 * put it in a ZIP archive!
+			 *
+			 * @link http://fileinfo.com/filetypes/common
+			 */
 			// Micro$oft Office.
 			'.doc',
 			'.docx',
 			'.xls',
 			'.xlsx',
+			'.xlr',
+			'.pps',
 			'.ppt',
 			'.pptx',
+			'.wps',
+			'.wpd',
+			'.rtf',
 			// Libre Office.
 			'.odt',
 			'.ods',
@@ -83,20 +101,49 @@ function StudentAssignmentSubmit( $assignment_id, &$error )
 			'.jpeg',
 			'.png',
 			'.gif',
-			// Sound.
+			'.bmp',
+			'.svg',
+			'.ico',
+			'.psd',
+			'.ai',
+			'.eps',
+			'.ps',
+			// Audio.
 			'.mp3',
 			'.ogg',
 			'.wav',
+			'.mid',
+			'.wma',
 			// Video.
 			'.avi',
 			'.mp4',
+			'.mpg',
 			'.ogv',
 			'.webm',
-			// Others.
-			'.zip',
+			'.wmv',
+			'.mov',
+			'.m4v',
+			'.flv',
+			'.swf',
+			// Text.
 			'.txt',
 			'.pdf',
+			'.md',
 			'.csv',
+			'.tex',
+			// Web.
+			'.xml',
+			'.xhtml',
+			'.html',
+			'.htm',
+			'.css',
+			'.rss',
+			// Compressed.
+			'.zip',
+			'.rar',
+			'.7z',
+			'.tar',
+			'.gz',
 		);
 
 		$student_name_RET = DBGet( DBQuery( "SELECT FIRST_NAME||' '||LAST_NAME AS NAME
@@ -108,8 +155,6 @@ function StudentAssignmentSubmit( $assignment_id, &$error )
 		// Filename = [course_title]_[assignment_ID]_[student_name]_[timestamp].ext.
 		$file_name_no_ext = no_accents( $assignment['COURSE_TITLE'] . '_' . $assignment_id . '_' .
 			$student_name ) . '_' . $timestamp;
-
-		$assignments_path = GetAssignmentsFilesPath( $assignment['STAFF_ID'] );
 
 		// Upload file to AssignmentsFiles/[School_Year]/Teacher[teacher_ID]/Quarter[1,2,3,4...]/.
 		$file = FileUpload(
@@ -142,7 +187,7 @@ function StudentAssignmentSubmit( $assignment_id, &$error )
 	}
 
 	// Check if HMTL submitted.
-	$message = isset( $_POST['message'] ) ? SanitizeHTML( $_POST['message'] ) : '';
+	$message = isset( $_POST['message'] ) ? SanitizeHTML( $_POST['message'], $assignments_path ) : '';
 
 	// Serialize Assignment Data.
 	$data = array( 'files' => $files, 'message' => $message, 'date' => $timestamp );

@@ -2,10 +2,12 @@
 
 require_once 'modules/Food_Service/includes/FS_Icons.inc.php';
 
-if ( $_REQUEST['modfunc']=='select')
+if ( $_REQUEST['modfunc'] === 'select' )
 {
 	$_SESSION['FSA_type'] = $_REQUEST['fsa_type'];
-	unset($_REQUEST['modfunc']);
+
+	// Unset modfunc & redirect URL.
+	RedirectURL( 'modfunc' );
 }
 
 if ( $_REQUEST['type'])
@@ -23,9 +25,14 @@ else
 	$tabcolor_s = Preferences('HEADER'); $textcolor_s = '#FFFFFF';
 	$tabcolor_u = '#DFDFDF'; $textcolor_u = '#999999';
 }*/
-//FJ remove DrawTab params
-$header = '<a href="Modules.php?modname='.$_REQUEST['modname'].'&modfunc=select&menu_id='.$_REQUEST['menu_id'].'&fsa_type=student"><b>'._('Students').'</b></a>';
-$header .= ' | <a href="Modules.php?modname='.$_REQUEST['modname'].'&modfunc=select&menu_id='.$_REQUEST['menu_id'].'&fsa_type=staff"><b>'._('Users').'</b></a>';
+
+$header = '<a href="Modules.php?modname=' . $_REQUEST['modname'] . '&modfunc=select&menu_id=' . $_REQUEST['menu_id'] . '&fsa_type=student">' .
+	( ! isset( $_REQUEST['type'] ) || $_REQUEST['type'] === 'student' ?
+		'<b>' . _( 'Students' ) . '</b>' : _( 'Students' ) ) . '</a>';
+
+$header .= ' | <a href="Modules.php?modname=' . $_REQUEST['modname'] . '&modfunc=select&menu_id=' . $_REQUEST['menu_id'] . '&fsa_type=staff">' .
+	( isset( $_REQUEST['type'] ) && $_REQUEST['type'] === 'staff' ?
+		'<b>' . _( 'Users' ) . '</b>' : _( 'Users' ) ) . '</a>';
 
 DrawHeader(($_SESSION['FSA_type']=='staff' ? _('User') : _('Student')).' &minus; '.ProgramTitle());
 User('PROFILE')=='student'?'':DrawHeader($header);
@@ -45,18 +52,26 @@ if ( ! $_REQUEST['menu_id'])
 else
 	$_SESSION['FSA_menu_id'] = $_REQUEST['menu_id'];
 
-if ( $_REQUEST['modfunc']=='add')
+if ( $_REQUEST['modfunc'] === 'add' )
 {
-	if ( $_REQUEST['item_sn'])
+	if ( $_REQUEST['item_sn'] )
+	{
 		$_SESSION['FSA_sale'][] = $_REQUEST['item_sn'];
-	unset($_REQUEST['modfunc']);
+	}
+
+	// Unset modfunc & item sn & redirect URL.
+	RedirectURL( array( 'modfunc', 'item_sn' ) );
 }
 
-if ( $_REQUEST['modfunc']=='remove')
+if ( $_REQUEST['modfunc'] === 'remove' )
 {
-	if ( $_REQUEST['id']!='')
-		unset($_SESSION['FSA_sale'][$_REQUEST['id']]);
-	unset($_REQUEST['modfunc']);
+	if ( $_REQUEST['id'] !== '' )
+	{
+		unset( $_SESSION['FSA_sale'][ $_REQUEST['id'] ] );
+	}
+
+	// Unset modfunc & ID & redirect URL.
+	RedirectURL( array( 'modfunc', 'id' ) );
 }
 
 require_once 'modules/Food_Service/'.($_SESSION['FSA_type']=='staff'?'Users/':'Students/').'/ServeMenus.php';

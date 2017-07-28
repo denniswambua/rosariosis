@@ -1,11 +1,28 @@
 <?php
 require_once 'modules/Accounting/functions.inc.php';
-if ( ! $_REQUEST['print_statements'])
-	DrawHeader(ProgramTitle());
 
-if ( $_REQUEST['values'] && $_POST['values'] && AllowEdit())
+if ( ! $_REQUEST['print_statements'] )
 {
-	foreach ( (array) $_REQUEST['values'] as $id => $columns)
+	DrawHeader( ProgramTitle() );
+}
+
+// Add eventual Dates to $_REQUEST['values'].
+if ( isset( $_REQUEST['day_values'], $_REQUEST['month_values'], $_REQUEST['year_values'] ) )
+{
+	$requested_dates = RequestedDates(
+		$_REQUEST['year_values'],
+		$_REQUEST['month_values'],
+		$_REQUEST['day_values']
+	);
+
+	$_REQUEST['values'] = array_replace_recursive( (array) $_REQUEST['values'], (array) $requested_dates );
+}
+
+if ( $_REQUEST['values']
+	&& $_POST['values']
+	&& AllowEdit() )
+{
+	foreach ( (array) $_REQUEST['values'] as $id => $columns )
 	{
 		if ( $id!='new')
 		{
@@ -13,20 +30,21 @@ if ( $_REQUEST['values'] && $_POST['values'] && AllowEdit())
 
 			foreach ( (array) $columns as $column => $value)
 			{
-				$sql .= $column."='".$value."',";
+				$sql .= DBEscapeIdentifier( $column ) . "='" . $value . "',";
 			}
 			$sql = mb_substr($sql,0,-1) . " WHERE ID='".$id."'";
 			DBQuery($sql);
 		}
-		else
+		elseif ( $columns['AMOUNT'] !== ''
+			&& $columns['PAYMENT_DATE'] )
 		{
 			$id = DBGet(DBQuery("SELECT ".db_seq_nextval('ACCOUNTING_PAYMENTS_SEQ').' AS ID'));
 			$id = $id[1]['ID'];
 
 			$sql = "INSERT INTO ACCOUNTING_PAYMENTS ";
 
-			$fields = 'ID,SYEAR,SCHOOL_ID,PAYMENT_DATE,';
-			$values = "'".$id."','".UserSyear()."','".UserSchool()."','".DBDate()."',";
+			$fields = 'ID,SYEAR,SCHOOL_ID,';
+			$values = "'".$id."','".UserSyear()."','".UserSchool()."',";
 
 			$go = 0;
 			foreach ( (array) $columns as $column => $value)
@@ -36,37 +54,50 @@ if ( $_REQUEST['values'] && $_POST['values'] && AllowEdit())
 					if ( $column=='AMOUNT')
 					{
 						$value = preg_replace('/[^0-9.-]/','',$value);
-//FJ fix SQL bug invalid amount
+						// FJ fix SQL bug invalid amount.
 						if ( !is_numeric($value))
 							$value = 0;
 					}
-					$fields .= $column.',';
-					$values .= "'".$value."',";
+					$fields .= DBEscapeIdentifier( $column ) . ',';
+					$values .= "'" . $value . "',";
 					$go = true;
 				}
 			}
-			$sql .= '(' . mb_substr($fields,0,-1) . ') values(' . mb_substr($values,0,-1) . ')';
+			$sql .= '(' . mb_substr( $fields, 0, -1 ) . ') values(' . mb_substr( $values, 0, -1 ) . ')';
 
 			if ( $go)
 				DBQuery($sql);
 		}
 	}
-	unset($_REQUEST['values']);
+
+	// Unset modfunc & redirect URL.
+	RedirectURL( 'modfunc' );
 }
 
-if ( $_REQUEST['modfunc']=='remove' && AllowEdit())
+if ( $_REQUEST['modfunc'] === 'remove'
+	&& AllowEdit() )
 {
-	if (DeletePrompt(_('Expense')))
+	if ( DeletePrompt( _( 'Expense' ) ) )
 	{
-		DBQuery("DELETE FROM ACCOUNTING_PAYMENTS WHERE ID='".$_REQUEST['id']."'");
-		unset($_REQUEST['modfunc']);
+		DBQuery( "DELETE FROM ACCOUNTING_PAYMENTS
+			WHERE ID='" . $_REQUEST['id'] . "'" );
+
+		// Unset modfunc & ID & redirect URL.
+		RedirectURL( array( 'modfunc', 'id' ) );
 	}
 }
 
-if ( ! $_REQUEST['modfunc'])
+if ( ! $_REQUEST['modfunc'] )
 {
 	$payments_total = 0;
-	$functions = array('REMOVE' => '_makePaymentsRemove','AMOUNT' => '_makePaymentsAmount','PAYMENT_DATE' => 'ProperDate','COMMENTS' => '_makePaymentsTextInput');
+
+	$functions = array(
+		'REMOVE' => '_makePaymentsRemove',
+		'AMOUNT' => '_makePaymentsAmount',
+		'PAYMENT_DATE' => 'ProperDate',
+		'COMMENTS' => '_makePaymentsTextInput',
+	);
+
 	$payments_RET = DBGet(DBQuery("SELECT '' AS REMOVE,ID,AMOUNT,PAYMENT_DATE,COMMENTS FROM ACCOUNTING_PAYMENTS WHERE SYEAR='".UserSyear()."' AND STAFF_ID IS NULL AND SCHOOL_ID='".UserSchool()."' ORDER BY ID"),$functions);
 	$i = 1;
 	$RET = array();
@@ -81,9 +112,23 @@ if ( ! $_REQUEST['modfunc'])
 	else
 		$columns = array();
 
-	$columns += array('AMOUNT' => _('Amount'),'PAYMENT_DATE' => _('Date'),'COMMENTS' => _('Comment'));
-	if ( ! $_REQUEST['print_statements'] && AllowEdit())
-		$link['add']['html'] = array('REMOVE'=>button('add'),'AMOUNT'=>_makePaymentsTextInput('','AMOUNT'),'PAYMENT_DATE'=>ProperDate(DBDate()),'COMMENTS'=>_makePaymentsTextInput('','COMMENTS'));
+	$columns += array(
+		'AMOUNT' => _( 'Amount' ),
+		'PAYMENT_DATE' => _( 'Date' ),
+		'COMMENTS' => _( 'Comment' ),
+	);
+
+	if ( ! $_REQUEST['print_statements']
+		&& AllowEdit() )
+	{
+		$link['add']['html'] = array(
+			'REMOVE' => button( 'add' ),
+			'AMOUNT' => _makePaymentsTextInput( '', 'AMOUNT' ),
+			'PAYMENT_DATE' => _makePaymentsDateInput( DBDate(), 'PAYMENT_DATE' ),
+			'COMMENTS' => _makePaymentsTextInput( '', 'COMMENTS' ),
+		);
+	}
+
 	if ( ! $_REQUEST['print_statements'] && AllowEdit())
 	{
 		echo '<form action="Modules.php?modname='.$_REQUEST['modname'].'" method="POST">';
@@ -126,13 +171,15 @@ if ( ! $_REQUEST['modfunc'])
 
 	$table .= '<tr><td>& '._('Total from Staff Payments').': '.'</td><td>'.Currency($Staff_payments_total[1]['TOTAL']).'</td></tr>';
 
-	$table .= '<tr><td>'._('General Balance').': <b>'.'</b></td><td><b id="update_balance">'.Currency(($incomes_total[1]['TOTAL']+$student_payments_total[1]['TOTAL']-$payments_total-$Staff_payments_total[1]['TOTAL'])).'</b></td></tr></table>';
+	$table .= '<tr><td>' . _( 'General Balance' ) . ': </td>
+		<td><b id="update_balance">' . Currency( ( $incomes_total[1]['TOTAL'] + $student_payments_total[1]['TOTAL'] - $payments_total - $Staff_payments_total[1]['TOTAL'] ) ) .
+		'</b></td></tr></table>';
 
-	if ( ! $_REQUEST['print_statements'])
-		DrawHeader('','',$table);
-	else
-		DrawHeader($table,'','',null,null,true);
+	DrawHeader( $table );
 
-	if ( ! $_REQUEST['print_statements'] && AllowEdit())
+	if ( ! $_REQUEST['print_statements']
+		&& AllowEdit() )
+	{
 		echo '</form>';
+	}
 }

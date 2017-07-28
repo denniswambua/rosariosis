@@ -1,115 +1,3 @@
-/* Open Sans */
-@font-face {
-	font-family: 'Open Sans';
-	src: url('fonts/opensans/Regular.eot');
-	src: url('fonts/opensans/Regular.eot?#iefix') format('embedded-opentype'),
-		 url('fonts/opensans/Regular.woff') format('woff'),
-		 url('fonts/opensans/Regular.ttf') format('truetype'),
-		 url('fonts/opensans/Regular.svg#Open Sans') format('svg');
-	font-weight: normal;
-	font-style: normal;
-}
-
-@font-face {
-	font-family: 'Open Sans';
-	src: url('fonts/opensans/Italic.eot');
-	src: url('fonts/opensans/Italic.eot?#iefix') format('embedded-opentype'),
-		 url('fonts/opensans/Italic.woff') format('woff'),
-		 url('fonts/opensans/Italic.ttf') format('truetype'),
-		 url('fonts/opensans/Italic.svg#Open Sans') format('svg');
-	font-weight: normal;
-	font-style: italic;
-}
-
-@font-face {
-	font-family: 'Open Sans';
-	src: url('fonts/opensans/BoldItalic.eot');
-	src: url('fonts/opensans/BoldItalic.eot?#iefix') format('embedded-opentype'),
-		 url('fonts/opensans/BoldItalic.woff') format('woff'),
-		 url('fonts/opensans/BoldItalic.ttf') format('truetype'),
-		 url('fonts/opensans/BoldItalic.svg#Open Sans') format('svg');
-	font-weight: 700;
-	font-style: italic;
-}
-
-@font-face {
-	font-family: 'Open Sans';
-	src: url('fonts/opensans/Bold.eot');
-	src: url('fonts/opensans/Bold.eot?#iefix') format('embedded-opentype'),
-		 url('fonts/opensans/Bold.woff') format('woff'),
-		 url('fonts/opensans/Bold.ttf') format('truetype'),
-		 url('fonts/opensans/Bold.svg#Open Sans') format('svg');
-	font-weight: 700;
-	font-style: normal;
-}
-
-/*@font-face {
-	font-family: 'Open Sans';
-	src: url('fonts/opensans/ExtraBoldItalic.eot');
-	src: url('fonts/opensans/ExtraBoldItalic.eot?#iefix') format('embedded-opentype'),
-		 url('fonts/opensans/ExtraBoldItalic.woff') format('woff'),
-		 url('fonts/opensans/ExtraBoldItalic.ttf') format('truetype'),
-		 url('fonts/opensans/ExtraBoldItalic.svg#Open Sans') format('svg');
-	font-weight: 800;
-	font-style: italic;
-}
-
-@font-face {
-	font-family: 'Open Sans';
-	src: url('fonts/opensans/ExtraBold.eot');
-	src: url('fonts/opensans/ExtraBold.eot?#iefix') format('embedded-opentype'),
-		 url('fonts/opensans/ExtraBold.woff') format('woff'),
-		 url('fonts/opensans/ExtraBold.ttf') format('truetype'),
-		 url('fonts/opensans/ExtraBold.svg#Open Sans') format('svg');
-	font-weight: 800;
-	font-style: normal;
-}
-
-@font-face {
-	font-family: 'Open Sans';
-	src: url('fonts/opensans/LightItalic.eot');
-	src: url('fonts/opensans/LightItalic.eot?#iefix') format('embedded-opentype'),
-		 url('fonts/opensans/LightItalic.woff') format('woff'),
-		 url('fonts/opensans/LightItalic.ttf') format('truetype'),
-		 url('fonts/opensans/LightItalic.svg#Open Sans') format('svg');
-	font-weight: 300;
-	font-style: italic;
-}
-
-@font-face {
-	font-family: 'Open Sans';
-	src: url('fonts/opensans/Light.eot');
-	src: url('fonts/opensans/Light.eot?#iefix') format('embedded-opentype'),
-		 url('fonts/opensans/Light.woff') format('woff'),
-		 url('fonts/opensans/Light.ttf') format('truetype'),
-		 url('fonts/opensans/Light.svg#Open Sans') format('svg');
-	font-weight: 300;
-	font-style: normal;
-}
-
-@font-face {
-	font-family: 'Open Sans';
-	src: url('fonts/opensans/SemiboldItalic.eot');
-	src: url('fonts/opensans/SemiboldItalic.eot?#iefix') format('embedded-opentype'),
-		 url('fonts/opensans/SemiboldItalic.woff') format('woff'),
-		 url('fonts/opensans/SemiboldItalic.ttf') format('truetype'),
-		 url('fonts/opensans/SemiboldItalic.svg#Open Sans') format('svg');
-	font-weight: 600;
-	font-style: italic;
-}
-
-@font-face {
-	font-family: 'Open Sans';
-	src: url('fonts/opensans/Semibold.eot');
-	src: url('fonts/opensans/Semibold.eot?#iefix') format('embedded-opentype'),
-		 url('fonts/opensans/Semibold.woff') format('woff'),
-		 url('fonts/opensans/Semibold.ttf') format('truetype'),
-		 url('fonts/opensans/Semibold.svg#Open Sans') format('svg');
-	font-weight: 600;
-	font-style: normal;
-}*/
-
-
 #wrap{
 	height:auto;
 	min-height:100%;
@@ -119,6 +7,7 @@
 #menuback,#menu{
 	width:205px
 }
+
 /*ScrollToFixed bug when menu hidden*/
 #menu.scroll-to-fixed-fixed.hide + div{
 	width:0!important
@@ -137,7 +26,7 @@
 	position:relative;
 	float:left;
 	overflow: visible;
-	z-index: auto !important;
+	z-index: 1 !important;
 }
 #menushadow{
 	position:absolute;
@@ -206,7 +95,7 @@ body,
 textarea,
 input,
 select{
-	font-family:'Open Sans';
+	font-family:'Open Sans', sans-serif;
 	line-height:1.4em
 }
 *{
@@ -220,6 +109,8 @@ a{
 iframe,img{
 	border:0
 }
+
+/* Responsive image */
 img{
 	max-width: 100%;
 }
@@ -228,9 +119,6 @@ td,textarea{
 }
 input,select{
 	line-height:1.231
-}
-select[multiple]{
-	height:6em
 }
 a,input,select:focus{
 	outline:0;
@@ -303,14 +191,23 @@ hr {
 	border:0 none;
 	margin:14px 0
 }
+sub,sup{
+	font-size: smaller;
+}
+
 .widefat,div.updated,div.error,textarea,input[type=text],input[type=password],input[type=file],input[type=button],input[type=submit],input[type=reset],input[type=email],input[type=number],input[type=search],input[type=tel],input[type=url],select,.postbox{
 	border-radius:3px;
 	border-width:1px;
 	border-style:solid
 }
+.postbox{
+	border-bottom-width:2px
+}
 .widefat{
 	clear:both;
-	margin:0
+	margin:0;
+	/* Move .cellspacing-0 directly here */
+	border-spacing: 0;
 }
 .widefat *{
 	word-wrap:break-word
@@ -330,20 +227,22 @@ hr {
 .widefat tfoot th:last-of-type{
 	border-bottom-right-radius:3px
 }
+
 /* listOutput sorting icon */
-.widefat th a[href*="LO_direction"]:after{
+.widefat th a[href*="LO_dir"]:after{
 	font-family: monospace;
 	font-size: larger;
 	line-height: 0.5em;
 	content: "\0000a0";
 	padding-left: 3px;
 }
-.widefat th a[href*="LO_direction=1"]:hover:after{
+.widefat th a[href*="LO_dir=1"]:hover:after{
 	content: "\25b4";
 }
-.widefat th a[href*="LO_direction=-1"]:hover:after{
+.widefat th a[href*="LO_dir=-1"]:hover:after{
 	content: "\25be";
 }
+
 /*empty header link (checkbox / checkAll)*/
 .widefat th a:empty:after{
 	content: "";
@@ -373,17 +272,39 @@ hr {
 	margin:2px 0 .8em
 }
 
+
+/* Lists */
+.list-nav,.list {
+	/* Move .width-100p here */
+	width: 100%;
+}
+.list-nav {
+	margin-top: 16px;
+}
+.list-nav td {
+	padding: 4px 8px;
+}
+.list {
+	margin-bottom: 16px;
+}
+.list-no-nav {
+	margin-top: 24px;
+}
+
+
 div.error{
 	padding:0 .6em;
-	margin:5px 0
+	margin:16px 0
 }
 div.updated{
 	padding:2px 9px;
-	margin:5px 0
+	margin:16px 0
 }
+
 .postbox > thead th,.widefat th{
 	font-family:Georgia,"Times New Roman",Times,serif
 }
+
 select option{
 	padding:2px
 }
@@ -407,6 +328,8 @@ input[type=submit],input[type=reset],input[type=button]{
 label{
 	vertical-align:middle
 }
+
+
 .adminmenu,.wp-submenu{
 	width:100%;
 	list-style: outside none none;
@@ -449,9 +372,6 @@ label{
 	padding-top: 6px;
 	position: absolute;
 	right: 5px;
-}
-html[dir="RTL"].no-touch .menu-module:hover .menu-top:after{
-	content: "";
 }
 #selectedModuleLink:after{
 	content: "";
@@ -501,20 +421,24 @@ html[dir="RTL"].no-touch .menu-module:hover .menu-top:after{
 .wp-submenu a{
 	margin:0
 }
+
+
 .current-person{
 	padding:1px;
 	margin-top:5px;
 	font-weight:bold;
 }
+
+
 .postbox{
 	margin-bottom:20px;
 	padding:0;
-	line-height:1
+	line-height:1.1
 }
 .postbox > thead th{
 	border-bottom-width:1px;
 	border-bottom-style:solid;
-	padding:0
+	padding:0 5px;
 }
 .postbox th h3,
 .postbox .h3multi{
@@ -540,6 +464,7 @@ html[dir="RTL"].no-touch .menu-module:hover .menu-top:after{
 .postbox .h3multi{
 	overflow-y:hidden
 }
+
 th a{
 	display:block;
 	overflow:hidden;
@@ -549,11 +474,13 @@ th a{
 	position:relative;
 	min-width:255px
 }
+
 fieldset{
 	border-width:1px;
 	border-style:solid;
 	margin:0
 }
+
 .error a{
 	text-decoration:underline
 }
@@ -565,15 +492,19 @@ div.error p,div.updated p{
 	margin:.2em 0;
 	padding:2px
 }
+
 h3 span{
 	font-weight:normal
 }
+
 .highlight{
 	padding:3px 3px 3px 12px;
 	margin-left:-12px;
 	font-weight:bold;
 	border:0 none
 }
+
+
 
 /*added*/
 .hide{
@@ -594,12 +525,17 @@ h3 span{
 #body{
 	padding:0 15px 38px;
 }
+.header {
+	/* Move .cellspacing-0 & width-100p directly here */
+	border-spacing: 0;
+	width: 100%;
+}
 .headerIcon{
 	height:32px;
 	vertical-align:bottom
 }
 .header1 h2{
-	font-family:'Open Sans';
+	font-family:'Open Sans', sans-serif;
 	font-size:30px;
 	font-weight:normal;
 	margin:0;
@@ -613,6 +549,8 @@ h3 span{
 	line-height:1;
 	margin-left:-3px
 }
+
+/* Scheduling Requests Courses div */
 #courses_div{
 	position:absolute;
 	border-style:solid;
@@ -625,6 +563,7 @@ h3 span{
 	overflow:auto;
 	width:auto
 }
+
 .size-3{
 	font-size:11px
 }
@@ -638,10 +577,13 @@ h3 span{
 .sizep2{
 	font-size:16px
 }
+
 .underline-dots{
 	border-bottom-style:dotted;
 	border-bottom-width:1px
 }
+
+
 /* Textarea MarkDown */
 div.underline-dots{
 	display:inline-block;
@@ -693,6 +635,7 @@ textarea{
 	margin-top:0;
 	resize: vertical;
 }
+
 /*MarkDown to HTML table styling*/
 .markdown-to-html table{
 	border-collapse: collapse;
@@ -704,11 +647,12 @@ textarea{
 	padding: 5px;
 }
 
+
 .legend-gray, .legend-red{
-	margin-top:5px;
 	margin-bottom:7px;
 	display:inline-block
 }
+
 .logo{
 	max-width:150px;
 	max-height:150px
@@ -716,9 +660,14 @@ textarea{
 #menu .logo{
 	margin-top:4px
 }
+
 .onclick{
 	cursor:pointer
 }
+div.onclick{
+	display: inline-block;
+}
+
 .cellspacing-0{
 	/*cellspacing="0"*/
 	border-spacing:0
@@ -735,7 +684,8 @@ textarea{
 	padding-right:5px;
 	padding-bottom:5px
 }
-td.popTable{
+
+.popTable{
 	padding:5px
 }
 td.valign-top,tr.valign-top,table.valign-top td{
@@ -743,7 +693,8 @@ td.valign-top,tr.valign-top,table.valign-top td{
 }
 .align-right,
 .align-right td,
-td.align-right{
+td.align-right,
+th.align-right{
 	text-align:right
 }
 table.col1-align-right > tbody > tr > td:first-child{
@@ -756,7 +707,8 @@ table.col1-align-right > tbody > tr > td:first-child{
 }
 table.center{
 	text-align:inherit;
-	margin:0 auto
+	margin-left: auto;
+	margin-right: auto;
 }
 span.nobr{
 	white-space:nowrap
@@ -768,6 +720,7 @@ span.center,
 a.center{
 	display:block
 }
+
 tr.address > td{
 	border-style:none dotted none none;
 	border:1;
@@ -776,6 +729,7 @@ tr.address > td{
 .br-after{
 	display:block
 }
+
 
 /*Honor Roll cliparts + frames*/
 td.image-radio-list{
@@ -794,10 +748,12 @@ img.image-radio-list{
 	max-height:150px
 }
 
+
 /*buttons*/
 .button{
 	vertical-align:middle;
-	height:18px
+	height:18px;
+	max-width:none
 }
 .button.bigger{
 	height:24px
@@ -814,6 +770,7 @@ div.error .button, div.updated .button{
 	height:32px
 }
 
+
 /*login form*/
 .login form input[type=text],.login form input[type=password]{
 	font-weight:200;
@@ -826,6 +783,7 @@ div.error .button, div.updated .button{
 	outline:none;
 	box-shadow:inset 1px 1px 2px rgba(200,200,200,.2)
 }
+
 
 /*bottom*/
 .BottomButton{
@@ -852,6 +810,7 @@ div.error .button, div.updated .button{
 	padding-bottom:13px;
 }
 
+
 /* Loading spinner */
 .loading{
 	display: inline-block;
@@ -861,16 +820,19 @@ div.error .button, div.updated .button{
 	visibility:hidden
 }
 
+
 /*bars*/
 .bar{
-	height:12px
+	word-wrap: normal;
 }
+
 
 /*stackable tables*/
 div.st{
 	float:left;
 	padding:4px
 }
+
 
 /*student comments*/
 #student-comments{
@@ -885,6 +847,7 @@ div.st{
 	margin-bottom:15px;
 	border-bottom:1px solid
 }
+
 
 /*calendar*/
 #calendar{
@@ -903,7 +866,7 @@ div.st{
 	max-width:103px;
 	overflow:hidden;
 	white-space:nowrap;
-	line-height:1
+	line-height:1.231
 }
 .calendar-day .bold{
 	font-weight:bold
@@ -922,16 +885,19 @@ td.calendar-menu{
 	max-width:none
 }
 
+
 /* colorBox */
 #cboxLoadedContent{
 	margin:1px;
 	padding:5px !important
 }
 
+
 /*responsive tables*/
 .rt .link2colorBox{
 	display:none
 }
+
 
 /*portal polls*/
 .divPortalPoll{
@@ -939,11 +905,19 @@ td.calendar-menu{
 	overflow-y:auto;
 	min-width: 300px
 }
+.divPortalPoll .widefat{
+	margin-bottom: 0.8em;
+}
+.widefat .divPortalPoll > p{
+	margin-bottom: 2px;
+}
+
 
 /*arrows*/
 .arrow.right:before,
 .switchMenu:before{
 	content: "\25b6\0000a0";
+	vertical-align: 10%;
 }
 .switchMenu.switched:before{
 	content: "\25bc\0000a0";
@@ -957,12 +931,14 @@ td.calendar-menu{
 	padding:5px
 }
 
+
 /*jqplot charts*/
 .chart{
 	margin:20px 10px;
 	width:700px;
 	height:560px
 }
+
 
 /*tipmessage (DO NOT EDIT)*/
 #tipMsg{
@@ -972,6 +948,11 @@ td.calendar-menu{
 	top:-100px;
 	max-width:300px
 }
+.tipmsg-label {
+	display: inline-block;
+	border-bottom: 1px dashed #bbb;
+}
+
 
 /* Tooltip */
 .tooltip{
@@ -993,11 +974,11 @@ td.calendar-menu{
 	opacity:0;
 	position:absolute;
 	bottom:150%;
-	left:-75px;
-	width:150px;
+	left:-55px;
+	width:120px;
 	z-index:999999;
 	display:inline-block;
-	padding:3px 6px;
+	padding:3px 5px;
 	border-radius:3px;
 	transition:opacity .3s;
 	text-align:left;
@@ -1009,15 +990,46 @@ td.calendar-menu{
 	opacity:1
 }
 
+
+/* Toggle, CSS checkbox hack */
+.toggle {
+	cursor: pointer;
+}
+
+input[type=checkbox].toggle {
+	position: absolute;
+	left: -9999px;
+}
+
+.toggle ~ .toggle-me { /* Hidden State */
+	display: none;
+}
+
+.toggle:checked ~ .toggle-me { /* Toggled State */
+	display: block;
+}
+
+.toggle:before{
+	content:"\25b6\0000a0";
+	vertical-align:10%
+}
+
+.toggle:checked + .toggle:before{
+	content:"\25bc\0000a0"
+}
+
+
 /* MiniColors */
 .minicolors{
 	margin:2px 2px 2px 0;
 }
 
+
 /* Accessibility (a11y) */
 .a11y-hidden {
 	display: none;
 }
+
 
 /* Login, First login & Password Reset pages */
 .login,
@@ -1032,254 +1044,79 @@ td.calendar-menu{
 	max-width: 550px;
 }
 
+
 /* Create account page */
 .create-account {
 	padding: 0 2px;
 }
 
 
-/*tablet vertical*/
-@media only screen and (max-width:800px){
-	.BottomButton span{
-		display:none
-	}
+/* AJAX error message */
+.ajax-error {
+	position: fixed;
+	top: 0;
+	right: 0;
+	padding: 11px;
+	background-color: red;
+	font-weight: bold;
+	color: #fff;
+	z-index: 100000;
+	display: none;
 }
 
-/*mobile*/
-@media only screen and (max-width:640px){
-	/*quick smartphone reset*/
-	.mod{
-		float:none !important;
-		clear:none !important;
-		width:auto !important;
-		margin-left:0 !important;
-		margin-right:0 !important;
-		position:relative !important;
-		border:0
-	}
-	#menu .logo{
-		max-width:130px;
-		margin:2px;
-		max-height:130px;
-		float:right
-	}
-	#menu{
-		padding-bottom:0
-	}
-	.adminmenu a{
-		padding:2px 5px
-	}
-	.wp-submenu a{
-		padding:5px
-	}
-	.menu-top img{
-		height:30px
-	}
-	.no-touch .menu-module:hover .menu-top:after{
-		content: "";
-	}
-	.no-touch .menu-module:hover .wp-submenu{
-		top: -1000em;
-	}
-	#body{
-		padding:0 2px
-	}
-	.header1 h2{
-		font-size:22px;
-		line-height:24px
-	}
-	#search input,#search select,#LO_search{
-		max-width:150px
-	}
-	#modulesBody textarea{
-		width:100% !important
-	}
-	tr.address > td{
-		border-style:none none dotted none;
-		padding:12px 0 12px 0
-	}
-	.chart{
-		margin:20px 0;
-		width:300px;
-		height:300px
-	}
-	input[type=submit],input[type=reset],input[type=button]{
-		margin:0 4px;
-	}
 
-	/*stackable tables*/
-	tr.st > td{
-		float:left;
-		width:100%;
-		box-sizing: border-box
-	}
-	table.col1-align-right > tbody > tr.st > td:first-child{
-		text-align:left
-	}
-	.fixed-col{
-		table-layout:auto; /*no fixed layout for stackable tables*/
-	}
-
-	.divPortalPoll{
-		min-width: 0
-	}
+/**
+ * TinyMCE
+ */
+.tinymce {
+	min-height:200px;
 }
 
-@media only screen and (max-width:1023px){
-	/*responsive tables*/
-	.rt{
-		display:block;
-		position:relative;
-		width:100%
-	}
-	.rt thead{
-		display:block;
-		float:left;
-		max-width:130px;
-	}
-	.rt tbody{
-		display:block;
-		width:auto;
-		position:relative;
-		overflow-x:auto;
-		white-space:nowrap
-	}
-	.rt thead tr{
-		display:block
-	}
-	.rt th{
-		display:block;
-		line-height:2em;
-		height:2em
-	}
-	.rt th,
-	.rt th a{
-		font-size:14px;
-	}
-	.rt tbody tr{
-		display:inline-block;
-		vertical-align:top
-	}
-	.rt td{
-		display:block;
-		line-height:2em;
-		height:2em
-	}
-	.rt img{
-		max-height:2em
-	}
-	.rt input,.rt select{
-		margin:0
-	}
-	.rt tr{
-		border-right-width:1px;
-		border-right-style:solid
-	}
-
-	/*rt td too large*/
-	.rt input,.rt select,.rt textarea{
-		max-width:150px
-	}
-	.rt .link2colorBox{
-		display:block
-	}
-	.rt .link2colorBox .colorboxinline{
-		background:url('btn/visualize.png') no-repeat;
-		background-size:contain;
-		width:24px;
-		height:24px;
-		display:block
-	}
-	.rt2colorBox{
-		overflow:auto
-	}
-	/*if content on 1 line & text <= 36 chars*/
-	.widefat td .rt2colorBox p {
-		margin-top:0
-	}
-	.rt .link2colorBox + .rt2colorBox{
-		display:none
-	}
-	.rt div.error, .rt div.updated{
-		padding:0;
-		margin:0
-	}
-
-	/*no THEAD repeat*/
-	.rt .thead-repeat{
-		display: none;
-	}
-
-	.divPortalPoll{
-		max-height:none;
-		overflow-y:visible
-	}
-
-	/*calendar*/
-	#calendar > thead > tr > th{
-		overflow: hidden;
-		word-wrap: normal;
-		padding: 4px;
-	}
-	.calendar-day{
-		position:relative;
-		height:48px
-	}
-	.calendar-day > table{
-		display:block;
-		width:inherit;
-		z-index:1
-	}
-	.calendar-day td{
-		display:none;
-	}
-	.calendar-day .hover:hover td,
-	.calendar-day .number{
-		display: table-cell;
-	}
-	/*.calendar-day .hover:hover .calendar-event{
-		display:inherit;
-	}*/
-	.calendar-day .hover:hover{
-		height:auto;
-		min-width:202px;
-		min-height:102px;
-		z-index:2;
-		position:absolute;
-		top:0;
-		left:0;
-		background-color:inherit;
-		box-shadow: 2px 2px 2px 1px #9f9f9f
-	}
-	/*fridays, saturdays*/
-	.calendar-day.thu-fri-sat .hover:hover{
-		right:0;
-		left:auto;
-		box-shadow: -2px 2px 2px 1px #9f9f9f
-	}
-
-	/*jscalendar+colorbox*/
-	.calendar{
-		z-index:10000
-	}
+.mce-tinymce.mce-container {
+	/* Max width: 1024px for PDF */
+	max-width: 1024px;
 }
 
-/*320 & 360px mobile*/
-@media only screen and (max-width:479px){
-	/*Stackable tables: columns always align left*/
-	.st > .align-right{
-		text-align: left;
-	}
-	/*calendar*/
-	.calendar-day{
-		height:36px
-	}
-	.calendar-day .hover:hover{
-		min-width:177px;
-		min-height:78px
-	}
-	input,select{
-		max-width:260px
-	}
+.tinymce-horizontal .mce-tinymce.mce-container {
+	/* Max width: 1448px for Horizontal PDF */
+	max-width: 1448px;
+}
 
+.mce-tinymce.mce-fullscreen,
+.tinymce-horizontal .mce-tinymce.mce-fullscreen {
+	max-width: none;
+}
+
+
+/* TinyMCE responsive toolbar buttons */
+.mce-btn-group .mce-btn {
+	float: left;
+}
+
+.tinymce-html img,
+.markdown-to-html img {
+	/* Responsive image for TinyMCE & Markdown HTML. */
+	height: auto;
+}
+
+
+/* Chosen select: add 15px to original width so Chosen options ALL fit */
+.chosen-select {
+	min-width: 55px;
+	padding-right: 15px;
+}
+/* Add 23px to multiple Chosen select */
+.chosen-select[multiple] {
+	padding-right: 23px;
+}
+
+
+/**
+ * Disguise phone number "tel" links on desktop
+ * http://stackoverflow.com/questions/15425356/how-to-disable-link-to-phone-number-when-on-desktop
+ */
+.no-touch .phone-link {
+	color: #333;
+	/*pointer-events: none;*/
+	cursor: default;
 }

@@ -16,15 +16,15 @@
  *
  * @see Search()
  *
- * @uses Widgets()         add Widgets SQL to $extra
- * @uses appendSQL()       add Search Student basic fields SQL to $extra['WHERE']
- * @uses CustomFields()    add Custom Fields SQL to $extra['WHERE']
- * @uses DBGet()           return Students
- * @uses makeParents()     generate Parents info popup
- * @uses makePhone()       format Phone number
- * @uses makeContactInfo() generate Contact Info tooltip
- * @uses makeCheckbox()    format Checkbox value
- * @uses makeTextarea()    format Textarea value
+ * @uses Widgets()               add Widgets SQL to $extra
+ * @uses appendSQL()             add Search Student basic fields SQL to $extra['WHERE']
+ * @uses CustomFields()          add Custom Fields SQL to $extra['WHERE']
+ * @uses DBGet()                 return Students
+ * @uses makeParents()           generate Parents info popup
+ * @uses makeEmail()             format Email address
+ * @uses makePhone()             format Phone number
+ * @uses makeContactInfo()       generate Contact Info tooltip
+ * @uses makeFieldTypeFunction() make / format custom fields based on their type
  *
  * @global $contacts_RET   Student Contacts array
  * @global $view_other_RET Used by makeParents() (see below)
@@ -47,6 +47,11 @@ function GetStuList( &$extra = array() )
 		Widgets( 'all', $extra );
 	}
 
+	if ( ! isset( $extra['WHERE'] ) )
+	{
+		$extra['WHERE'] = '';
+	}
+
 	$extra['WHERE'] .= appendSQL( '', $extra );
 
 	$extra['WHERE'] .= CustomFields( 'where', 'student', $extra );
@@ -62,7 +67,7 @@ function GetStuList( &$extra = array() )
 
 	if ( isset( $extra['functions'] ) )
 	{
-		$functions += $extra['functions'];
+		$functions += (array) $extra['functions'];
 	}
 
 	if ( ! isset( $extra['MP'] )
@@ -72,11 +77,11 @@ function GetStuList( &$extra = array() )
 
 		$extra['DATE'] = DBDate();
 	}
-	elseif ( ! $extra['MP'] )
+	elseif ( empty( $extra['MP'] ) )
 	{
 		$extra['MP'] = GetCurrentMP( 'QTR', $extra['DATE'], false );
 	}
-	elseif ( ! $extra['DATE'] )
+	elseif ( empty( $extra['DATE'] ) )
 	{
 		$extra['DATE'] = DBDate();
 	}
@@ -113,12 +118,12 @@ function GetStuList( &$extra = array() )
 		$view_other_RET = DBGet( DBQuery( "SELECT TITLE,VALUE
 			FROM PROGRAM_USER_CONFIG
 			WHERE PROGRAM='StudentFieldsView'
-			AND TITLE IN ('CONTACT_INFO','HOME_PHONE','GUARDIANS','ALL_CONTACTS')
+			AND TITLE IN ('USERNAME','CONTACT_INFO','HOME_PHONE','GUARDIANS','ALL_CONTACTS')
 			AND USER_ID='" . User( 'STAFF_ID' ) . "'"), array(), array( 'TITLE' ) );
 
 		if ( ! $view_fields_RET
 			&& ! $view_address_RET
-			&& !isset( $view_other_RET['CONTACT_INFO'] ) )
+			&& ! isset( $view_other_RET['CONTACT_INFO'] ) )
 		{
 			$extra['columns_after'] = array(
 				'ADDRESS' => _( 'Mailing Address' ),
@@ -207,7 +212,7 @@ function GetStuList( &$extra = array() )
 		else
 		{
 			if ( $view_other_RET['CONTACT_INFO'][1]['VALUE'] == 'Y'
-				&& !isset( $_REQUEST['_ROSARIO_PDF'] ) )
+				&& ! isset( $_REQUEST['_ROSARIO_PDF'] ) )
 			{
 				$select .= ',ssm.STUDENT_ID AS CONTACT_INFO ';
 
@@ -257,34 +262,26 @@ function GetStuList( &$extra = array() )
 				$_REQUEST['addr'] = $addr;
 			}
 
+			// Student Fields: search Username.
+			if ( $view_other_RET['USERNAME'][1]['VALUE'] === 'Y' )
+			{
+				$extra['columns_after']['USERNAME'] = _( 'Username' );
+
+				$select .= ',s.USERNAME';
+			}
+
 			foreach ( (array) $view_fields_RET as $field )
 			{
 				$field_key = 'CUSTOM_' . $field['ID'];
 				$extra['columns_after'][ $field_key ] = $field['TITLE'];
 
-				if ( $field['TYPE'] === 'date' )
+				if ( Config( 'STUDENTS_EMAIL_FIELD' ) === $field['ID'] )
 				{
-					$functions[ $field_key ] = 'ProperDate';
+					$functions[ $field_key ] = 'makeEmail';
 				}
-				elseif ( $field['TYPE'] === 'numeric' )
+				else
 				{
-					$functions[ $field_key ] = 'removeDot00';
-				}
-				elseif ( $field['TYPE'] === 'codeds' )
-				{
-					$functions[ $field_key ] = 'DeCodeds';
-				}
-				elseif ( $field['TYPE'] === 'exports' )
-				{
-					$functions[ $field_key ] = 'DeCodeds';
-				}
-				elseif ( $field['TYPE'] === 'radio' )
-				{
-					$functions[ $field_key ] = 'makeCheckbox';
-				}
-				elseif ( $field['TYPE'] === 'textarea' )
-				{
-					$functions[ $field_key ] = 'makeTextarea';
+					$functions[ $field_key ] = makeFieldTypeFunction( $field['TYPE'] );
 				}
 
 				$select .= ',s.' . $field_key;
@@ -372,7 +369,11 @@ function GetStuList( &$extra = array() )
 
 				$extra['columns_after'][ $field_key ] = $field['TITLE'];
 
-				if ( $field['TYPE'] === 'date' )
+				if ( Config( 'STUDENTS_EMAIL_FIELD' ) === $field['ID'] )
+				{
+					$functions[ $field_key ] = 'makeEmail';
+				}
+				elseif ( $field['TYPE'] === 'date' )
 				{
 					$functions[ $field_key ] = 'ProperDate';
 				}
@@ -651,7 +652,10 @@ function GetStuList( &$extra = array() )
 		// It would be easier to sort on full_name but postgres sometimes yields strange results.
 		$sql .= 's.LAST_NAME,s.FIRST_NAME,s.MIDDLE_NAME';
 
-		$sql .= $extra['ORDER'];
+		if ( isset( $extra['ORDER'] ) )
+		{
+			$sql .= $extra['ORDER'];
+		}
 	}
 	elseif ( isset( $extra['ORDER_BY'] ) )
 	{
@@ -665,8 +669,11 @@ function GetStuList( &$extra = array() )
 		echo '<!--' . $sql . '-->';
 	}
 
+	// DBGet group arg.
+	$group = ( isset( $extra['group'] ) ? $extra['group'] : array() );
+
 	// Execute Query & return.
-	return DBGet( DBQuery( $sql ), $functions, $extra['group'] );
+	return DBGet( DBQuery( $sql ), $functions, $group );
 }
 
 
@@ -690,16 +697,20 @@ function makeContactInfo( $student_id, $column )
 		require_once 'ProgramFunctions/TipMessage.fnc.php';
 	}
 
+	$tipmsg = '';
+
 	if ( isset( $contacts_RET[ $student_id ] ) )
 	{
-		$tipmsg = '';
-
 		foreach ( (array) $contacts_RET[ $student_id ] as $person )
 		{
 			if ( $person[1]['FIRST_NAME'] || $person[1]['LAST_NAME'] )
 			{
 				$tipmsg .= $person[1]['STUDENT_RELATION'] . ': ' .
 					$person[1]['FIRST_NAME'] . ' ' . $person[1]['LAST_NAME'] . '<br />';
+			}
+			else
+			{
+				continue;
 			}
 
 			$tipmsg .= '<table class="width-100p cellspacing-0">';
@@ -724,15 +735,21 @@ function makeContactInfo( $student_id, $column )
 		}
 	}
 	else
-		$tipmsg = _( 'This student has no contact information.' );
+	{
+		// $tipmsg = _( 'This student has no contact information.' );
+	}
 
+	if ( ! $tipmsg )
+	{
+		return '';
+	}
 
 	return MakeTipMessage( $tipmsg, _( 'Contact Information' ), button( 'phone' ) );
 }
 
 
 /**
- * Remove .00 to float string
+ * Remove .00 from float string
  *
  * @example if ( $field['TYPE'] === 'numeric' )	$functions[ $field_key ] = 'removeDot00';
  *
@@ -750,9 +767,44 @@ function removeDot00( $value, $column = '' )
 
 
 /**
+ * Make / Format Email address
+ *
+ * @example if ( Config( 'STUDENTS_EMAIL_FIELD' ) === $field['ID'] ) $functions['EMAIL'] = 'makeEmail';
+ *
+ * @since 2.9.10
+ *
+ * @see DBGet() callback
+ *
+ * @param  string $email  Email address.
+ * @param  string $column Column (optional). Defaults to ''.
+ *
+ * @return string Formatted email address
+ */
+function makeEmail( $email, $column = '' )
+{
+	$email = trim( $email );
+
+	if ( $email == '' )
+	{
+		return '';
+	}
+
+	// Validate email.
+	if ( ! filter_var( $email, FILTER_VALIDATE_EMAIL ) )
+	{
+		return $email;
+	}
+
+	return '<a href="mailto:' . $email . '">' . $email . '</a>';
+}
+
+
+/**
  * Make / Format Phone number
  *
  * @example if ( $view_other_RET['HOME_PHONE'][1]['VALUE'] === 'Y' ) $functions['PHONE'] = 'makePhone';
+ *
+ * @since 2.9.10 Wrap phone inside tel dial link.
  *
  * @see DBGet() callback
  *
@@ -763,21 +815,63 @@ function removeDot00( $value, $column = '' )
  */
 function makePhone( $phone, $column = '' )
 {
+	global $locale;
+
+	$phone = trim( $phone );
+
+	// Keep numbers and extension.
+	$unformatted_phone = preg_replace( "/[^0-9\+x]/", "", $phone );
+
 	if ( $phone === '' )
 	{
 		return '';
 	}
+	elseif ( $unformatted_phone !== $phone )
+	{
+		// Phone already contains formatting chars, keep them.
+		$fphone = $phone;
+	}
+	elseif ( mb_strlen( $phone ) === 9 )
+	{
+		// Spain: 012 345 678.
+		$fphone = mb_substr( $phone, 0, 3 ) . ' ' .
+			mb_substr( $phone, 3, 3 ) . ' ' . mb_substr( $phone, 6 );
+	}
 	elseif ( mb_strlen( $phone ) === 10 )
 	{
-		return '(' . mb_substr( $phone, 0, 3 ) . ')' .
-			mb_substr( $phone, 3, 7 ) . '-' . mb_substr( $phone, 7 );
+		if ( mb_strpos( $locale, 'fr' ) === 0 )
+		{
+			// France: 01 23 45 67 89.
+			$fphone = mb_substr( $phone, 0, 2 ) . ' ' .
+				mb_substr( $phone, 2, 2 ) . ' ' . mb_substr( $phone, 4, 2 ) . ' ' .
+				mb_substr( $phone, 6, 2 ) . ' ' . mb_substr( $phone, 8 );
+		}
+		else
+		{
+			// US: (012) 345-6789.
+			$fphone = '(' . mb_substr( $phone, 0, 3 ) . ') ' .
+				mb_substr( $phone, 3, 4 ) . '-' . mb_substr( $phone, 7 );
+		}
 	}
 	elseif ( mb_strlen( $phone ) === 7 )
 	{
-		return mb_substr( $phone, 0, 3 ) . '-' . mb_substr( $phone, 3 );
+		// US: 345-6789.
+		$fphone = mb_substr( $phone, 0, 3 ) . '-' . mb_substr( $phone, 3 );
 	}
 	else
-		return $phone;
+		$fphone = $phone;
+
+	$dial_phone = $unformatted_phone;
+
+	$extension_pos = mb_strpos( $dial_phone, 'x' );
+
+	if ( $extension_pos !== false )
+	{
+		// Remove extension.
+		$dial_phone = mb_substr( $dial_phone, 0, $extension_pos );
+	}
+
+	return '<a href="tel:' . $dial_phone . '" title="' . _( 'Call' ) . '" class="phone-link">' . $fphone . '</a>';
 }
 
 
@@ -901,8 +995,8 @@ function DeCodeds( $value, $column, $table = 'auto' )
 	if ( ! isset( $decodeds[ $column ] ) )
 	{
 		$RET = DBGet( DBQuery( "SELECT TYPE,SELECT_OPTIONS
-			FROM " . $table . "_FIELDS
-			WHERE ID='" . $field[1] . "'" ) );
+			FROM " . DBEscapeIdentifier( $table . '_FIELDS' ) .
+			" WHERE ID='" . $field[1] . "'" ) );
 
 		if ( $RET[1]['TYPE'] == 'codeds'
 			|| $RET[1]['TYPE'] == 'exports' )
@@ -1010,7 +1104,7 @@ function makeTextarea( $value, $column )
 {
 	static $i = 1;
 
-	return $value !== '' ?
+	return $value != '' ?
 		'<div id="' . $column . $i++ . '" class="rt2colorBox"><div class="markdown-to-html">' .
 			$value . '</div></div>' :
 		'';
@@ -1030,6 +1124,8 @@ function makeTextarea( $value, $column )
  * @example $extra['WHERE'] .= appendSQL( '', $extra );
  *
  * @global $_ROSARIO sets $_ROSARIO['SearchTerms']
+ *
+ * @uses SearchField()
  *
  * @param  string $sql   Students SQL query.
  * @param  array  $extra Extra for SQL request (optional). Defaults to empty array.
@@ -1068,30 +1164,34 @@ function appendSQL( $sql, $extra = array() )
 		}
 	}
 
-	// Last Name (starts with, case insensitive).
+	// Last Name.
 	if ( isset( $_REQUEST['last'] )
 		&& $_REQUEST['last'] !== '' )
 	{
-		$sql .= " AND LOWER(s.LAST_NAME) LIKE '" . mb_strtolower( $_REQUEST['last'] ) . "%'";
+		$last_name = array(
+			'COLUMN' => 'LAST_NAME',
+			'VALUE' => $_REQUEST['last'],
+			'TITLE' => _( 'Last Name' ),
+			'TYPE' => 'text',
+			'SELECT_OPTIONS' => null,
+		);
 
-		if ( ! $no_search_terms )
-		{
-			$_ROSARIO['SearchTerms'] .= '<b>' . _( 'Last Name starts with' ) . ': </b>' .
-				str_replace( "''", "'", $_REQUEST['last'] ) . '<br />';
-		}
+		$sql .= SearchField( $last_name, 'where', 'student', $extra );
 	}
 
-	// First Name (starts with, case insensitive).
+	// First Name.
 	if ( isset( $_REQUEST['first'] )
 		&& $_REQUEST['first'] !== '' )
 	{
-		$sql .= " AND LOWER(s.FIRST_NAME) LIKE '" . mb_strtolower( $_REQUEST['first'] ) . "%'";
+		$first_name = array(
+			'COLUMN' => 'FIRST_NAME',
+			'VALUE' => $_REQUEST['first'],
+			'TITLE' => _( 'First Name' ),
+			'TYPE' => 'text',
+			'SELECT_OPTIONS' => null,
+		);
 
-		if ( ! $no_search_terms )
-		{
-			$_ROSARIO['SearchTerms'] .= '<b>' . _( 'First Name starts with' ) . ': </b>' .
-			str_replace( "''", "'", $_REQUEST['first'] ).'<br />';
-		}
+		$sql .= SearchField( $first_name, 'where', 'student', $extra );
 	}
 
 	// Grade Level.
@@ -1150,7 +1250,7 @@ function appendSQL( $sql, $extra = array() )
 		$sql .= " AND (LOWER(a.ADDRESS) LIKE '%" . mb_strtolower( $_REQUEST['addr'] ) .
 			"%' OR LOWER(a.CITY) LIKE '" . mb_strtolower( $_REQUEST['addr'] ) .
 			"%' OR LOWER(a.STATE)='" . mb_strtolower( $_REQUEST['addr'] ) .
-			"' OR ZIPCODE LIKE '" . $_REQUEST['addr'] . "%')";
+			"' OR a.ZIPCODE LIKE '" . $_REQUEST['addr'] . "%')";
 
 		if ( ! $no_search_terms )
 		{
@@ -1160,4 +1260,51 @@ function appendSQL( $sql, $extra = array() )
 	}
 
 	return $sql;
+}
+
+
+/**
+ * Get make / format function by field type.
+ *
+ * @example $extra['functions'][ 'CUSTOM_' . $field['ID'] ] = makeFieldTypeFunction( $field['TYPE'] );
+ *
+ * @since 2.9.10
+ *
+ * @param string  $field_type Field type.
+ * @param string  $table      'auto'|'STAFF' (optional). Defaults to 'auto'.
+ *
+ * @return string             Make function name or empty if type not found.
+ */
+function makeFieldTypeFunction( $field_type, $table = 'auto' )
+{
+	switch ( $field_type )
+	{
+		case 'date':
+
+			return 'ProperDate';
+
+		case 'numeric':
+
+			return 'removeDot00';
+
+		case 'codeds':
+		case 'exports':
+
+			if ( $table === 'STAFF' )
+			{
+				return 'StaffDecodeds';
+			}
+
+			return 'DeCodeds';
+
+		case 'radio':
+
+			return 'makeCheckbox';
+
+		case 'textarea':
+
+			return 'makeTextarea';
+	}
+
+	return '';
 }

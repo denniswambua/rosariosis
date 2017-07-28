@@ -8,8 +8,11 @@ if ( ! $_REQUEST['search_modfunc'])
 		case 'admin':
 		case 'teacher':
 			//if ( $_SESSION['student_id'] && ($_REQUEST['modname']!='Students/Search.php' || $_REQUEST['student_id']=='new'))
-			if (UserStudentID() && $_REQUEST['student_id']=='new')
-				unset($_SESSION['student_id']);
+			if ( UserStudentID()
+				&& $_REQUEST['student_id'] === 'new' )
+			{
+				unset( $_SESSION['student_id'] );
+			}
 
 			$_SESSION['Search_PHP_SELF'] = PreparePHP_SELF($_SESSION['_REQUEST_vars'],array('bottom_back','advanced'));
 			if ( $_SESSION['Back_PHP_SELF']!='student')
@@ -55,8 +58,11 @@ if ( ! $_REQUEST['search_modfunc'])
 					( Preferences( 'DEFAULT_FAMILIES' ) == 'Y' ? ' checked' : '' ) . '>&nbsp;' .
 					_( 'Group by Family' ) . '</label><br />';
 
-				//FJ if only one school, no Search All Schools option
-				if ( SchoolInfo( 'SCHOOLS_NB' ) > 1 )
+				// FJ if only one school, no Search All Schools option.
+				// Restrict Search All Schools to user schools.
+				if ( SchoolInfo( 'SCHOOLS_NB' ) > 1
+					&& ( ! trim( User( 'SCHOOLS' ), ',' )
+						|| mb_substr_count( User( 'SCHOOLS' ), ',' ) > 2 ) )
 				{
 					echo '<label><input type="checkbox" name="_search_all_schools" value="Y"' .
 						( Preferences( 'DEFAULT_ALL_SCHOOLS' ) == 'Y' ? ' checked' : '' ) . '>&nbsp;' .
@@ -73,7 +79,7 @@ if ( ! $_REQUEST['search_modfunc'])
 				|| $extra['extra_search']
 				|| $extra['second_col'] )
 			{
-				echo '<table class="widefat width-100p cellspacing-0 col1-align-right">';
+				echo '<table class="widefat width-100p col1-align-right">';
 
 				if ( $extra['search'] )
 					echo $extra['search'];
@@ -115,8 +121,10 @@ if ( ! $_REQUEST['search_modfunc'])
 
 			echo '</form>';
 
-			// update Bottom.php
-			echo '<script>ajaxLink("Bottom.php"); old_modname="";</script>';
+			// Update Bottom.php.
+			$bottom_url = 'Bottom.php?modname=' . $_REQUEST['modname'];
+
+			echo '<script>ajaxLink(' .  json_encode( $bottom_url ) . '); old_modname="";</script>';
 
 			PopTable( 'footer' );
 
@@ -186,8 +194,11 @@ else
 	$name_link['FULL_NAME']['link'] = 'Modules.php?modname='.$_REQUEST['next_modname'];
 	$name_link['FULL_NAME']['variables'] = array('student_id' => 'STUDENT_ID');
 
-	if ( $_REQUEST['_search_all_schools'])
+	if ( isset( $_REQUEST['_search_all_schools'] )
+		&& $_REQUEST['_search_all_schools'] === 'Y' )
+	{
 		$name_link['FULL_NAME']['variables']['school_id'] = 'SCHOOL_ID';
+	}
 
 	if (isset($extra['link']) && is_array($extra['link']))
 		$link = $extra['link'] + $name_link;
@@ -240,8 +251,14 @@ else
 				unset($_SESSION['Search_PHP_SELF']);
 			}
 
-			if (User('PROFILE')=='admin' || User('PROFILE')=='teacher')
-				echo '<script>ajaxLink("Bottom.php"); old_modname="";</script>';
+			if ( User( 'PROFILE' ) === 'admin'
+				|| User( 'PROFILE' ) === 'teacher' )
+			{
+				// Update Bottom.php.
+				$bottom_url = 'Bottom.php?modname=' . $_REQUEST['modname'] . '&search_modfunc=list';
+
+				echo '<script>ajaxLink(' .  json_encode( $bottom_url ) . '); old_modname="";</script>';
+			}
 		}
 
 		if ( $_REQUEST['address_group'])
@@ -265,14 +282,17 @@ else
 				$_REQUEST[ $var ] = $students_RET['1'][ $val ];
 		}
 
-		if ( !is_array($students_RET[1]['STUDENT_ID']))
+		if ( ! is_array( $students_RET[1]['STUDENT_ID'] ) )
 		{
-			if ( $students_RET[1]['SCHOOL_ID']!=UserSchool())
+			if ( $students_RET[1]['SCHOOL_ID']!= UserSchool() )
+			{
 				$_SESSION['UserSchool'] = $students_RET[1]['SCHOOL_ID'];
+			}
 
-			SetUserStudentID($students_RET[1]['STUDENT_ID']);
+			SetUserStudentID( $students_RET[1]['STUDENT_ID'] );
 
-			unset($_REQUEST['search_modfunc']);
+			// Unset search modfunc & redirect URL.
+			RedirectURL( 'search_modfunc' );
 		}
 
 		if ( $_REQUEST['modname']!=$_REQUEST['next_modname'])

@@ -17,7 +17,7 @@ if ( isset( $_POST['day_values'], $_POST['month_values'], $_POST['year_values'] 
 	$_POST['values'] = array_replace_recursive( (array) $_POST['values'], $requested_dates );
 }
 
-if ( $_REQUEST['modfunc']=='update')
+if ( $_REQUEST['modfunc'] === 'update' )
 {
 	if ( isset( $_POST['values'] )
 		&& count( $_POST['values'] ) )
@@ -65,7 +65,7 @@ if ( $_REQUEST['modfunc']=='update')
 							//FJ default points
 							elseif ( $column=='DEFAULT_POINTS' && $value=='*')
 								$value = '-1';
-							$sql .= $column."='".$value."',";
+							$sql .= DBEscapeIdentifier( $column ) . "='" . $value . "',";
 						}
 
 						if ( $_REQUEST['tab_id']!='new')
@@ -124,13 +124,13 @@ if ( $_REQUEST['modfunc']=='update')
 								$value = '-1';
 							if ( $value!='')
 							{
-								$fields .= $column.',';
-								$values .= "'".$value."',";
+								$fields .= DBEscapeIdentifier( $column ) . ',';
+								$values .= "'" . $value . "',";
 								if ( $column!='ASSIGNMENT_TYPE_ID' && $column!='ASSIGNED_DATE' && $column!='DUE_DATE' && $column!='DEFAULT_POINTS' && $column!='DESCRIPTION')
 									$go = true;
 							}
 						}
-						$sql .= '(' . mb_substr($fields,0,-1) . ') values(' . mb_substr($values,0,-1) . ')';
+						$sql .= '(' . mb_substr( $fields, 0, -1 ) . ') values(' . mb_substr( $values, 0, -1 ) . ')';
 
 						if ( $go)
 							DBQuery($sql);
@@ -144,35 +144,34 @@ if ( $_REQUEST['modfunc']=='update')
 		}
 	}
 
-	unset( $_REQUEST['modfunc'] );
-	unset( $_SESSION['_REQUEST_vars']['modfunc'] );
+	// Unset modfunc & redirect URL.
+	RedirectURL( 'modfunc' );
 }
 
-if ( $_REQUEST['modfunc']=='remove')
+if ( $_REQUEST['modfunc'] === 'remove' )
 {
 	if ( DeletePrompt( $_REQUEST['tab_id'] != 'new' ? _( 'Assignment' ) : _( 'Assignment Type' ) ) )
 	{
 		if ( $_REQUEST['tab_id'] != 'new' )
 		{
-			DBQuery("DELETE FROM GRADEBOOK_GRADES WHERE ASSIGNMENT_ID='".$_REQUEST['id']."'");
-			DBQuery("DELETE FROM GRADEBOOK_ASSIGNMENTS WHERE ASSIGNMENT_ID='".$_REQUEST['id']."'");
+			DBQuery("DELETE FROM GRADEBOOK_GRADES WHERE ASSIGNMENT_ID='" . $_REQUEST['id'] . "'");
+			DBQuery("DELETE FROM GRADEBOOK_ASSIGNMENTS WHERE ASSIGNMENT_ID='" . $_REQUEST['id'] . "'");
 		}
 		else
 		{
-			$assignments_RET = DBGet(DBQuery("SELECT ASSIGNMENT_ID FROM GRADEBOOK_ASSIGNMENTS WHERE ASSIGNMENT_TYPE_ID='".$_REQUEST['id']."'"));
+			$assignments_RET = DBGet(DBQuery("SELECT ASSIGNMENT_ID FROM GRADEBOOK_ASSIGNMENTS WHERE ASSIGNMENT_TYPE_ID='" . $_REQUEST['id'] . "'"));
 
 			if (count($assignments_RET))
 			{
 				foreach ( (array) $assignments_RET as $assignment_id)
 					DBQuery("DELETE FROM GRADEBOOK_GRADES WHERE ASSIGNMENT_ID='".$assignment_id['ASSIGNMENT_ID']."'");
 			}
-			DBQuery("DELETE FROM GRADEBOOK_ASSIGNMENTS WHERE ASSIGNMENT_TYPE_ID='".$_REQUEST['id']."'");
-			DBQuery("DELETE FROM GRADEBOOK_ASSIGNMENT_TYPES WHERE ASSIGNMENT_TYPE_ID='".$_REQUEST['id']."'");
+			DBQuery("DELETE FROM GRADEBOOK_ASSIGNMENTS WHERE ASSIGNMENT_TYPE_ID='" . $_REQUEST['id'] . "'");
+			DBQuery("DELETE FROM GRADEBOOK_ASSIGNMENT_TYPES WHERE ASSIGNMENT_TYPE_ID='" . $_REQUEST['id'] . "'");
 		}
 
-		unset( $_REQUEST['id'] );
-
-		$_REQUEST['modfunc'] = false;
+		// Unset modfunc & ID & redirect URL.
+		RedirectURL( array( 'modfunc', 'id' ) );
 	}
 }
 

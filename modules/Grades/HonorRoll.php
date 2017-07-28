@@ -15,7 +15,6 @@ if ( $_REQUEST['modfunc'] === 'save' )
 		$extra['WHERE'] = " AND s.STUDENT_ID IN (".$st_list.")";
 
 		$mp_RET = DBGet(DBQuery("SELECT TITLE,END_DATE FROM SCHOOL_MARKING_PERIODS WHERE MP='QTR' AND MARKING_PERIOD_ID='".UserMP()."'"));
-		$school_info_RET = DBGet(DBQuery("SELECT TITLE,PRINCIPAL FROM SCHOOLS WHERE ID='".UserSchool()."' AND SYEAR='".UserSyear()."'"));
 
 		$extra['SELECT'] = ",s.FIRST_NAME AS NICK_NAME";
 		$extra['SELECT'] .= ",(SELECT SORT_ORDER FROM SCHOOL_GRADELEVELS WHERE ID=ssm.GRADE_ID) AS SORT_ORDER";
@@ -61,11 +60,18 @@ if ( $_REQUEST['modfunc'] === 'save' )
 
 		$RET = GetStuList($extra);
 
-		if ( $_REQUEST['list'])
+		if ( $_REQUEST['list'] )
 		{
 			$handle = PDFStart();
 			echo '<table class="center" style="width:80%;">';
-			echo '<tr class="center"><td colspan="6"><b>'.sprintf(_('%s Honor Roll'),$school_info_RET[1]['TITLE']).' </b> - '.$mp_RET[1]['TITLE'].' - '.date('F j, Y',strtotime($mp_RET[1]['END_DATE'])).'</td></tr>';
+			echo '<tr class="center"><td colspan="6"><b>' .
+				sprintf(
+					_( '%s Honor Roll' ),
+					SchoolInfo( 'TITLE' )
+				) . ' </b> - ' . $mp_RET[1]['TITLE'] . ' - ' .
+				date( 'F j, Y', strtotime( $mp_RET[1]['END_DATE'] ) ) .
+			'</td></tr>';
+
 			echo '<tr class="center"><td colspan="6">&nbsp;</td></tr>';
 
 			foreach ( array('Y','') AS $high)
@@ -146,7 +152,7 @@ if ( $_REQUEST['modfunc'] === 'save' )
 				$student['LAST_NAME'],
 				$student['MIDDLE_NAME'],
 				$student['GRADE_ID'],
-				$school_info_RET[1]['TITLE'],
+				SchoolInfo( 'TITLE' ),
 				$_REQUEST['subject']),$honor_roll_text);
 
 				$honor_roll_text = ($student['HIGH_HONOR']=='Y'? str_replace(_('Honor Roll'),_('High Honor Roll'),$honor_roll_text) : $honor_roll_text);
@@ -158,7 +164,11 @@ if ( $_REQUEST['modfunc'] === 'save' )
 				echo '<tr><td><span style="font-size:x-large;">'.$student['TEACHER'].'</span><br /><span style="font-size:medium;">'._('Teacher').'</span></td>';
 				echo '<td><span style="font-size:x-large;">'.$mp_RET[1]['TITLE'].'</span><br /><span style="font-size:medium;">'._('Marking Period').'</span></td></tr>';
 
-				echo '<tr><td><span style="font-size:x-large;">'.$school_info_RET[1]['PRINCIPAL'].'</span><br /><span style="font-size:medium;">'._('Principal').'</span></td>';
+				echo '<tr><td><span style="font-size:x-large;">' .
+					SchoolInfo( 'PRINCIPAL' ) .
+					'</span><br />
+					<span style="font-size:medium;">' . _( 'Principal' ) . '</span></td>';
+
 				echo '<td><span style="font-size:x-large;">' .
 					ProperDate( $mp_RET[1]['END_DATE'] ) .
 					'</span><br />
@@ -199,16 +209,18 @@ if ( ! $_REQUEST['modfunc'] )
 
 		//FJ add TinyMCE to the textarea
 		$extra['extra_header_left'] .= '<tr><td>&nbsp;</td></tr>
-		<tr class="st"><td style="vertical-align: top;">'._('Text').'</td>
-		<td>' .
+		<tr class="st"><td class="valign-top">' . _( 'Text' ) . '</td>
+		<td class="width-100p">' .
 		TinyMCEInput(
 			( isset( $templates[ User( 'STAFF_ID' ) ] ) ?
 				$templates[ User( 'STAFF_ID' ) ][1]['TEMPLATE'] :
 				$templates[0][1]['TEMPLATE'] ),
-			'honor_roll_text'
+			'honor_roll_text',
+			'',
+			'class="tinymce-horizontal"'
 		) . '</td></tr>';
 
-		$extra['extra_header_left'] .= '<tr class="st"><td style="vertical-align: top;">'._('Substitutions').':</td><td><table><tr class="st">';
+		$extra['extra_header_left'] .= '<tr class="st"><td class="valign-top">'._('Substitutions').':</td><td><table><tr class="st">';
 		$extra['extra_header_left'] .= '<td>__FULL_NAME__</td><td>= '._('Last, First M').'</td><td>&nbsp;</td>';
 		$extra['extra_header_left'] .= '<td>__LAST_NAME__</td><td>= '._('Last Name').'</td></tr>';
 

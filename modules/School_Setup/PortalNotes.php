@@ -3,6 +3,8 @@ require_once 'ProgramFunctions/PortalPollsNotes.fnc.php';
 require_once 'ProgramFunctions/FileUpload.fnc.php';
 require_once 'ProgramFunctions/MarkDownHTML.fnc.php';
 
+DrawHeader( ProgramTitle() );
+
 // Add eventual Dates to $_REQUEST['values'].
 if ( isset( $_POST['day_values'], $_POST['month_values'], $_POST['year_values'] ) )
 {
@@ -18,11 +20,17 @@ if ( isset( $_POST['day_values'], $_POST['month_values'], $_POST['year_values'] 
 }
 
 $profiles_RET = DBGet(DBQuery("SELECT ID,TITLE FROM USER_PROFILES ORDER BY ID"));
-if ((($_REQUEST['profiles'] && $_POST['profiles']) || ($_REQUEST['values'] && $_POST['values'])) && AllowEdit())
+
+if ( $_REQUEST['modfunc'] === 'update'
+	&& ( ( $_REQUEST['profiles']
+			&& $_POST['profiles'] )
+		|| ( $_REQUEST['values']
+			&& $_POST['values'] ) )
+	&& AllowEdit() )
 {
 	$notes_RET = DBGet(DBQuery("SELECT ID FROM PORTAL_NOTES WHERE SCHOOL_ID='".UserSchool()."' AND SYEAR='".UserSyear()."'"));
 
-	foreach ( (array) $notes_RET as $note_id)
+	foreach ( (array) $notes_RET as $note_id )
 	{
 		$note_id = $note_id['ID'];
 		$_REQUEST['values'][ $note_id ]['PUBLISHED_PROFILES'] = '';
@@ -44,9 +52,12 @@ if ((($_REQUEST['profiles'] && $_POST['profiles']) || ($_REQUEST['values'] && $_
 	}
 }
 
-if ( $_REQUEST['values'] && $_POST['values'] && AllowEdit())
+if ( $_REQUEST['modfunc'] === 'update'
+	&& $_REQUEST['values']
+	&& $_POST['values']
+	&& AllowEdit() )
 {
-	foreach ( (array) $_REQUEST['values'] as $id => $columns)
+	foreach ( (array) $_REQUEST['values'] as $id => $columns )
 	{
 		// FJ fix SQL bug invalid sort order.
 		if (empty($columns['SORT_ORDER']) || is_numeric($columns['SORT_ORDER']))
@@ -64,7 +75,7 @@ if ( $_REQUEST['values'] && $_POST['values'] && AllowEdit())
 
 				foreach ( (array) $columns as $column => $value)
 				{
-					$sql .= $column."='".$value."',";
+					$sql .= DBEscapeIdentifier( $column ) . "='" . $value . "',";
 				}
 				$sql = mb_substr($sql,0,-1) . " WHERE ID='".$id."'";
 
@@ -73,27 +84,32 @@ if ( $_REQUEST['values'] && $_POST['values'] && AllowEdit())
 				//hook
 				do_action('School_Setup/PortalNotes.php|update_portal_note');
 			}
-			else
+			// New: check for Title.
+			elseif ( $columns['TITLE'] )
 			{
-				if (count($_REQUEST['profiles']['new']))
+				foreach ( array('admin','teacher','parent') as $profile_id )
 				{
-					foreach ( array('admin','teacher','parent') as $profile_id)
+					if ( isset( $_REQUEST['profiles']['new'][ $profile_id ] )
+						&& $_REQUEST['profiles']['new'][ $profile_id ] )
 					{
-						if ( $_REQUEST['profiles']['new'][ $profile_id ])
-							$_REQUEST['values']['new']['PUBLISHED_PROFILES'] .= $profile_id.',';
-						$columns['PUBLISHED_PROFILES'] = ','.$_REQUEST['values']['new']['PUBLISHED_PROFILES'];
-					}
-					foreach ( (array) $profiles_RET as $profile)
-					{
-						$profile_id = $profile['ID'];
-
-						if ( $_REQUEST['profiles']['new'][ $profile_id ])
-							$_REQUEST['values']['new']['PUBLISHED_PROFILES'] .= $profile_id.',';
-						$columns['PUBLISHED_PROFILES'] = ','.$_REQUEST['values']['new']['PUBLISHED_PROFILES'];
+						$_REQUEST['values']['new']['PUBLISHED_PROFILES'] .= $profile_id . ',';
 					}
 				}
-				else
-					$_REQUEST['values']['new']['PUBLISHED_PROFILES'] = '';
+
+				foreach ( (array) $profiles_RET as $profile )
+				{
+					$profile_id = $profile['ID'];
+
+					if ( isset( $_REQUEST['profiles']['new'][ $profile_id ] )
+						&& $_REQUEST['profiles']['new'][ $profile_id ] )
+					{
+						$_REQUEST['values']['new']['PUBLISHED_PROFILES'] .= $profile_id . ',';
+					}
+				}
+
+				$columns['PUBLISHED_PROFILES'] = $_REQUEST['values']['new']['PUBLISHED_PROFILES'] ?
+					',' . $_REQUEST['values']['new']['PUBLISHED_PROFILES'] :
+					'';
 
 				$sql = "INSERT INTO PORTAL_NOTES ";
 
@@ -107,36 +123,81 @@ if ( $_REQUEST['values'] && $_POST['values'] && AllowEdit())
 				$values = $portal_note_id.",'".UserSchool()."','".UserSyear()."',CURRENT_TIMESTAMP,'".User('STAFF_ID')."',";
 
 				$file_attached_ext_white_list = array(
-					// Micro$oft Office
+					/**
+					 * Extensions white list.
+					 *
+					 * Common file types.
+					 * Obviously, we won't include executable types
+					 * .php, .sql, .js, .exe...
+					 * If you file type is not white listed,
+					 * put it in a ZIP archive!
+					 *
+					 * @link http://fileinfo.com/filetypes/common
+					 */
+					// Micro$oft Office.
 					'.doc',
 					'.docx',
 					'.xls',
 					'.xlsx',
+					'.xlr',
+					'.pps',
 					'.ppt',
 					'.pptx',
-					// Libre Office
+					'.wps',
+					'.wpd',
+					'.rtf',
+					// Libre Office.
 					'.odt',
 					'.ods',
 					'.odp',
-					// Images
+					// Images.
 					'.jpg',
 					'.jpeg',
 					'.png',
 					'.gif',
-					// Sound
+					'.bmp',
+					'.svg',
+					'.ico',
+					'.psd',
+					'.ai',
+					'.eps',
+					'.ps',
+					// Audio.
 					'.mp3',
 					'.ogg',
 					'.wav',
-					// Video
+					'.mid',
+					'.wma',
+					// Video.
 					'.avi',
 					'.mp4',
+					'.mpg',
 					'.ogv',
 					'.webm',
-					// Others
-					'.zip',
+					'.wmv',
+					'.mov',
+					'.m4v',
+					'.flv',
+					'.swf',
+					// Text.
 					'.txt',
 					'.pdf',
+					'.md',
 					'.csv',
+					'.tex',
+					// Web.
+					'.xml',
+					'.xhtml',
+					'.html',
+					'.htm',
+					'.css',
+					'.rss',
+					// Compressed.
+					'.zip',
+					'.rar',
+					'.7z',
+					'.tar',
+					'.gz',
 				);
 
 				if ( $columns['FILE_OR_EMBED'] == 'FILE')
@@ -153,12 +214,12 @@ if ( $_REQUEST['values'] && $_POST['values'] && AllowEdit())
 				{
 					if ( !empty($value) || $value=='0')
 					{
-						$fields .= $column.',';
-						$values .= "'".$value."',";
+						$fields .= DBEscapeIdentifier( $column ) . ',';
+						$values .= "'" . $value . "',";
 						$go = true;
 					}
 				}
-				$sql .= '(' . mb_substr($fields,0,-1) . ') values(' . mb_substr($values,0,-1) . ')';
+				$sql .= '(' . mb_substr( $fields, 0, -1 ) . ') values(' . mb_substr( $values, 0, -1 ) . ')';
 
 				if ( $go && empty($error))
 				{
@@ -172,37 +233,34 @@ if ( $_REQUEST['values'] && $_POST['values'] && AllowEdit())
 		else
 			$error[] = _('Please enter a valid Sort Order.');
 	}
-	unset($_REQUEST['values']);
-	unset($_SESSION['_REQUEST_vars']['values']);
-	unset($_REQUEST['profiles']);
-	unset($_SESSION['_REQUEST_vars']['profiles']);
+
+	// Unset modfunc & values & profiles & redirect URL.
+	RedirectURL( array( 'modfunc', 'values', 'profiles' ) );
 }
 
-DrawHeader(ProgramTitle());
-
-if ( $_REQUEST['modfunc']=='remove' && AllowEdit())
+if ( $_REQUEST['modfunc'] === 'remove'
+	&& AllowEdit() )
 {
-	if (DeletePrompt(_('Note')))
+	if ( DeletePrompt( _( 'Note' ) ) )
 	{
-//FJ file attached to portal notes
-		$file_to_remove = DBGet(DBQuery("SELECT FILE_ATTACHED FROM PORTAL_NOTES WHERE ID='".$_REQUEST['id']."'"));
+		// FJ file attached to portal notes.
+		$file_to_remove = DBGet(DBQuery("SELECT FILE_ATTACHED FROM PORTAL_NOTES WHERE ID='" . $_REQUEST['id'] . "'"));
 		@unlink($file_to_remove[1]['FILE_ATTACHED']);
-		DBQuery("DELETE FROM PORTAL_NOTES WHERE ID='".$_REQUEST['id']."'");
+		DBQuery("DELETE FROM PORTAL_NOTES WHERE ID='" . $_REQUEST['id'] . "'");
 
 		//hook
 		do_action('School_Setup/PortalNotes.php|delete_portal_note');
 
-		unset($_REQUEST['modfunc']);
+		// Unset modfunc & ID & redirect URL.
+		RedirectURL( array( 'modfunc', 'id' ) );
 	}
 }
 
-//FJ fix SQL bug invalid sort order
-if ( !empty($error))
-	echo ErrorMessage($error);
+echo ErrorMessage( $error );
 
-if ( $_REQUEST['modfunc']!='remove')
+if ( ! $_REQUEST['modfunc'] )
 {
-//FJ file attached to portal notes
+	// FJ file attached to portal notes.
 	$sql = "SELECT ID,SORT_ORDER,TITLE,CONTENT,START_DATE,END_DATE,PUBLISHED_PROFILES,FILE_ATTACHED,
 	CASE WHEN END_DATE IS NOT NULL AND END_DATE<CURRENT_DATE THEN 'Y' ELSE NULL END AS EXPIRED
 	FROM PORTAL_NOTES
@@ -229,24 +287,32 @@ if ( $_REQUEST['modfunc']!='remove')
 	echo '</form>';
 }
 
-function _makeTextInput($value,$name)
-{	global $THIS_RET;
+function _makeTextInput( $value, $name )
+{
+	global $THIS_RET;
 
-	if ( $THIS_RET['ID'])
+	if ( $THIS_RET['ID'] )
+	{
 		$id = $THIS_RET['ID'];
+	}
 	else
+	{
 		$id = 'new';
+	}
 
-	if ( $name!='TITLE')
+	if ( $name !== 'TITLE' )
+	{
 		$extra = 'size=5 maxlength=10';
-//FJ title field required
-	if ( $name=='TITLE' && $id != 'new')
+	}
+	elseif ( $id !== 'new' )
+	{
 		$extra = 'required';
+	}
 
 	return TextInput(
-		$name == 'TITLE' && $THIS_RET['EXPIRED'] ?
+		( $name == 'TITLE' && $THIS_RET['EXPIRED'] ?
 			array( $value, '<span style="color:red">' . $value . '</span>' ) :
-			$value,
+			$value ),
 		'values[' . $id . '][' . $name . ']',
 		'',
 		$extra

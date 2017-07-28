@@ -49,17 +49,28 @@ else
 	}
 }
 
-if (User('PROFILE')!='admin')
+// Allow update for Parents & Teachers if have Edit permissions.
+if ( User( 'PROFILE' ) !== 'admin' )
 {
-	if (User('PROFILE_ID'))
-		$can_edit_RET = DBGet(DBQuery("SELECT MODNAME FROM PROFILE_EXCEPTIONS WHERE PROFILE_ID='".User('PROFILE_ID')."' AND MODNAME='Users/User.php&category_id=".$category_id."' AND CAN_EDIT='Y'"));
-	else
-		$can_edit_RET = DBGet(DBQuery("SELECT MODNAME FROM STAFF_EXCEPTIONS WHERE USER_ID='".User('STAFF_ID')."' AND MODNAME='Users/User.php&category_id=".$category_id."' AND CAN_EDIT='Y'"),array(),array('MODNAME'));
-	if ( $can_edit_RET)
+	$can_edit_from_where = " FROM PROFILE_EXCEPTIONS WHERE PROFILE_ID='" . User( 'PROFILE_ID' ) . "'";
+
+	if ( ! User( 'PROFILE_ID' ) )
+	{
+		$can_edit_from_where = " FROM STAFF_EXCEPTIONS WHERE USER_ID='" . User( 'STAFF_ID' ) . "'";
+	}
+
+	$can_edit_RET = DBGet( DBQuery( "SELECT MODNAME " . $can_edit_from_where .
+		" AND MODNAME='Users/User.phpp&category_id=" . $category_id . "'
+		AND CAN_EDIT='Y'" ) );
+
+	if ( $can_edit_RET )
+	{
 		$_ROSARIO['allow_edit'] = true;
+	}
 }
 
-if ( $_REQUEST['modfunc']=='update' && AllowEdit())
+if ( $_REQUEST['modfunc'] === 'update'
+	&& AllowEdit() )
 {
 	if ( isset( $_POST['day_staff'], $_POST['month_staff'], $_POST['year_staff'] ) )
 	{
@@ -76,8 +87,19 @@ if ( $_REQUEST['modfunc']=='update' && AllowEdit())
 
 	if ( isset( $_REQUEST['staff']['SCHOOLS'] ) )
 	{
+		$staff_schools = '';
+
+		// FJ remove empty schools.
+		foreach ( (array) $_REQUEST['staff']['SCHOOLS'] as $school_id => $yes )
+		{
+			if ( $yes )
+			{
+				$staff_schools .= $school_id . ',';
+			}
+		}
+
 		// Build schools format: ,1,2,
-		$_REQUEST['staff']['SCHOOLS'] = ',' . implode( ',', array_keys( $_REQUEST['staff']['SCHOOLS'] ) ) . ',';
+		$_REQUEST['staff']['SCHOOLS'] = $staff_schools ? ',' . $staff_schools : '';
 
 		// FJ remove Schools for Parents.
 		if ( isset ( $_REQUEST['staff']['PROFILE'] )
@@ -93,10 +115,46 @@ if ( $_REQUEST['modfunc']=='update' && AllowEdit())
 		}
 	}
 
+	// Admin Schools restriction.
+	if ( ( User( 'PROFILE' ) === 'admin'
+			&& ! AllowEdit( 'Users/User.php&category_id=1&schools' ) )
+		|| User( 'PROFILE' ) !== 'admin' )
+	{
+		if ( UserStaffID() )
+		{
+			// Restricted!
+			unset( $_REQUEST['staff']['SCHOOLS'] );
+		}
+		elseif ( UserSchool() ) // No set if "Create User Account".
+		{
+			// Assign new user to current school only.
+			$_REQUEST['staff']['SCHOOLS'] = ',' . UserSchool() . ',';
+		}
+	}
+
+
+	// Admin Profile restriction.
+	if ( ( User( 'PROFILE' ) === 'admin'
+			&& ! AllowEdit( 'Users/User.php&category_id=1&user_profile' )
+			&& isset( $_REQUEST['staff']['PROFILE'] ) )
+		|| User( 'PROFILE' ) !== 'admin' )
+	{
+		if ( UserStaffID() )
+		{
+			// Restricted!
+			unset( $_REQUEST['staff']['PROFILE'] );
+			unset( $_REQUEST['staff']['PROFILE_ID'] );
+		}
+		// New User.
+		elseif ( $_REQUEST['staff']['PROFILE'] === 'admin' )
+		{
+			// Remove Administrator from profile options.
+			$_REQUEST['staff']['PROFILE'] = 'teacher';
+		}
+	}
+
 	if ( isset( $_POST['staff'] )
-		&& count( $_POST['staff'] )
-		&& ( User( 'PROFILE' ) === 'admin'
-			|| basename( $_SERVER['PHP_SELF'] ) === 'index.php' ) )
+		&& count( $_POST['staff'] ) )
 	{
 		$required_error = false;
 
@@ -168,7 +226,7 @@ if ( $_REQUEST['modfunc']=='update' && AllowEdit())
 				$go = false;
 				foreach ( (array) $_REQUEST['staff'] as $column_name => $value)
 				{
-					if (1)//!empty($value) || $value=='0')
+					if ( ! is_array( $value ) )
 					{
 						//FJ check numeric fields
 						if ( $fields_RET[str_replace('CUSTOM_','',$column_name)][1]['TYPE'] == 'numeric' && $value!='' && !is_numeric($value))
@@ -189,6 +247,29 @@ if ( $_REQUEST['modfunc']=='update' && AllowEdit())
 							$sql .= "$column_name='".encrypt_password($value)."',";
 							$go = true;
 						}
+					}
+					else
+					{
+						// Select multiple from options.
+						// FJ fix bug none selected not saved.
+						$sql_multiple_input = '';
+
+						foreach ( (array) $value as $val )
+						{
+							if ( $val )
+							{
+								$sql_multiple_input .= $val . '||';
+							}
+						}
+
+						if ( $sql_multiple_input )
+						{
+							$sql_multiple_input = "||" . $sql_multiple_input;
+						}
+
+						$sql .= $column_name . "='" . $sql_multiple_input . "',";
+
+						$go = true;
 					}
 				}
 				$sql = mb_substr($sql,0,-1) . " WHERE STAFF_ID='".UserStaffID()."'";
@@ -243,11 +324,11 @@ if ( $_REQUEST['modfunc']=='update' && AllowEdit())
 							break;
 						}
 
-						$fields .= $column.',';
+						$fields .= DBEscapeIdentifier( $column ) . ',';
 
 						//FJ add password encryption
 						if ( $column!=='PASSWORD')
-							$values .= "'".$value."',";
+							$values .= "'" . $value . "',";
 						else
 						{
 							$value = str_replace("''","'",$value);
@@ -255,7 +336,7 @@ if ( $_REQUEST['modfunc']=='update' && AllowEdit())
 						}
 					}
 				}
-				$sql .= '(' . mb_substr($fields,0,-1) . ') values(' . mb_substr($values,0,-1) . ')';
+				$sql .= '(' . mb_substr( $fields, 0, -1 ) . ') values(' . mb_substr( $values, 0, -1 ) . ')';
 
 				DBQuery($sql);
 
@@ -292,12 +373,22 @@ Remote IP: %s', $admin_username, User('NAME'), $ip);
 			}
 		}
 
-		if (UserStaffID() && $_FILES['photo'])
+		if ( UserStaffID()
+			&& $_FILES['photo'] )
 		{
-			$new_photo_file = FileUpload('photo', $UserPicturesPath.UserSyear().'/', array('.jpg', '.jpeg'), 2, $error, '.jpg', UserStaffID());
+			// $new_photo_file = FileUpload('photo', $UserPicturesPath.UserSyear().'/', array('.jpg', '.jpeg'), 2, $error, '.jpg', UserStaffID());
 
-			//hook
-			do_action('Users/User.php|upload_user_photo');
+			$new_photo_file = ImageUpload(
+				'photo',
+				array( 'width' => 150, 'height' => '150' ),
+				$UserPicturesPath . UserSyear() . '/',
+				array(),
+				'.jpg',
+				UserStaffID()
+			);
+
+			// Hook.
+			do_action( 'Users/User.php|upload_user_photo' );
 		}
 
 	}
@@ -315,10 +406,8 @@ Remote IP: %s', $admin_username, User('NAME'), $ip);
 	if ( $error && !UserStaffID())
 		$_REQUEST['staff_id'] = 'new';
 
-	unset( $_REQUEST['staff'] );
-	unset( $_REQUEST['modfunc'] );
-	unset( $_SESSION['_REQUEST_vars']['staff'] );
-	unset( $_SESSION['_REQUEST_vars']['modfunc'] );
+	// Unset modfunc & staff & redirect URL.
+	RedirectURL( array( 'modfunc', 'staff' ) );
 
 	if ( User('STAFF_ID') == $_REQUEST['staff_id'] )
 		unset( $_ROSARIO['User'] );
@@ -353,24 +442,33 @@ else
 
 echo ErrorMessage( $error );
 
-if ( $_REQUEST['modfunc']=='delete' && basename($_SERVER['PHP_SELF'])!='index.php' && AllowEdit())
+if ( $_REQUEST['modfunc'] === 'delete'
+	&& basename( $_SERVER['PHP_SELF'] ) != 'index.php'
+	&& AllowEdit() )
 {
-	if (DeletePrompt(_('User')))
+	if ( DeletePrompt( _( 'User' ) ) )
 	{
-		DBQuery("DELETE FROM PROGRAM_USER_CONFIG WHERE USER_ID='".UserStaffID()."'");
-		DBQuery("DELETE FROM STAFF_EXCEPTIONS WHERE USER_ID='".UserStaffID()."'");
-		DBQuery("DELETE FROM STUDENTS_JOIN_USERS WHERE STAFF_ID='".UserStaffID()."'");
-		DBQuery("DELETE FROM STAFF WHERE STAFF_ID='".UserStaffID()."'");
+		DBQuery( "DELETE FROM PROGRAM_USER_CONFIG
+			WHERE USER_ID='" . UserStaffID() . "'" );
 
-		//hook
-		do_action('Users/User.php|delete_user');
+		DBQuery( "DELETE FROM STAFF_EXCEPTIONS
+			WHERE USER_ID='" . UserStaffID() . "'" );
 
-		unset($_SESSION['staff_id']);
-		unset($_REQUEST['staff_id']);
-		unset($_REQUEST['modfunc']);
-		unset($_SESSION['_REQUEST_vars']['staff_id']);
-		unset($_SESSION['_REQUEST_vars']['modfunc']);
-		Search('staff_id',$extra);
+		DBQuery( "DELETE FROM STUDENTS_JOIN_USERS
+			WHERE STAFF_ID='" . UserStaffID() . "'" );
+
+		DBQuery( "DELETE FROM STAFF
+			WHERE STAFF_ID='" . UserStaffID() . "'" );
+
+		// Hook
+		do_action( 'Users/User.php|delete_user' );
+
+		unset( $_SESSION['staff_id'] );
+
+		// Unset modfunc & staff_id & redirect URL.
+		RedirectURL( array( 'modfunc', 'staff_id' ) );
+
+		Search( 'staff_id', $extra );
 	}
 }
 
@@ -385,10 +483,19 @@ if ((UserStaffID() || $_REQUEST['staff_id']=='new') && $_REQUEST['modfunc']!='de
 		$staff = $staff[1];
 	}
 
-	if (basename($_SERVER['PHP_SELF'])!='index.php')
-		echo '<form name="staff" action="Modules.php?modname='.$_REQUEST['modname'].'&category_id='.$category_id.'&modfunc=update" method="POST" enctype="multipart/form-data">';
+	if ( basename( $_SERVER['PHP_SELF'] ) !== 'index.php' )
+	{
+		$form_action = 'Modules.php?modname=' . $_REQUEST['modname'] .
+			'&category_id=' . $category_id . '&staff_id=' . UserStaffID() . '&modfunc=update';
+	}
 	else
-		echo '<form action="index.php?create_account=user&staff_id=new&modfunc=update" method="POST" enctype="multipart/form-data">';
+	{
+		// FJ create account.
+		$form_action = 'index.php?create_account=user&staff_id=new&modfunc=update';
+	}
+
+	echo '<form name="staff" id="staff"	action="' . $form_action . '"
+		method="POST" enctype="multipart/form-data">';
 
 	if (basename($_SERVER['PHP_SELF'])!='index.php')
 	{
@@ -442,11 +549,16 @@ if ((UserStaffID() || $_REQUEST['staff_id']=='new') && $_REQUEST['modfunc']!='de
 			else
 				$include = 'Other_Info';*/
 
-			$tabs[] = array('title' => $category['TITLE'],'link'=>($_REQUEST['staff_id']!='new' ? 'Modules.php?modname='.$_REQUEST['modname'].'&category_id='.$category['ID'] : ''));
+			$tabs[] = array(
+				'title' => $category['TITLE'],
+				'link' => ( $_REQUEST['staff_id'] !== 'new' ?
+					'Modules.php?modname=' . $_REQUEST['modname'] . '&category_id=' . $category['ID'] . '&staff_id=' . UserStaffID() :
+					'' ),
+			);
 		}
 	}
 
-	$_ROSARIO['selected_tab'] = 'Modules.php?modname='.$_REQUEST['modname'].'&category_id='.$category_id;
+	$_ROSARIO['selected_tab'] = 'Modules.php?modname=' . $_REQUEST['modname'] . '&category_id=' . $category_id . '&staff_id=' . UserStaffID();
 
 	echo '<br />';
 	PopTable('header',$tabs,'width="100%"');

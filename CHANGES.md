@@ -1,11 +1,339 @@
 # CHANGES
 ## RosarioSIS Student Information System
 
+Changes in 3.4.2
+----------------
+- Move "Calendars" program up & "Database Backup" under Security in School_Setup/Menu.php
+- Update Arabic translation in locale/ar_AE.utf8, thanks to @abogadeer
+- Fix #195 Add Right to Left languages stylesheet & move side menu to right in rtl.css
+- Fix #195 Handle RTL languages (menu on the right) in jquery-fixedmenu.js
+
+Changes in 3.4.1
+----------------
+- Add maxlength & length to Fees & Payments text inputs in Student_Billing/functions.inc.php
+- Add maxlength & length to Salaries & Payments text inputs in Accounting/functions.inc.php
+- #191 Fix PHP notices thanks to @vanyog in GetStaffList.fnc.php, GetStuList.fnc.php & ListOutput.fnc.php
+- Set current SchoolYear on login in index.php, Side.php & Portal.php
+- Fix SQL error when UserSchool() not set in Config.fnc.php
+- Optimize: remove SCHOOL_DATE index (events) & group LO options in vars in Portal.php
+- Translate "No Address" in Address.inc.php, Transcripts.php
+- Fix Remove previous years MP columns from list in Transcripts.php
+- Fix SQL error remove duplicate "s." prefix in Search.fnc.php
+- Remove useless DBGet indexes in SetUserStudentID() in Current.php
+- Fix PHP error when no Student associated to Parent in Registration.php
+- Fix #197 last login date in PasswordReset.php, thanks to @Claculagator
+- Add Student Payments Header action hook in StudentPayments.php
+- Fix SQL error searching Other Value in Search.fnc.php
+
+Changes in 3.4
+--------------
+- Fix #193 PHP error: do not call button(), not logged in in PortalPollsNotes.fnc.php
+- New translations (37% completed) in locale/
+- Add new translations flag icons in assets/flags/
+- Update README.md & add translations REFERENCE.md in locale/
+- International proof no_accents function in FileUpload.fnc.php
+- Fix SQL error field type numeric(5,0) in Registration.php
+- Fix PHP error typo SchoolInfo() in HonorRoll.php
+- Rollback TinyMCE image upload handler in Inputs.php
+- CSS style sub & sup HTML elements in stylesheet.css
+- Add pdf_start action hook to PDF.php & Actions.php
+- Add header & footer HTML options to PDF.php & Wkhtmltopdf.php
+
+Changes in 3.3.4
+----------------
+- Fix "Create User Account" schools in User.php
+- Security check for $modname in Modules.php
+- Default school year is 2017 in rosariosis.sql & config.inc.sample.php
+
+Changes in 3.3.3
+----------------
+- Fix PHP error new width height not set in ImageResizeGD.php
+- Accept .jpg, .png. & .gif + remove 2MB limit for school logo upload in Configuration.php
+- Add School Periods "Blocks" help text in Help_en.php, Help_es.php & Help_fr.php
+
+Changes in 3.3.2
+----------------
+- Fix SQL error in students data in Transcripts.php
+- Fatal error when no calendars setup yet in Calendar.php
+- Fix #192 CheckRequiredCustomFields() in Fields.fnc.php, thanks to @vanyog
+- Display required address / people fields error in Address.inc.php
+- Set start date to yesterday, prevents having long list on first load in AccessLog.php
+- Fix PHP notice in diagnostic.php, thanks to @vanyog
+- Add rosariosis2017.sql for 2017 school year DB in rosariosis2017.sql
+
+Changes in 3.3.1
+----------------
+- Fix wkhtmltopdf error on Windows: prepend file:/// in PDF.php
+- Fix PHP error removed s.*, select each student field in Export.php
+- Optimize _makeNextSchool & _makeTeachers functions in miscExport.fnc.php
+- Fix GD bug with transparent background PNG in ImageResizeGD.php
+- Fix TinyMCE using relative URLs in Inputs.php
+- JS Fix tipmessage mig_lay error in main16.js
+- Add $image_path parameter to SanitizeHTML() in MarDownHTML.fnc.php
+- Upload TinyMCE images to AssignmentFiles/ in StudentAssignments.fnc.php
+- Fix PHP error max execution time in DBGet.fnc.php
+
+Changes in 3.3
+--------------
+- CSS Add padding to .list-nav & remove spaces before buttons in ListOutput.fnc.php & stylesheet.css
+- Add RedirectURL(), prevents showing an obsolete & confusing delete confirmation screen on page reload in Prepare_PHP_SELF.fnc.php & program wide
+- Handle X-Redirect-Url header in warehouse.js
+- Use PreparePHP_Self() in forms to maintain program state in Administration.php & Eligibility/Student.php
+- Fixed Cancel Delete Event / Transaction in Calendar.php, ActivityReport.php & Statements.php
+- Remove "# Associated" column from Student list in AddStudents.php
+- Fix disabled buttons on back or page reload in Firefox in warehouse.js
+- CSS larger tooltip & fix FS menu calendar in stylesheet.css
+- Add  &student_id / &staff_id params to update form URL in Student.php & User.php
+- Do not display Contact Info tipmsg in Student List if no contacts in GetStuList.fnc.php
+- Remove eval(), up to 4x speed & memory gain in DBGet.fnc.php
+- Fix PHP error 'VALUE' index. Append % to Teacher grade scale breakoff in ReportCardGrades.php
+- Format ListOutput() code, rework nav HTML & logic in ListOutput.fnc.php
+- Do not submit form when LO_search in ListOutput.fnc.php & warehouse.js
+- CSS Rename .list-header to .list-nav & add .list-no-nav class in stylesheet.css
+- Add Grunt for automatic CSS & JS files concat & minify in package.json, Gruntfile.js, assets/js/ & assets/themes/WPadmin/
+- Relevance score inside bar (transparent) so value can be exported in stylesheet.css, colors.css & ListOutput.fnc.php
+- Check if Request exists before inserting in Requests.php
+- Check for PHP gd extension in diagnostic.php & INSTALL.md
+- Add general File Uploads folder in assets/FileUploads/
+- Add $FileUploadsPath & $PNGQuantPath optional configuration variables in INSTALL.md & Warehouse.php
+- Add Image resize and compress class in classes/ImageResizeGD.php
+- Add ImageUpload() function in FileUpload.fnc.php
+- Use new ImageUpload() function in SanitizeHTML() & remove CheckBase64Image() in MarkDownHTML.fnc.php
+- Use new ImageUpload() function for student / user photo in Student.php & User.php
+
+Changes in 3.2
+--------------
+- Append "%" to displayed Breakoff value in ReportCardGrades.php
+- CSS add .tipmsg-label class to TipMessage label in TipMessage.fnc.php & stylesheet.css
+- Format code, reorganize update errors & add maxlength to Sort Order input in Assignments.php
+- Allow Parents & Students to Edit Requests if have permissions in Requests.php, Exceptions.php & Profiles.php
+- Hide List sorting icon on vertical mobile + rename "LO_direction" param to "LO_dir" in stylesheet.css & ListOutput.fnc.php
+- Update French & Spanish translations
+
+Changes in 3.1.2
+----------------
+- Fix Assignment view: do not exit so Warehouse('footer') is called in StudentAssignments.php
+- Remove Used for Attendance column, unused in Periods.php
+- Add Student photo Tip message in MakeReferral.php & Referrals.php
+- Sanitize XML tag names in ListOutput.fnc.php
+- Fix #185 PHP error do not check if constant is empty
+
+Changes in 3.1.1
+----------------
+- Fix memory error: rework SQL query in MassCreateAssignments.php
+- Fix Save $_REQUEST vars in session: if not printing PDF in Modules.php
+
+Changes in 3.1
+--------------
+- Add ETagCache() function in Warehouse.php
+- Fix SQL error when entering (Unweighted) GPA Value > 99.99 in rosariosis.sql & Update.fnc.php
+- Activate ETagCache in Bottom.php
+- Rename 'modfunc' to 'bottomfunc' in Bottom.php & warehouse.js
+- Unique Bottom.php URL in Users/Search.inc.php & Students/Search.inc.php
+- Hide link to User Permissions on Add a User screen in Users/includes/General_Info.inc.php
+- Fix Admin Schools restriction: Assign new user to current school only in User.php
+- Fix modname & ProgramLoaded when has parameters in Modules.php & warehouse.js
+- Add Mass Create Assignments program (sponsored by Sofia Private School) in MassCreateAssignments.php & Grades/Menu.php & Update.fnc.php
+- Fix check if user logged in when history back in warehouse.js, Warehouse.php & Side.php
+- Fix SQL error: check for current Student / User ID before saving programwide
+- Format code & data display in DuplicateAttendance.php
+- Update French & Spanish translations
+- CSS for responsive images, TinyMCE max-width & min-height
+- Add maxlength attribute to every text input in Widgets.fnc.php & StaffWidgets.fnc.php
+- Move Find a User form General Info & Profile inside Search() in Users/Search.inc.php & Search.fnc.php
+
+Changes in 3.0.2
+----------------
+- Retry once on AJAX error 0, maybe a micro Wifi interruption in warehouse.js
+- Better check if #body should be updated in Side.php
+- Fix Warehouse footer: always open menu to modname in Warehouse.php
+- Cache &lt;script&gt; resources loaded in AJAX in warehouse.js
+- Limit Assignments to the ones due during the Progress Period in InputFinalGrades
+- Update help texts for Input Final Grades in Help_en.php, Help_es.php & Help_fr.php
+
+Changes in 3.0.1
+----------------
+- Fix popup + AJAX: no Warehouse header / footer neede in Modules.php & Warehouse.php
+- CSS optimizations: add .header & .list-nav classes in DrawHeader.fnc.php & ListOutput.fnc.php
+- CSS Media queries for mobile: update for iPhone 6 plus in stylesheet.css
+- Add isAJAX() function in Warehouse.php
+- Simplified code in Modules.php
+- Fix XML export: remove parenthesis in column names in ListOutput.fnc.php
+- Fix Admin User Profile & School restrictions position in Exceptions.php
+- Fix logic for User Info tabs in Profiles.php & Exceptions.php
+
+Changes in 3.0
+--------------
+- Add ETag cache system in Warehouse.php & Modules.php
+- Add TinyMCE UploadImage plugin in assets/js/tinymce/plugins/uploadimage & Inputs.php
+- Add CheckBase64Image() in MarkDownHTML.fnc.php
+- Fix JS error for search Go button in ListOutput.fnc.php
+- Add link to RosarioSIS Forum to Resources in rosariosis.sql
+- Current tab in bold in Configuration.php & Food Service module wide
+- Fix do not show Delete prompt when reloading page in Schools.php
+- Add Marking Periods to parents & students in School_Setup/Menu.php & rosariosis.sql
+- Add Access Log, thanks to @dpredster in AccessLog.php, index.php, Update.fnc.php & rosariosis.sql
+- Add User Agent functions in ProgramFunctions/UserAgent.fnc.php
+- Add Browser column to Access Log in AccessLog.php
+- When clicking on Username, go to Student or User Info in AccessLog.php
+- Logic & design fixes & show Can Edit for User Info tabs in Profiles.php & Exceptions.php
+- Add DBEscapeIdentifier() in database.inc.php
+- Escape SQL identifiers (table, column), program wide
+- Performance: 90% gain when updating Side menu in Side.php, Warehouse.php & warehouse.js
+- Student Fields: Search Username in Search.fnc.php, GetStuList.fnc.php
+- Add SearchField() function in Search.fnc.php
+- Add link to User Permissions when user has custom permissions in Users/includes/General_Info.inc.php
+- Can't delete Assignment Type if has Assignments in Assignments.php
+- Add ThemeLiveUpdate() in ProgramFunctions/Theme.fnc.php
+- Update French & Spanish translations
+
+
+Changes in 2.9.15
+-----------------
+- Security: update PHPMailer to version 2.9.21
+- Fix #176 SQL error More than 1 row returned by a subquery in Rollover.php
+- Add Attendance Chart + Student Summary to Teachers help in Help\_en.php & Help_es.php
+- Fix footer help text disappearing when bottom menu updated in warehouse.js
+- Add French help in Help_fr.php
+- Merge PR #178 Add Khmer translation thanks to @lkozloff
+- Include theme's scripts.js file (optional) in Warehouse.php
+- Add percent sign (%) to grade & semester fields in Grades/Configuration.php
+- Fix PHP error division by zero in InputFinalGrades.php
+- Fix Show Go button to Parents & Students in StudentList.php
+- Add Anomalous Grades help texts for teachers in Help_*.php
+
+Changes in 2.9.14
+-----------------
+- Add "No courses found" error in Side.php
+- Fix gettext bug when string is '.' in ParseML.php
+- Add SELECT\_OPTIONS column to SCHOOL_FIELDS table in Update.fnc.php & rosariosis.sql
+- Add School Field types in Schools.php & SchoolFields.php (sponsored by Aptiris)
+- Add help for School Fields in Help\_en.php & Help_es.php
+- Get autos / edits pull-down edited options: fix $field var name in AssignOtherInfo.php
+- _makeMultipleInput(): Fix div ID in StudentsUsersInfo.fnc.php
+- Fix Save Select multiple from options field in User.php
+- Admin User Profile restriction in Profiles.php, Exceptions.php, User.php & General_Info.inc.php (sponsored by Aptiris)
+- Update database for Admin User Profile restriction in rosariosis.sql & Update.fnc.php
+- Merge PR #175 Update AttendanceSummary.php, fix #174, thanks to @lkozloff
+
+Changes in 2.9.13
+-----------------
+- Always use SchoolInfo() instead of querying SCHOOLS DB table, programwide
+- Unset current student after setting new current school in Schools.php & CopySchool.php
+- Check if Update() version < ROSARIO_VERSION in Update.fnc.php
+- Admin Schools restriction in Profiles.php, Exceptions.php, User.php & General_Info.inc.php (sponsored by Aptiris)
+- Update database for Admin Schools restriction in rosariosis.sql & Update.fnc.php
+- Restrict Search All Schools to user schools (sponsored by Aptiris)
+
+Changes in 2.9.12
+-----------------
+**Warning**: consequently to commit 2eaee53c6e9f5d9e7bfa24be859e9c711de88b39
+please also upgrade the [Students Import](https://github.com/francoisjacquet/Students_Import) & [Reports](https://github.com/francoisjacquet/Reports) add-on modules.
+
+- Order Schools list by title in Users/includes/General_Info.inc.php & Side.php (sponsored by Aptiris)
+- Add Open Sans CSS to stylesheet_wkhtmltopdf.css
+- Add Force Default Theme option in Configuration.php & User.fnc.php
+- Fix Contact info fields display, with(out) auto-pull-downs or AllowEdit in Address.inc.php
+- Add Custom/Registration.php program (sponsored by @dpredster)
+- Display General Info's tab custom fields (Other Info) in Registration.php
+- When -Edit- option selected, change the Address auto pull-downs to text fields in Address.inc.php (sponsored by Aptiris)
+- Fix #173 resend login form: redirect to Modules.php in index.php
+- Fix Recreate Calendar defaults + copy Calendar weekdays in Calendar.php
+- New: check for Title, programwide
+- Not new: Title is required, programwide
+
+Changes in 2.9.11
+-----------------
+- Put Course Periods back + fixes in ScheduleReport.php
+- Fix PHP fatal error: check Include file exists in StudentFields.php & UserFields.php
+- Fix SQL error unterminated quoted string at or near "'1 in EditReportCardGrades.php
+- Added common file types to upload white list in PortalNotes.php & StudentAssignments.fnc.php
+- Help texts updates in Help_en.php & Help_es.php
+
+Changes in 2.9.10
+-----------------
+- Schedule multiple courses in MassSchedule.php (sponsored by Aptiris)
+- Wrap phone inside tel dial link in GetStuList.fnc.php
+- User Fields: search Email Address & Phone in CustomFields.fnc.php, GetStaffList.fnc.php, Search.fnc.php & Preferences.php
+- Add makeEmail() function in GetStuList.fnc.php
+- Help texts updates in Help_en.php & Help_es.php
+- Fix SQL error table "a" specified more than once when searching Address in MyReport.php
+- Add makeFieldTypeFunction() function in GetStuList.fnc.php
+
+Changes in 2.9.9
+----------------
+- Fix PHP error when no options set for multiple field in Referral.php & MakeReferral.php
+- Fix SQL error when all-day checked & minutes in Calendar.php
+- Fix SQL error when more than one Rollover default enrollment code in Rollover.php
+- Add warning & help for Rollover default enrollment code in EnrollmentCodes.php
+- Fix Delete Prompt displayed when working User/Student cleared program wide
+- Add Warning if not in current Quarter in Assignments.php
+- Check IDs are valid for current school & syear in MarkingPeriods.php & Assignments.php
+- Help texts updates in Help_en.php & Help_es.php
+
+Changes in 2.9.8
+----------------
+- Fix Menu default program when not allowed in Menu.php
+- Add "Students/Student.php|account_created" action hook in Student.php
+- Add "index.php|login_check" action hook in index.php
+- Fix Create Account (was not redirecting to index) (regression since 2.9.2) in Warehouse.php
+- Adapt Warehouse( 'footer' ) & use it on non Modules pages in Warehouse.php
+
+Changes in 2.9.7
+----------------
+- Update Parsedown class to version 1.6.0 in classes/Parsedown.php
+- Update PHPMailer class to version 5.2.16 in classes/PHPMailer/
+- Actions API simplified: register your custom action tag on the fly in Actions.php
+- Fix no JS loaded regression (since 2.9.2) in Create Account pages in Warehouse.php
+- Hotfix SQL error when new subject ID
+
+Changes in 2.9.6
+----------------
+- Fix #157 Delete Period when days unchecked in Courses.php
+- Fix Check subject ID is valid for current school & syear in Courses.php
+- Fix SQL error invalid input syntax for type date in Discipline/*Breakdown.php
+- Fix #159 Update Help text to drop/remove a course in Help_en.php & Help_es.php
+- Fix #161 Letter Grade Widget search terms when combined in Widgets.fnc.php
+- Fix PHP7 error 'continue' not in the 'loop' or 'switch' context
+
+Changes in 2.9.5
+----------------
+- Fix #152 Cookie on localhost/ (root path) and IE in Warehouse.php
+- Add jQuery Chosen 1.5.1 plugin in assets/js/jquery-chosen
+- Add ChosenSelectInput() function in Inputs.php
+- Add "Limit Existing Contacts & Addresses to current school" global setting in Configuration.php (sponsored by Aptiris)
+- Use Chosen for multiple select inputs in MakeReferral.php & Transcripts.php
+
+Changes in 2.9.4
+----------------
+- Limit ListOutput() results to 1000 in ListOutput.fnc.php
+- Add Dates Formats: DD-MM-YYYY, DD-MM-YY (European) & MM/DD/YYYY (US) to ExplodeDate() in Date.php
+- Gender & Ethnicity Student Fields not Required by default in rosariosis.sql
+- Add user friendly AJAX error messages in warehouse.js & Warehouse.php & stylesheet.css
+- JS code optimizations in warehouse.js
+- JS: show loading spinner when loading Help in warehouse.js
+- Spam fix: send plain text email along with HTML & set Reply To instead of From in SendEmail.fnc.php
+
+Changes in 2.9.3
+----------------
+- Force email fields check using HTML5 input's email type, pattern & placeholder in General_Info.inc.php & StudentsUsersInfo.fnc.php
+- Replace jQuery ScrollToFixed plugin with jQuery FixedMenu in assets/js/jquery-fixedmenu/
+- Fix XMLRPC error with Moodle 3.1 in plugins/Moodle/client.php
+- Update Default School Year to 2016 in rosariosis.sql & config.inc.sample.php
+- Moodle plugin configuration, Student email field: select input + Username
+- Moodle plugin fix: do not save idnumber for courses categories in Courses.php
+- Fix switch to previous Syear with current UserStaff (not rolled) in Side.php
+
 Changes in 2.9.2
 ----------------
 - If Admin Profile updated, reload menu in Profiles.php
 - Add page CSS class to body & always use Warehouse( 'header' )
 - Remove inline CSS & use CSS classes program wide
+- Select all School Years in Transcripts.php
+- Set Payment Date in StudentPayments.php & MassAssignPayments.php
+- Set Date in Incomes.php, Expenses.php & StaffPayments.php
+- Add Minimum Passing Grade option to Grade Scales in ReportCardGrades.php & InputFinalGrades.php
+- Place RosarioSIS version, disclaimer & copyright inside "About" toggle in index.php
 
 Changes in 2.9.1
 ----------------
@@ -1337,7 +1665,7 @@ Changes in 1.0
 - added CSS tags for the new theme
 - delete old themes
 - replaced modules icon set
-- added <label> on checkbox and radio
+- added &lt;label&gt; on checkbox and radio
 - added favicon
 - removed Common Name
 - added ability to add Student/User Photo directly from the Student/User screen via jQueryForm

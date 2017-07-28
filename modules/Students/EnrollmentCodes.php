@@ -1,9 +1,15 @@
 <?php
-if ( $_REQUEST['values'] && $_POST['values'] && AllowEdit())
+
+DrawHeader( ProgramTitle() );
+
+if ( $_REQUEST['modfunc'] === 'update'
+	&& $_REQUEST['values']
+	&& $_POST['values']
+	&& AllowEdit() )
 {
-	foreach ( (array) $_REQUEST['values'] as $id => $columns)
+	foreach ( (array) $_REQUEST['values'] as $id => $columns )
 	{
-//FJ fix SQL bug invalid sort order
+		//FJ fix SQL bug invalid sort order
 		if (empty($columns['SORT_ORDER']) || is_numeric($columns['SORT_ORDER']))
 		{
 			if ( $id!='new')
@@ -12,12 +18,13 @@ if ( $_REQUEST['values'] && $_POST['values'] && AllowEdit())
 
 				foreach ( (array) $columns as $column => $value)
 				{
-					$sql .= $column."='".$value."',";
+					$sql .= DBEscapeIdentifier( $column ) . "='" . $value . "',";
 				}
 				$sql = mb_substr($sql,0,-1) . " WHERE ID='".$id."'";
 				DBQuery($sql);
 			}
-			else
+			// New: check for Title.
+			elseif ( $columns['TITLE'] )
 			{
 				$sql = "INSERT INTO STUDENT_ENROLLMENT_CODES ";
 
@@ -29,12 +36,12 @@ if ( $_REQUEST['values'] && $_POST['values'] && AllowEdit())
 				{
 					if ( !empty($value) || $value=='0')
 					{
-						$fields .= $column.',';
-						$values .= "'".$value."',";
+						$fields .= DBEscapeIdentifier( $column ) . ',';
+						$values .= "'" . $value . "',";
 						$go = true;
 					}
 				}
-				$sql .= '(' . mb_substr($fields,0,-1) . ') values(' . mb_substr($values,0,-1) . ')';
+				$sql .= '(' . mb_substr( $fields, 0, -1 ) . ') values(' . mb_substr( $values, 0, -1 ) . ')';
 
 				if ( $go)
 					DBQuery($sql);
@@ -43,30 +50,50 @@ if ( $_REQUEST['values'] && $_POST['values'] && AllowEdit())
 		else
 			$error[] = _('Please enter a valid Sort Order.');
 	}
+
+	// Unset modfunc & redirect URL.
+	RedirectURL( 'modfunc' );
 }
 
-DrawHeader(ProgramTitle());
-
-if ( $_REQUEST['modfunc']=='remove' && AllowEdit())
+if ( $_REQUEST['modfunc'] === 'remove'
+	&& AllowEdit() )
 {
-	if (DeletePrompt(_('Enrollment Code')))
+	if ( DeletePrompt( _( 'Enrollment Code' ) ) )
 	{
-		DBQuery("DELETE FROM STUDENT_ENROLLMENT_CODES WHERE ID='".$_REQUEST['id']."'");
-		unset($_REQUEST['modfunc']);
+		DBQuery( "DELETE FROM STUDENT_ENROLLMENT_CODES
+			WHERE ID='" . $_REQUEST['id'] . "'" );
+
+		// Unset modfunc & ID & redirect URL.
+		RedirectURL( array( 'modfunc', 'id' ) );
 	}
 }
 
-// FJ fix SQL bug invalid sort order
+// Check we have 1 and only one Rollover default code.
+$rollover_default_RET = DBGet( DBQuery( "SELECT ID
+	FROM STUDENT_ENROLLMENT_CODES
+	WHERE SYEAR='" . UserSyear() . "'
+	AND TYPE='Add'
+	AND DEFAULT_CODE='Y'" ) );
+
+if ( ! $rollover_default_RET
+	|| count( $rollover_default_RET ) !== 1 )
+{
+	$warning[] = _( 'There must be exactly one Rollover default enrollment code (of type Add).' );
+}
+
+// FJ fix SQL bug invalid sort order.
 echo ErrorMessage( $error );
 
-if ( $_REQUEST['modfunc']!='remove')
+echo ErrorMessage( $warning, 'warning' );
+
+if ( ! $_REQUEST['modfunc'] )
 {
 	$sql = "SELECT ID,TITLE,SHORT_NAME,TYPE,DEFAULT_CODE,SORT_ORDER FROM STUDENT_ENROLLMENT_CODES WHERE SYEAR='".UserSyear()."' ORDER BY SORT_ORDER,TITLE";
 	$QI = DBQuery($sql);
-	$codes_RET = DBGet($QI,array('TITLE' => 'makeTextInput','SHORT_NAME' => 'makeTextInput','TYPE' => 'makeSelectInput','DEFAULT_CODE' => 'makeCheckBoxInput','SORT_ORDER' => 'makeTextInput'));
+	$codes_RET = DBGet($QI,array('TITLE' => '_makeTextInput','SHORT_NAME' => '_makeTextInput','TYPE' => '_makeSelectInput','DEFAULT_CODE' => '_makeCheckBoxInput','SORT_ORDER' => '_makeTextInput'));
 
 	$columns = array('TITLE' => _('Title'),'SHORT_NAME' => _('Short Name'),'TYPE' => _('Type'),'DEFAULT_CODE' => _('Rollover Default'),'SORT_ORDER' => _('Sort Order'));
-	$link['add']['html'] = array('TITLE'=>makeTextInput('','TITLE'),'SHORT_NAME'=>makeTextInput('','SHORT_NAME'),'TYPE'=>makeSelectInput('','TYPE'),'DEFAULT_CODE'=>makeCheckBoxInput('','DEFAULT_CODE'),'SORT_ORDER'=>makeTextInput('','SORT_ORDER'));
+	$link['add']['html'] = array('TITLE'=>_makeTextInput('','TITLE'),'SHORT_NAME'=>_makeTextInput('','SHORT_NAME'),'TYPE'=>_makeSelectInput('','TYPE'),'DEFAULT_CODE'=>_makeCheckBoxInput('','DEFAULT_CODE'),'SORT_ORDER'=>_makeTextInput('','SORT_ORDER'));
 	$link['remove']['link'] = 'Modules.php?modname='.$_REQUEST['modname'].'&modfunc=remove';
 	$link['remove']['variables'] = array('id' => _('ID'));
 
@@ -78,45 +105,87 @@ if ( $_REQUEST['modfunc']!='remove')
 	echo '</form>';
 }
 
-function makeTextInput($value,$name)
-{	global $THIS_RET;
+function _makeTextInput( $value, $name )
+{
+	global $THIS_RET;
 
-	if ( $THIS_RET['ID'])
+	if ( $THIS_RET['ID'] )
+	{
 		$id = $THIS_RET['ID'];
+	}
 	else
+	{
 		$id = 'new';
+	}
 
-	if ( $name=='SHORT_NAME')
+	if ( $name === 'SHORT_NAME' )
+	{
 		$extra = 'size=5 maxlength=10';
-	elseif ( $name=='SORT_ORDER')
+	}
+	elseif ( $name === 'SORT_ORDER' )
+	{
 		$extra = 'size=5 maxlength=10';
+	}
+	elseif ( $name === 'TITLE' )
+	{
+		$extra = '';
 
-	return TextInput($value,'values['.$id.']['.$name.']','',$extra);
+		if ( $id !== 'new' )
+		{
+			$extra .= ' required';
+		}
+	}
+
+	return TextInput( $value, 'values[' . $id . '][' . $name . ']', '', $extra );
 }
 
-function makeSelectInput($value,$name)
-{	global $THIS_RET;
+function _makeSelectInput( $value, $name )
+{
+	global $THIS_RET;
 
-	if ( $THIS_RET['ID'])
+	if ( $THIS_RET['ID'] )
+	{
 		$id = $THIS_RET['ID'];
+	}
 	else
+	{
 		$id = 'new';
+	}
 
-	if ( $name=='TYPE')
-		$options = array('Add' => _('Add'),'Drop' => _('Drop'));
+	if ( $name === 'TYPE' )
+	{
+		$options = array( 'Add' => _( 'Add' ), 'Drop' => _( 'Drop' ) );
+	}
 
-	return SelectInput($value,'values['.$id.']['.$name.']','',$options);
+	return SelectInput(
+		$value,
+		'values[' . $id . '][' . $name . ']',
+		'',
+		$options,
+		( $id === 'new' ? 'N/A' : false )
+	);
 }
 
-function makeCheckBoxInput($value,$name)
-{	global $THIS_RET;
+function _makeCheckBoxInput( $value, $name )
+{
+	global $THIS_RET;
 
-	if ( $THIS_RET['ID'])
+	if ( $THIS_RET['ID'] )
+	{
 		$id = $THIS_RET['ID'];
+	}
 	else
+	{
 		$id = 'new';
+	}
 
-//FJ css WPadmin
-//	return CheckboxInput($value,'values['.$id.']['.$name.']','','',($id=='new'));
-	return CheckboxInput($value, 'values['.$id.']['.$name.']', '', '', ($id=='new'), button('check'), button('x'));
+	return CheckboxInput(
+		$value,
+		'values[' . $id . '][' . $name . ']',
+		'',
+		'',
+		( $id === 'new' ),
+		button( 'check' ),
+		button( 'x' )
+	);
 }

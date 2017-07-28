@@ -9,7 +9,7 @@ function _makeFeesRemove($value,$column)
 	if ( ! $THIS_RET['WAIVED_FEE_ID'] && ! $waived_fees_RET[$THIS_RET['ID']])
 		$return = button('remove',_('Waive'),'"Modules.php?modname='.$_REQUEST['modname'].'&modfunc=waive&id='.$THIS_RET['ID'].'"');
 	elseif ( $waived_fees_RET[$THIS_RET['ID']])
-		$return = '<span class="center" style="color:#00A642">'._('Waived').'</span>';
+		$return = '<span style="color:#00A642">'._('Waived').'</span> ';
 	return $return.button('remove',_('Delete'),'"Modules.php?modname='.$_REQUEST['modname'].'&modfunc=remove&id='.$THIS_RET['ID'].'"');
 }
 
@@ -26,12 +26,16 @@ function _makePaymentsRemove($value,$column)
 	return $return.button('remove',_('Delete'),'"Modules.php?modname='.$_REQUEST['modname'].'&modfunc=remove&id='.$THIS_RET['ID'].'"');
 }
 
-function _makeFeesTextInput($value,$name)
-{	global $THIS_RET;
+function _makeFeesTextInput( $value, $name )
+{
+	global $THIS_RET;
 
-	if ( $THIS_RET['WAIVED_FEE_ID'])
+	if ( $THIS_RET['WAIVED_FEE_ID'] )
+	{
 		$THIS_RET['row_colow'] = 'FFFFFF';
-	if ( $THIS_RET['ID'])
+	}
+
+	if ( $THIS_RET['ID'] )
 	{
 		$id = $THIS_RET['ID'];
 		$div = 'force';
@@ -42,10 +46,24 @@ function _makeFeesTextInput($value,$name)
 		$div = false;
 	}
 
-	if ( $name=='AMOUNT')
-		$extra = 'size=5 maxlength=10';
+	$extra = 'maxlength=255';
 
-	return TextInput($value,'values['.$id.']['.$name.']','',$extra,$div);
+	if ( $name === 'AMOUNT' )
+	{
+		$extra = 'size=5 maxlength=10';
+	}
+	elseif ( ! $value )
+	{
+		$extra .= ' size=15';
+	}
+
+	return TextInput(
+		$value,
+		'values[' . $id . '][' . $name . ']',
+		'',
+		$extra,
+		$div
+	);
 }
 
 function _makeFeesDateInput($value='',$name)
@@ -68,18 +86,43 @@ function _makeFeesAmount($value,$column)
 	return Currency($value);
 }
 
-function _makePaymentsTextInput($value,$name)
-{	global $THIS_RET;
+function _makePaymentsTextInput( $value, $name )
+{
+	global $THIS_RET;
 
-	if ( $THIS_RET['ID'])
+	if ( $THIS_RET['ID'] )
+	{
 		$id = $THIS_RET['ID'];
+	}
 	else
 		$id = 'new';
 
-	if ( $name=='AMOUNT')
-		$extra = 'size=5 maxlength=10';
+	$extra = 'maxlength=255';
 
-	return TextInput($value,'values['.$id.']['.$name.']','',$extra);
+	if ( $name === 'AMOUNT' )
+	{
+		$extra = 'size=5 maxlength=10';
+	}
+	elseif ( ! $value )
+	{
+		$extra .= ' size=15';
+	}
+
+	return TextInput( $value, 'values[' . $id . '][' . $name . ']', '', $extra );
+}
+
+function _makePaymentsDateInput( $value, $name )
+{
+	global $THIS_RET;
+
+	if ( $THIS_RET['ID'] )
+	{
+		$id = $THIS_RET['ID'];
+	}
+	else
+		$id = 'new';
+
+	return DateInput( $value, 'values[' . $id . '][' . $name . ']', '', ( $id !== 'new' ), false );
 }
 
 function _makePaymentsAmount($value,$column)
@@ -89,16 +132,24 @@ function _makePaymentsAmount($value,$column)
 	return Currency($value);
 }
 
-function _lunchInput($value,$column)
-{	global $THIS_RET;
+function _lunchInput( $value, $column )
+{
+	global $THIS_RET;
 
-	if ( $THIS_RET['ID'])
+	if ( $THIS_RET['ID'] )
+	{
 		$id = $THIS_RET['ID'];
+	}
 	else
 	{
 		$id = 'new';
-		$new = true;
 	}
 
-	return CheckboxInput($value,'values['.$id.']['.$column.']','','',$new,_('Yes'),_('No'));
+	return CheckboxInput(
+		$value,
+		'values[' . $id . '][' . $column . ']',
+		'',
+		'',
+		( $id === 'new' )
+	);
 }

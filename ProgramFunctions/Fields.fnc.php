@@ -98,14 +98,16 @@ function AddDBField( $table, $sequence, $type )
 		break;
 	}
 
-	DBQuery( 'ALTER TABLE ' . $table . ' ADD CUSTOM_' . (int) $id . ' ' . $sql_type );
+	DBQuery( 'ALTER TABLE ' . DBEscapeIdentifier( $table ) . ' ADD ' .
+		DBEscapeIdentifier( 'CUSTOM_' . (int) $id ) . ' ' . $sql_type );
 
 	if ( $create_index )
 	{
 		$index_name = $table === 'STUDENTS' ? 'CUSTOM_IND' : $table . '_IND';
 
-		DBQuery( 'CREATE INDEX ' . $index_name . (int) $id .
-			' ON ' . $table . ' (CUSTOM_' . (int) $id . ')' );
+		DBQuery( 'CREATE INDEX ' . DBEscapeIdentifier( $index_name . (int) $id ) .
+			' ON ' . DBEscapeIdentifier( $table ) .
+			' (' . DBEscapeIdentifier( 'CUSTOM_' . (int) $id ) . ')' );
 	}
 
 	return $id;
@@ -149,11 +151,11 @@ function DeleteDBField( $table, $id )
 		mb_substr( $fields_table, 0, -1 ) :
 		$fields_table;
 
-	DBQuery( "DELETE FROM " . $fields_table . "_FIELDS
-		WHERE ID='" . (int) $id . "'" );
+	DBQuery( "DELETE FROM " . DBEscapeIdentifier( $fields_table . '_FIELDS' ) .
+		" WHERE ID='" . (int) $id . "'" );
 
-	DBQuery( 'ALTER TABLE ' . $table . '
-		DROP COLUMN CUSTOM_' . (int) $id );
+	DBQuery( 'ALTER TABLE ' . DBEscapeIdentifier( $table ) . '
+		DROP COLUMN ' . DBEscapeIdentifier( 'CUSTOM_' . (int) $id ) );
 
 	return true;
 }
@@ -195,8 +197,8 @@ function DeleteDBFieldCategory( $table, $id )
 
 	// Delete all fields in Category.
 	$fields = DBGet( DBQuery( "SELECT ID
-		FROM " . $fields_table . "_FIELDS
-		WHERE CATEGORY_ID='" . (int) $id . "'" ) );
+		FROM " . DBEscapeIdentifier( $fields_table . '_FIELDS' ) .
+		" WHERE CATEGORY_ID='" . (int) $id . "'" ) );
 
 	foreach ( (array) $fields as $field )
 	{
@@ -208,8 +210,8 @@ function DeleteDBFieldCategory( $table, $id )
 		mb_substr( $table, 0, -1 ) :
 		$table;
 
-	DBQuery( "DELETE FROM " . $field_categories_table . "_FIELD_CATEGORIES
-		WHERE ID='" . (int) $id . "'" );
+	DBQuery( "DELETE FROM " . DBEscapeIdentifier( $field_categories_table . '_FIELD_CATEGORIES' ) .
+		" WHERE ID='" . (int) $id . "'" );
 
 	return true;
 }
@@ -330,14 +332,14 @@ function GetFieldsForm( $table, $title, $RET, $extra_category_fields = array(), 
 				'select' => _( 'Pull-Down' ),
 				'autos' => _( 'Auto Pull-Down' ),
 				'edits' => _( 'Edit Pull-Down' ),
-				'text' => _( 'Text' ),
-				'radio' => _( 'Checkbox' ),
 				'codeds' => _( 'Coded Pull-Down' ),
 				'exports' => _( 'Export Pull-Down' ),
-				'numeric' => _( 'Number' ),
 				'multiple' => _( 'Select Multiple from Options' ),
-				'date' => _( 'Date' ),
+				'text' => _( 'Text' ),
 				'textarea' => _( 'Long Text' ),
+				'radio' => _( 'Checkbox' ),
+				'numeric' => _( 'Number' ),
+				'date' => _( 'Date' ),
 			);
 		}
 
@@ -387,8 +389,8 @@ function GetFieldsForm( $table, $title, $RET, $extra_category_fields = array(), 
 		{
 			// CATEGORIES.
 			$categories_RET = DBGet( DBQuery( "SELECT ID,TITLE,SORT_ORDER
-				FROM " . $table . "_FIELD_CATEGORIES
-				ORDER BY SORT_ORDER,TITLE" ) );
+				FROM " . DBEscapeIdentifier( $table . '_FIELD_CATEGORIES' ) .
+				" ORDER BY SORT_ORDER,TITLE" ) );
 
 			foreach ( (array) $categories_RET as $type )
 			{
@@ -545,7 +547,7 @@ function FieldsMenuOutput( $RET, $id, $category_id = '0' )
 	$LO_options = array( 'save' => false, 'search' => false, 'responsive' => false );
 
 	$LO_columns = array(
-		'TITLE' => $category_id ? _( 'Field' ) : _( 'Category' ),
+		'TITLE' => ( $category_id || $category_id === false ? _( 'Field' ) : _( 'Category' ) ),
 		'SORT_ORDER' => _( 'Sort Order' ),
 	);
 
@@ -618,14 +620,14 @@ function MakeFieldType( $value, $column = '' )
 		'select' => _( 'Pull-Down' ),
 		'autos' => _( 'Auto Pull-Down' ),
 		'edits' => _( 'Edit Pull-Down' ),
-		'text' => _( 'Text' ),
-		'radio' => _( 'Checkbox' ),
 		'codeds' => _( 'Coded Pull-Down' ),
 		'exports' => _( 'Export Pull-Down' ),
-		'numeric' => _( 'Number' ),
 		'multiple' => _( 'Select Multiple from Options' ),
-		'date' => _( 'Date' ),
+		'text' => _( 'Text' ),
 		'textarea' => _( 'Long Text' ),
+		'radio' => _( 'Checkbox' ),
+		'numeric' => _( 'Number' ),
+		'date' => _( 'Date' ),
 	);
 
 	return isset( $type_options[ $value ] ) ? $type_options[ $value ] : $value;
@@ -678,7 +680,7 @@ function FilterCustomFieldsMarkdown( $table, $request_index, $request_index_2 = 
 
 	// FJ textarea fields MarkDown sanitize.
 	$textarea_RET = DBGet( DBQuery( "SELECT ID
-		FROM " . $table . "
+		FROM " . DBEscapeIdentifier( $table ) . "
 		WHERE TYPE='textarea'") );
 
 	if ( ! $textarea_RET )
@@ -733,9 +735,8 @@ function CheckRequiredCustomFields( $table, $request_values )
 		return false;
 	}
 
-	$required_RET = DBGet( DBQuery( "SELECT ID FROM " . $table . "
-		WHERE CATEGORY_ID='" . $category_id . "'
-		AND REQUIRED='Y'" ) );
+	$required_RET = DBGet( DBQuery( "SELECT ID FROM " . DBEscapeIdentifier( $table ) . "
+		WHERE REQUIRED='Y'" ) );
 
 	foreach ( (array) $required_RET as $required )
 	{

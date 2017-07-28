@@ -1,13 +1,15 @@
 <?php
 require_once 'modules/Food_Service/includes/FS_Icons.inc.php';
 
-DrawHeader(ProgramTitle());
+DrawHeader( ProgramTitle() );
 
-if ( $_REQUEST['modfunc']=='update')
+if ( $_REQUEST['modfunc'] === 'update' )
 {
-	if ( $_REQUEST['values'] && $_POST['values'] && AllowEdit())
+	if ( $_REQUEST['values']
+		&& $_POST['values']
+		&& AllowEdit() )
 	{
-		if ( $_REQUEST['tab_id'])
+		if ( $_REQUEST['tab_id'] )
 		{
 			foreach ( (array) $_REQUEST['values'] as $id => $columns)
 			{
@@ -30,7 +32,7 @@ if ( $_REQUEST['modfunc']=='update')
 
 							foreach ( (array) $columns as $column => $value )
 							{
-								$sql .= $column . "='" . $value . "',";
+								$sql .= DBEscapeIdentifier( $column ) . "='" . $value . "',";
 								$go = true;
 							}
 
@@ -64,11 +66,11 @@ if ( $_REQUEST['modfunc']=='update')
 						foreach ( (array) $columns as $column => $value)
 							if ( !empty($value) || $value=='0')
 							{
-								$fields .= $column.',';
-								$values .= '\''.$value.'\',';
+								$fields .= DBEscapeIdentifier( $column ) . ',';
+								$values .= "'" . $value . "',";
 								$go = true;
 							}
-						$sql .= '(' . mb_substr($fields,0,-1) . ') values(' . mb_substr($values,0,-1) . ')';
+						$sql .= '(' . mb_substr( $fields, 0, -1 ) . ') values(' . mb_substr( $values, 0, -1 ) . ')';
 
 						//FJ fix SQL bug MENU_ITEM not null
 						if ( $_REQUEST['tab_id'] !== 'new'
@@ -91,10 +93,13 @@ if ( $_REQUEST['modfunc']=='update')
 			}
 		}
 	}
-	unset($_REQUEST['modfunc']);
+
+	// Unset modfunc & redirect URL.
+	RedirectURL( 'modfunc' );
 }
 
-if ( $_REQUEST['modfunc']=='remove' && AllowEdit())
+if ( $_REQUEST['modfunc'] === 'remove'
+	&& AllowEdit() )
 {
 	if ( $_REQUEST['tab_id']!='new')
 	{
@@ -104,26 +109,24 @@ if ( $_REQUEST['modfunc']=='remove' && AllowEdit())
 				WHERE MENU_ID='" . $_REQUEST['tab_id'] . "'
 				AND MENU_ITEM_ID='" . $_REQUEST['menu_item_id'] . "'" );
 
-			$_REQUEST['modfunc'] = false;
+			// Unset modfunc & menu item ID & redirect URL.
+			RedirectURL( array( 'modfunc', 'menu_item_id' ) );
 		}
 	}
-	else
+	elseif ( DeletePrompt( _( 'Item' ) ) )
 	{
-		if ( DeletePrompt( _( 'Item' ) ) )
-		{
-			DBQuery( "DELETE FROM FOOD_SERVICE_MENU_ITEMS
-				WHERE ITEM_ID='" . $_REQUEST['item_id'] . "'" );
+		DBQuery( "DELETE FROM FOOD_SERVICE_MENU_ITEMS
+			WHERE ITEM_ID='" . $_REQUEST['item_id'] . "'" );
 
-			DBQuery( "DELETE FROM FOOD_SERVICE_ITEMS
-				WHERE ITEM_ID='" . $_REQUEST['item_id'] . "'" );
+		DBQuery( "DELETE FROM FOOD_SERVICE_ITEMS
+			WHERE ITEM_ID='" . $_REQUEST['item_id'] . "'" );
 
-			$_REQUEST['modfunc'] = false;
-		}
+		// Unset modfunc & item ID & redirect URL.
+		RedirectURL( array( 'modfunc', 'item_id' ) );
 	}
 }
 
 if ( ! $_REQUEST['modfunc'] )
-
 {
 	$menus_RET = DBGet(DBQuery('SELECT MENU_ID,TITLE FROM FOOD_SERVICE_MENUS WHERE SCHOOL_ID=\''.UserSchool().'\' ORDER BY SORT_ORDER'),array(),array('MENU_ID'));
 	if ( $_REQUEST['tab_id'])
@@ -278,7 +281,7 @@ function makeSelectInput($value,$name)
 			'values[' . $id . '][' . $name . ']',
 			'',
 			$items_select,
-			$id == 'new' ? '' : false
+			( $id === 'new' ? 'N/A' : false )
 		);
 	}
 	elseif ( $name=='CATEGORY_ID')

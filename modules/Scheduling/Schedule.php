@@ -47,7 +47,7 @@ else
 		$date = $_REQUEST['year_date'] . '-' . $_REQUEST['month_date'] . '-' . $_REQUEST['day_date'];
 	}
 }
-unset($_SESSION['_REQUEST_vars']['modfunc']);
+$_SESSION['_REQUEST_vars']['modfunc'] = false;
 
 Widgets('course');
 Widgets('request');
@@ -74,7 +74,8 @@ if ( isset( $_POST['day_schedule'], $_POST['month_schedule'], $_POST['year_sched
 	unset($_SESSION['_REQUEST_vars']['year_schedule']);
 }
 
-if ( isset( $_REQUEST['schedule'] )
+if ( $_REQUEST['modfunc'] === 'modify'
+	&& isset( $_REQUEST['schedule'] )
 	&& count( $_REQUEST['schedule'] )
 	&& AllowEdit() )
 {
@@ -85,7 +86,7 @@ if ( isset( $_REQUEST['schedule'] )
 
 		foreach ( (array) $columns as $column => $value)
 		{
-			$sql .= $column."='".$value."',";
+			$sql .= DBEscapeIdentifier( $column ) . "='" . $value . "',";
 		}
 		$sql = mb_substr($sql,0,-1) . " WHERE STUDENT_ID='".UserStudentID()."' AND COURSE_PERIOD_ID='".$course_period_id."' AND START_DATE='".$start_date."'";
 		DBQuery($sql);
@@ -97,8 +98,14 @@ if ( isset( $_REQUEST['schedule'] )
 			//User is asked if he wants absences and grades to be deleted
 			if (count($start_end_RET))
 			{
-				//if user clicked Cancel or OK then pass else Display Prompt
-				if (DeletePrompt(_('Student\'s Absences and Grades'), 'Delete', false))
+				$delete_ok = DeletePrompt(
+					_( 'Student\'s Absences and Grades' ),
+					_( 'also delete' ),
+					false
+				);
+
+				// If user clicked Cancel or OK then pass else Display Prompt
+				if ( $delete_ok )
 				{
 					//if user clicked OK
 					if ( ! isset( $_REQUEST['delete_cancel'] ) )
@@ -123,11 +130,15 @@ if ( isset( $_REQUEST['schedule'] )
 		}
 	}
 
-	unset($_SESSION['_REQUEST_vars']['schedule']);
-	unset($_REQUEST['schedule']);
+	if ( ! $schedule_deletion_pending )
+	{
+		// Unset modfunc & schedule & redirect URL.
+		RedirectURL( array( 'modfunc', 'schedule' ) );
+	}
 }
 
-if (UserStudentID() && $_REQUEST['modfunc']!='choose_course' && empty($schedule_deletion_pending))
+if ( UserStudentID()
+	&& ! $_REQUEST['modfunc'] )
 {
 	echo '<form action="Modules.php?modname='.$_REQUEST['modname'].'&modfunc=modify" method="POST">';
 
@@ -435,7 +446,8 @@ function _makePeriodSelect($course_period_id,$column)
 		'schedule[' . $THIS_RET['COURSE_PERIOD_ID'] . '][' . $THIS_RET['START_DATE'] . '][COURSE_PERIOD_ID]',
 		'',
 		$periods,
-		false
+		false,
+		'style="max-width: 300px;"'
 	);
 }
 

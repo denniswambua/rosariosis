@@ -1,7 +1,7 @@
 <?php
 /**
  * Moodle integrator
- * 
+ *
  * XMLRPC client for Moodle 2
  */
 
@@ -23,6 +23,8 @@ function moodle_xmlrpc_call( $functionname, $object )
 
 	$curl = new curl;
 
+	$curl->setHeader( 'Content-type: text/xml' );
+
 	//var_dump($object);
 
 	if ( empty( $object ) )
@@ -37,8 +39,10 @@ function moodle_xmlrpc_call( $functionname, $object )
 	$resp = xmlrpc_decode( $curl->post( $serverurl, $post ), 'utf-8' );
 
 	if ( get_xmlrpc_error( $resp ) )
-		//handle the positive response
+	{
+		// Handle the positive response.
 		return call_user_func( $functionname . '_response', $resp );
+	}
 	else
 		return false;
 }
@@ -58,7 +62,7 @@ function get_xmlrpc_error( $resp )
 	if ( is_array( $resp )
 		&& xmlrpc_is_fault( $resp ) )
 	{
-		$message = 'Moodle: '  .$resp['faultCode'] . ' - ' . $resp['faultString'];
+		$message = 'Moodle: ' . $resp['faultCode'] . ' - ' . $resp['faultString'];
 
 		$error[] = $message;
 
@@ -70,6 +74,6 @@ function get_xmlrpc_error( $resp )
 
 		return false;
 	}
-	
+
 	return true;
 }

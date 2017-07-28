@@ -290,6 +290,23 @@ SET default_tablespace = '';
 SET default_with_oids = false;
 
 --
+-- Name: access_log; Type: TABLE; Schema: public; Owner: rosariosis; Tablespace:
+--
+
+CREATE TABLE access_log (
+    syear numeric(4,0),
+    username character varying(100),
+    profile character varying(30),
+    login_time timestamp(0) without time zone,
+    ip_address character varying(50),
+    user_agent text,
+    status character varying(50)
+);
+
+
+
+
+--
 -- Name: accounting_incomes; Type: TABLE; Schema: public; Owner: rosariosis; Tablespace:
 --
 
@@ -418,13 +435,10 @@ SELECT pg_catalog.setval('accounting_payments_seq', 1, false);
 CREATE TABLE address (
     address_id numeric(10,0) NOT NULL,
     house_no numeric(5,0),
-    fraction character varying(3),
-    letter character varying(2),
     direction character varying(2),
     street character varying(30),
     apt character varying(5),
     zipcode character varying(10),
-    plus4 character varying(4),
     city character varying(60),
     state character varying(10),
     mail_street character varying(30),
@@ -2362,12 +2376,13 @@ CREATE TABLE report_card_grade_scales (
     school_id numeric NOT NULL,
     title character varying(300),
     comment character varying(1000),
-    hhr_gpa_value numeric(4,2),
-    hr_gpa_value numeric(4,2),
+    hhr_gpa_value numeric,
+    hr_gpa_value numeric,
     sort_order numeric,
     rollover_id numeric,
     gp_scale numeric(10,3),
-    hrs_gpa_value numeric(4,2)
+    gp_passing_value numeric(10,3),
+    hrs_gpa_value numeric
 );
 
 
@@ -2404,11 +2419,11 @@ CREATE TABLE report_card_grades (
     school_id numeric,
     title character varying(100),
     sort_order numeric,
-    gpa_value numeric(4,2),
+    gpa_value numeric,
     break_off numeric,
     comment character varying(1000),
     grade_scale_id numeric,
-    unweighted_gp numeric(4,2)
+    unweighted_gp numeric
 );
 
 
@@ -2562,6 +2577,7 @@ CREATE TABLE school_fields (
     type character varying(10) NOT NULL,
     title character varying(1000) NOT NULL,
     sort_order numeric,
+    select_options character varying(1000),
     required character varying(1),
     default_selection character varying(255)
 );
@@ -3361,7 +3377,43 @@ CREATE TABLE templates (
 -- modif Francois: history grades in Transripts
 
 CREATE VIEW transcript_grades AS
-    SELECT mp.syear, mp.school_id, mp.marking_period_id, mp.mp_type, mp.short_name, mp.parent_id, mp.grandparent_id, (SELECT mp2.end_date FROM (student_report_card_grades JOIN marking_periods mp2 ON (((mp2.marking_period_id)::text = (student_report_card_grades.marking_period_id)::text))) WHERE (((student_report_card_grades.student_id = (sms.student_id)::numeric) AND (((student_report_card_grades.marking_period_id)::text = (mp.parent_id)::text) OR ((student_report_card_grades.marking_period_id)::text = (mp.grandparent_id)::text))) AND ((student_report_card_grades.course_title)::text = (srcg.course_title)::text)) ORDER BY mp2.end_date LIMIT 1) AS parent_end_date, mp.end_date, sms.student_id, (sms.cum_weighted_factor * schools.reporting_gp_scale) AS cum_weighted_gpa, (sms.cum_unweighted_factor * schools.reporting_gp_scale) AS cum_unweighted_gpa, sms.cum_rank, sms.mp_rank, sms.class_size, ((sms.sum_weighted_factors / sms.count_weighted_factors) * schools.reporting_gp_scale) AS weighted_gpa, ((sms.sum_unweighted_factors / sms.count_unweighted_factors) * schools.reporting_gp_scale) AS unweighted_gpa, sms.grade_level_short, srcg.comment, srcg.grade_percent, srcg.grade_letter, srcg.weighted_gp, srcg.unweighted_gp, srcg.gp_scale, srcg.credit_attempted, srcg.credit_earned, srcg.course_title, srcg.school AS school_name, schools.reporting_gp_scale AS school_scale, ((sms.cr_weighted_factors / (sms.count_cr_factors)::numeric) * schools.reporting_gp_scale) AS cr_weighted_gpa, ((sms.cr_unweighted_factors / (sms.count_cr_factors)::numeric) * schools.reporting_gp_scale) AS cr_unweighted_gpa, (sms.cum_cr_weighted_factor * schools.reporting_gp_scale) AS cum_cr_weighted_gpa, (sms.cum_cr_unweighted_factor * schools.reporting_gp_scale) AS cum_cr_unweighted_gpa, srcg.class_rank, sms.comments, srcg.credit_hours FROM (((marking_periods mp JOIN student_report_card_grades srcg ON (((mp.marking_period_id)::text = (srcg.marking_period_id)::text))) JOIN student_mp_stats sms ON ((((sms.marking_period_id)::numeric = mp.marking_period_id) AND ((sms.student_id)::numeric = srcg.student_id)))) LEFT OUTER JOIN schools ON (((mp.school_id = schools.id) AND (mp.syear = schools.syear)))) ORDER BY srcg.course_period_id;
+    SELECT mp.syear,mp.school_id,mp.marking_period_id,mp.mp_type,
+    mp.short_name,mp.parent_id,mp.grandparent_id,
+    (SELECT mp2.end_date
+        FROM (student_report_card_grades
+            JOIN marking_periods mp2
+            ON (((mp2.marking_period_id)::text = (student_report_card_grades.marking_period_id)::text)))
+                WHERE (((student_report_card_grades.student_id = (sms.student_id)::numeric)
+                    AND (((student_report_card_grades.marking_period_id)::text = (mp.parent_id)::text)
+                        OR ((student_report_card_grades.marking_period_id)::text = (mp.grandparent_id)::text)))
+                AND ((student_report_card_grades.course_title)::text = (srcg.course_title)::text))
+                ORDER BY mp2.end_date LIMIT 1) AS parent_end_date,
+    mp.end_date,sms.student_id,
+    (sms.cum_weighted_factor * schools.reporting_gp_scale) AS cum_weighted_gpa,
+    (sms.cum_unweighted_factor * schools.reporting_gp_scale) AS cum_unweighted_gpa,
+    sms.cum_rank,sms.mp_rank,sms.class_size,
+    ((sms.sum_weighted_factors / sms.count_weighted_factors) * schools.reporting_gp_scale) AS weighted_gpa,
+    ((sms.sum_unweighted_factors / sms.count_unweighted_factors) * schools.reporting_gp_scale) AS unweighted_gpa,
+    sms.grade_level_short,srcg.comment,srcg.grade_percent,srcg.grade_letter,
+    srcg.weighted_gp,srcg.unweighted_gp,srcg.gp_scale,srcg.credit_attempted,
+    srcg.credit_earned,srcg.course_title,srcg.school AS school_name,
+    schools.reporting_gp_scale AS school_scale,
+    ((sms.cr_weighted_factors / (sms.count_cr_factors)::numeric) * schools.reporting_gp_scale) AS cr_weighted_gpa,
+    ((sms.cr_unweighted_factors / (sms.count_cr_factors)::numeric) * schools.reporting_gp_scale) AS cr_unweighted_gpa,
+    (sms.cum_cr_weighted_factor * schools.reporting_gp_scale) AS cum_cr_weighted_gpa,
+    (sms.cum_cr_unweighted_factor * schools.reporting_gp_scale) AS cum_cr_unweighted_gpa,
+    srcg.class_rank,sms.comments,
+    srcg.credit_hours
+    FROM (((marking_periods mp
+        JOIN student_report_card_grades srcg
+        ON (((mp.marking_period_id)::text = (srcg.marking_period_id)::text)))
+        JOIN student_mp_stats sms
+        ON ((((sms.marking_period_id)::numeric = mp.marking_period_id)
+            AND ((sms.student_id)::numeric = srcg.student_id))))
+        LEFT OUTER JOIN schools
+        ON (((mp.school_id = schools.id)
+            AND (mp.syear = schools.syear))))
+    ORDER BY srcg.course_period_id;
 
 
 
@@ -3422,7 +3474,7 @@ SELECT pg_catalog.setval('user_profiles_seq', 3, true);
 -- Data for Name: address; Type: TABLE DATA; Schema: public; Owner: rosariosis
 --
 
-INSERT INTO address VALUES (0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'No Address', NULL, NULL);
+INSERT INTO address VALUES (0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'No Address', NULL, NULL);
 
 
 --
@@ -3447,7 +3499,7 @@ INSERT INTO address VALUES (0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, N
 -- Data for Name: attendance_calendars; Type: TABLE DATA; Schema: public; Owner: rosariosis
 --
 
-INSERT INTO attendance_calendars VALUES (1, 'Main', 2015, 1, 'Y', NULL);
+INSERT INTO attendance_calendars VALUES (1, 'Main', 2017, 1, 'Y', NULL);
 
 
 --
@@ -3460,10 +3512,10 @@ INSERT INTO attendance_calendars VALUES (1, 'Main', 2015, 1, 'Y', NULL);
 -- Data for Name: attendance_codes; Type: TABLE DATA; Schema: public; Owner: rosariosis
 --
 
-INSERT INTO attendance_codes VALUES (1, 2015, 1, 'Absent', 'A', 'teacher', 'A', NULL, 0, NULL);
-INSERT INTO attendance_codes VALUES (2, 2015, 1, 'Present', 'P', 'teacher', 'P', 'Y', 0, NULL);
-INSERT INTO attendance_codes VALUES (3, 2015, 1, 'Tardy', 'T', 'teacher', 'P', NULL, 0, NULL);
-INSERT INTO attendance_codes VALUES (4, 2015, 1, 'Excused Absence', 'E', 'official', 'A', NULL, 0, NULL);
+INSERT INTO attendance_codes VALUES (1, 2017, 1, 'Absent', 'A', 'teacher', 'A', NULL, 0, NULL);
+INSERT INTO attendance_codes VALUES (2, 2017, 1, 'Present', 'P', 'teacher', 'P', 'Y', 0, NULL);
+INSERT INTO attendance_codes VALUES (3, 2017, 1, 'Tardy', 'T', 'teacher', 'P', NULL, 0, NULL);
+INSERT INTO attendance_codes VALUES (4, 2017, 1, 'Excused Absence', 'E', 'official', 'A', NULL, 0, NULL);
 
 
 --
@@ -3507,15 +3559,17 @@ INSERT INTO attendance_codes VALUES (4, 2015, 1, 'Excused Absence', 'E', 'offici
 --
 
 INSERT INTO config VALUES (0, 'LOGIN', 'No');
-INSERT INTO config VALUES (0, 'VERSION', '2.9.1');
+INSERT INTO config VALUES (0, 'VERSION', '3.4.1');
 INSERT INTO config VALUES (0, 'TITLE', 'Rosario Student Information System');
 INSERT INTO config VALUES (0, 'NAME', 'RosarioSIS');
 INSERT INTO config VALUES (0, 'MODULES', 'a:13:{s:12:"School_Setup";b:1;s:8:"Students";b:1;s:5:"Users";b:1;s:10:"Scheduling";b:1;s:6:"Grades";b:1;s:10:"Attendance";b:1;s:11:"Eligibility";b:1;s:10:"Discipline";b:1;s:10:"Accounting";b:1;s:15:"Student_Billing";b:1;s:12:"Food_Service";b:1;s:9:"Resources";b:1;s:6:"Custom";b:1;}');
 INSERT INTO config VALUES (0, 'PLUGINS', 'a:1:{s:6:"Moodle";b:0;}');
 INSERT INTO config VALUES (0, 'THEME', 'WPadmin');
+INSERT INTO config VALUES (0, 'THEME_FORCE', NULL);
 INSERT INTO config VALUES (0, 'CREATE_USER_ACCOUNT', NULL);
 INSERT INTO config VALUES (0, 'CREATE_STUDENT_ACCOUNT', NULL);
 INSERT INTO config VALUES (0, 'STUDENTS_EMAIL_FIELD', NULL);
+INSERT INTO config VALUES (0, 'LIMIT_EXISTING_CONTACTS_ADDRESSES', NULL);
 INSERT INTO config VALUES (1, 'SCHOOL_SYEAR_OVER_2_YEARS', 'Y');
 INSERT INTO config VALUES (1, 'ATTENDANCE_FULL_DAY_MINUTES', '300');
 INSERT INTO config VALUES (1, 'STUDENTS_USE_MAILING', NULL);
@@ -3557,13 +3611,13 @@ INSERT INTO config VALUES (1, 'CURRENCY', '$');
 --
 
 INSERT INTO custom_fields VALUES (200000000, 'select', 'Gender', 0, 'Male
-Female', 1, 'Y', NULL);
+Female', 1, NULL, NULL);
 INSERT INTO custom_fields VALUES (200000001, 'select', 'Ethnicity', 1, 'White, Non-Hispanic
 Black, Non-Hispanic
 Amer. Indian or Alaskan Native
 Asian or Pacific Islander
 Hispanic
-Other', 1, 'Y', NULL);
+Other', 1, NULL, NULL);
 INSERT INTO custom_fields VALUES (200000002, 'text', 'Common Name', 2, NULL, 1, NULL, NULL);
 INSERT INTO custom_fields VALUES (200000003, 'text', 'Social Security', 3, NULL, 1, NULL, NULL);
 INSERT INTO custom_fields VALUES (200000004, 'date', 'Birthdate', 4, NULL, 1, NULL, NULL);
@@ -3587,10 +3641,10 @@ INSERT INTO custom_fields VALUES (200000011, 'textarea', 'Doctor''s Note Comment
 -- Data for Name: discipline_field_usage; Type: TABLE DATA; Schema: public; Owner: rosariosis
 --
 
-INSERT INTO discipline_field_usage VALUES (1, 3, 2015, 1, 'Parents Contacted By Teacher', '', 4);
-INSERT INTO discipline_field_usage VALUES (2, 4, 2015, 1, 'Parent Contacted by Administrator', '', 5);
-INSERT INTO discipline_field_usage VALUES (3, 6, 2015, 1, 'Comments', '', 6);
-INSERT INTO discipline_field_usage VALUES (4, 1, 2015, 1, 'Violation', 'Skipping Class
+INSERT INTO discipline_field_usage VALUES (1, 3, 2017, 1, 'Parents Contacted By Teacher', '', 4);
+INSERT INTO discipline_field_usage VALUES (2, 4, 2017, 1, 'Parent Contacted by Administrator', '', 5);
+INSERT INTO discipline_field_usage VALUES (3, 6, 2017, 1, 'Comments', '', 6);
+INSERT INTO discipline_field_usage VALUES (4, 1, 2017, 1, 'Violation', 'Skipping Class
 Profanity, vulgarity, offensive language
 Insubordination (Refusal to Comply, Disrespectful Behavior)
 Inebriated (Alcohol or Drugs)
@@ -3599,11 +3653,11 @@ Harassment
 Fighting
 Public Display of Affection
 Other', 1);
-INSERT INTO discipline_field_usage VALUES (5, 2, 2015, 1, 'Detention Assigned', '10 Minutes
+INSERT INTO discipline_field_usage VALUES (5, 2, 2017, 1, 'Detention Assigned', '10 Minutes
 20 Minutes
 30 Minutes
 Discuss Suspension', 2);
-INSERT INTO discipline_field_usage VALUES (6, 5, 2015, 1, 'Suspensions (Office Only)', 'Half Day
+INSERT INTO discipline_field_usage VALUES (6, 5, 2017, 1, 'Suspensions (Office Only)', 'Half Day
 In School Suspension
 1 Day
 2 Days
@@ -3641,9 +3695,9 @@ INSERT INTO discipline_fields VALUES (6, 'Comments', '', 'textarea', 'CATEGORY_6
 -- Data for Name: eligibility_activities; Type: TABLE DATA; Schema: public; Owner: rosariosis
 --
 
-INSERT INTO eligibility_activities VALUES (1, 2015, 1, 'Boy''s Basketball', '2015-10-01', '2016-04-14');
-INSERT INTO eligibility_activities VALUES (2, 2015, 1, 'Chess Team', '2015-09-01', '2016-06-04');
-INSERT INTO eligibility_activities VALUES (3, 2015, 1, 'Girl''s Basketball', '2015-10-01', '2016-04-15');
+INSERT INTO eligibility_activities VALUES (1, 2017, 1, 'Boy''s Basketball', '2017-10-02', '2018-04-13');
+INSERT INTO eligibility_activities VALUES (2, 2017, 1, 'Chess Team', '2017-09-01', '2018-06-08');
+INSERT INTO eligibility_activities VALUES (3, 2017, 1, 'Girl''s Basketball', '2017-10-02', '2018-04-13');
 
 
 --
@@ -3855,6 +3909,8 @@ INSERT INTO profile_exceptions VALUES (1, 'Users/Exceptions.php', 'Y', 'Y');
 INSERT INTO profile_exceptions VALUES (1, 'Users/UserFields.php', 'Y', 'Y');
 INSERT INTO profile_exceptions VALUES (1, 'Users/TeacherPrograms.php&include=Eligibility/EnterEligibility.php', 'Y', 'Y');
 INSERT INTO profile_exceptions VALUES (1, 'Users/User.php&category_id=1', 'Y', 'Y');
+INSERT INTO profile_exceptions VALUES (1, 'Users/User.php&category_id=1&user_profile', 'Y', 'Y');
+INSERT INTO profile_exceptions VALUES (1, 'Users/User.php&category_id=1&schools', 'Y', 'Y');
 INSERT INTO profile_exceptions VALUES (1, 'Users/User.php&category_id=2', 'Y', 'Y');
 INSERT INTO profile_exceptions VALUES (1, 'Users/User.php&category_id=3', 'Y', 'Y');
 INSERT INTO profile_exceptions VALUES (1, 'Scheduling/Schedule.php', 'Y', 'Y');
@@ -3889,6 +3945,7 @@ INSERT INTO profile_exceptions VALUES (1, 'Grades/ReportCardComments.php', 'Y', 
 INSERT INTO profile_exceptions VALUES (1, 'Grades/ReportCardCommentCodes.php', 'Y', 'Y');
 INSERT INTO profile_exceptions VALUES (1, 'Grades/EditHistoryMarkingPeriods.php', 'Y', 'Y');
 INSERT INTO profile_exceptions VALUES (1, 'Grades/EditReportCardGrades.php', 'Y', 'Y');
+INSERT INTO profile_exceptions VALUES (1, 'Grades/MassCreateAssignments.php', 'Y', 'Y');
 INSERT INTO profile_exceptions VALUES (1, 'Users/TeacherPrograms.php&include=Grades/InputFinalGrades.php', 'Y', 'Y');
 INSERT INTO profile_exceptions VALUES (1, 'Users/TeacherPrograms.php&include=Grades/Grades.php', 'Y', 'Y');
 INSERT INTO profile_exceptions VALUES (1, 'Users/TeacherPrograms.php&include=Grades/AnomalousGrades.php', 'Y', 'Y');
@@ -3977,6 +4034,7 @@ INSERT INTO profile_exceptions VALUES (2, 'Accounting/Salaries.php', 'Y', NULL);
 INSERT INTO profile_exceptions VALUES (2, 'Accounting/StaffPayments.php', 'Y', NULL);
 INSERT INTO profile_exceptions VALUES (2, 'Accounting/Statements.php&_ROSARIO_PDF', 'Y', NULL);
 INSERT INTO profile_exceptions VALUES (3, 'School_Setup/Schools.php', 'Y', NULL);
+INSERT INTO profile_exceptions VALUES (3, 'School_Setup/MarkingPeriods.php', 'Y', NULL);
 INSERT INTO profile_exceptions VALUES (3, 'School_Setup/Calendar.php', 'Y', NULL);
 INSERT INTO profile_exceptions VALUES (3, 'Students/Student.php', 'Y', NULL);
 INSERT INTO profile_exceptions VALUES (3, 'Students/Student.php&category_id=1', 'Y', NULL);
@@ -4006,6 +4064,7 @@ INSERT INTO profile_exceptions VALUES (3, 'Food_Service/DailyMenus.php', 'Y', NU
 INSERT INTO profile_exceptions VALUES (3, 'Food_Service/MenuItems.php', 'Y', NULL);
 INSERT INTO profile_exceptions VALUES (3, 'Resources/Resources.php', 'Y', NULL);
 INSERT INTO profile_exceptions VALUES (0, 'School_Setup/Schools.php', 'Y', NULL);
+INSERT INTO profile_exceptions VALUES (0, 'School_Setup/MarkingPeriods.php', 'Y', NULL);
 INSERT INTO profile_exceptions VALUES (0, 'School_Setup/Calendar.php', 'Y', NULL);
 INSERT INTO profile_exceptions VALUES (0, 'Students/Student.php', 'Y', NULL);
 INSERT INTO profile_exceptions VALUES (0, 'Students/Student.php&category_id=1', 'Y', NULL);
@@ -4034,6 +4093,8 @@ INSERT INTO profile_exceptions VALUES (1, 'Custom/MyReport.php', 'Y', 'Y');
 INSERT INTO profile_exceptions VALUES (1, 'Custom/CreateParents.php', 'Y', 'Y');
 INSERT INTO profile_exceptions VALUES (1, 'Custom/NotifyParents.php', 'Y', 'Y');
 INSERT INTO profile_exceptions VALUES (1, 'Custom/AttendanceSummary.php', 'Y', 'Y');
+INSERT INTO profile_exceptions VALUES (0, 'Custom/Registration.php', 'Y', NULL);
+INSERT INTO profile_exceptions VALUES (3, 'Custom/Registration.php', 'Y', NULL);
 INSERT INTO profile_exceptions VALUES (1, 'Discipline/MakeReferral.php', 'Y', 'Y');
 INSERT INTO profile_exceptions VALUES (1, 'Discipline/Referrals.php', 'Y', 'Y');
 INSERT INTO profile_exceptions VALUES (1, 'Discipline/CategoryBreakdown.php', 'Y', 'Y');
@@ -4049,6 +4110,7 @@ INSERT INTO profile_exceptions VALUES (1, 'Scheduling/MasterScheduleReport.php',
 INSERT INTO profile_exceptions VALUES (1, 'School_Setup/DatabaseBackup.php', 'Y', 'Y');
 INSERT INTO profile_exceptions VALUES (1, 'School_Setup/PortalPolls.php', 'Y', 'Y');
 INSERT INTO profile_exceptions VALUES (1, 'School_Setup/Configuration.php', 'Y', 'Y');
+INSERT INTO profile_exceptions VALUES (1, 'School_Setup/AccessLog.php', 'Y', 'Y');
 INSERT INTO profile_exceptions VALUES (1, 'Student_Billing/StudentFees.php', 'Y', 'Y');
 INSERT INTO profile_exceptions VALUES (1, 'Student_Billing/StudentPayments.php', 'Y', 'Y');
 INSERT INTO profile_exceptions VALUES (1, 'Student_Billing/MassAssignFees.php', 'Y', 'Y');
@@ -4073,31 +4135,31 @@ INSERT INTO profile_exceptions VALUES (1, 'Students/StudentBreakdown.php', 'Y', 
 -- Data for Name: program_config; Type: TABLE DATA; Schema: public; Owner: rosariosis
 --
 
-INSERT INTO program_config VALUES (2015, 1, 'eligibility', 'START_DAY', '1');
-INSERT INTO program_config VALUES (2015, 1, 'eligibility', 'START_HOUR', '23');
-INSERT INTO program_config VALUES (2015, 1, 'eligibility', 'START_MINUTE', '30');
-INSERT INTO program_config VALUES (2015, 1, 'eligibility', 'START_M', 'PM');
-INSERT INTO program_config VALUES (2015, 1, 'eligibility', 'END_DAY', '5');
-INSERT INTO program_config VALUES (2015, 1, 'eligibility', 'END_HOUR', '23');
-INSERT INTO program_config VALUES (2015, 1, 'eligibility', 'END_MINUTE', '30');
-INSERT INTO program_config VALUES (2015, 1, 'eligibility', 'END_M', 'PM');
-INSERT INTO program_config VALUES (2015, 1, 'attendance', 'ATTENDANCE_EDIT_DAYS_BEFORE', NULL);
-INSERT INTO program_config VALUES (2015, 1, 'attendance', 'ATTENDANCE_EDIT_DAYS_AFTER', NULL);
-INSERT INTO program_config VALUES (2015, 1, 'grades', 'GRADES_DOES_LETTER_PERCENT', '0');
-INSERT INTO program_config VALUES (2015, 1, 'grades', 'GRADES_HIDE_NON_ATTENDANCE_COMMENT', NULL);
-INSERT INTO program_config VALUES (2015, 1, 'grades', 'GRADES_TEACHER_ALLOW_EDIT', NULL);
-INSERT INTO program_config VALUES (2015, 1, 'grades', 'GRADES_DO_STATS_STUDENTS_PARENTS', NULL);
-INSERT INTO program_config VALUES (2015, 1, 'grades', 'GRADES_DO_STATS_ADMIN_TEACHERS', 'Y');
-INSERT INTO program_config VALUES (2015, 1, 'students', 'STUDENTS_USE_BUS', 'Y');
-INSERT INTO program_config VALUES (2015, 1, 'students', 'STUDENTS_USE_CONTACT', 'Y');
-INSERT INTO program_config VALUES (2015, 1, 'students', 'STUDENTS_SEMESTER_COMMENTS', NULL);
-INSERT INTO program_config VALUES (2015, 1, 'moodle', 'MOODLE_URL', NULL);
-INSERT INTO program_config VALUES (2015, 1, 'moodle', 'MOODLE_TOKEN', NULL);
-INSERT INTO program_config VALUES (2015, 1, 'moodle', 'MOODLE_PARENT_ROLE_ID', NULL);
-INSERT INTO program_config VALUES (2015, 1, 'moodle', 'ROSARIO_STUDENTS_EMAIL_FIELD_ID', NULL);
-INSERT INTO program_config VALUES (2015, 1, 'food_service', 'FOOD_SERVICE_BALANCE_WARNING', '5');
-INSERT INTO program_config VALUES (2015, 1, 'food_service', 'FOOD_SERVICE_BALANCE_MINIMUM', '-40');
-INSERT INTO program_config VALUES (2015, 1, 'food_service', 'FOOD_SERVICE_BALANCE_TARGET', '19');
+INSERT INTO program_config VALUES (2017, 1, 'eligibility', 'START_DAY', '1');
+INSERT INTO program_config VALUES (2017, 1, 'eligibility', 'START_HOUR', '23');
+INSERT INTO program_config VALUES (2017, 1, 'eligibility', 'START_MINUTE', '30');
+INSERT INTO program_config VALUES (2017, 1, 'eligibility', 'START_M', 'PM');
+INSERT INTO program_config VALUES (2017, 1, 'eligibility', 'END_DAY', '5');
+INSERT INTO program_config VALUES (2017, 1, 'eligibility', 'END_HOUR', '23');
+INSERT INTO program_config VALUES (2017, 1, 'eligibility', 'END_MINUTE', '30');
+INSERT INTO program_config VALUES (2017, 1, 'eligibility', 'END_M', 'PM');
+INSERT INTO program_config VALUES (2017, 1, 'attendance', 'ATTENDANCE_EDIT_DAYS_BEFORE', NULL);
+INSERT INTO program_config VALUES (2017, 1, 'attendance', 'ATTENDANCE_EDIT_DAYS_AFTER', NULL);
+INSERT INTO program_config VALUES (2017, 1, 'grades', 'GRADES_DOES_LETTER_PERCENT', '0');
+INSERT INTO program_config VALUES (2017, 1, 'grades', 'GRADES_HIDE_NON_ATTENDANCE_COMMENT', NULL);
+INSERT INTO program_config VALUES (2017, 1, 'grades', 'GRADES_TEACHER_ALLOW_EDIT', NULL);
+INSERT INTO program_config VALUES (2017, 1, 'grades', 'GRADES_DO_STATS_STUDENTS_PARENTS', NULL);
+INSERT INTO program_config VALUES (2017, 1, 'grades', 'GRADES_DO_STATS_ADMIN_TEACHERS', 'Y');
+INSERT INTO program_config VALUES (2017, 1, 'students', 'STUDENTS_USE_BUS', 'Y');
+INSERT INTO program_config VALUES (2017, 1, 'students', 'STUDENTS_USE_CONTACT', 'Y');
+INSERT INTO program_config VALUES (2017, 1, 'students', 'STUDENTS_SEMESTER_COMMENTS', NULL);
+INSERT INTO program_config VALUES (2017, 1, 'moodle', 'MOODLE_URL', NULL);
+INSERT INTO program_config VALUES (2017, 1, 'moodle', 'MOODLE_TOKEN', NULL);
+INSERT INTO program_config VALUES (2017, 1, 'moodle', 'MOODLE_PARENT_ROLE_ID', NULL);
+INSERT INTO program_config VALUES (2017, 1, 'moodle', 'ROSARIO_STUDENTS_EMAIL_FIELD_ID', NULL);
+INSERT INTO program_config VALUES (2017, 1, 'food_service', 'FOOD_SERVICE_BALANCE_WARNING', '5');
+INSERT INTO program_config VALUES (2017, 1, 'food_service', 'FOOD_SERVICE_BALANCE_MINIMUM', '-40');
+INSERT INTO program_config VALUES (2017, 1, 'food_service', 'FOOD_SERVICE_BALANCE_TARGET', '19');
 
 
 --
@@ -4128,45 +4190,47 @@ INSERT INTO program_config VALUES (2015, 1, 'food_service', 'FOOD_SERVICE_BALANC
 -- Data for Name: report_card_comments; Type: TABLE DATA; Schema: public; Owner: rosariosis
 --
 
-INSERT INTO report_card_comments VALUES (1, 2015, 1, NULL, NULL, NULL, 1, '^n Fails to Meet Course Requirements');
-INSERT INTO report_card_comments VALUES (2, 2015, 1, NULL, NULL, NULL, 2, '^n Comes to ^s Class Unprepared');
-INSERT INTO report_card_comments VALUES (3, 2015, 1, NULL, NULL, NULL, 3, '^n Exerts Positive Influence in Class');
+INSERT INTO report_card_comments VALUES (1, 2017, 1, NULL, NULL, NULL, 1, '^n Fails to Meet Course Requirements');
+INSERT INTO report_card_comments VALUES (2, 2017, 1, NULL, NULL, NULL, 2, '^n Comes to ^s Class Unprepared');
+INSERT INTO report_card_comments VALUES (3, 2017, 1, NULL, NULL, NULL, 3, '^n Exerts Positive Influence in Class');
 
 
 --
 -- Data for Name: report_card_grade_scales; Type: TABLE DATA; Schema: public; Owner: rosariosis
 --
 
-INSERT INTO report_card_grade_scales VALUES (1, 2015, 1, 'Main', NULL, NULL, NULL, 1, NULL, 4, NULL);
+INSERT INTO report_card_grade_scales VALUES (1, 2017, 1, 'Main', NULL, NULL, NULL, 1, NULL, 4, 0, NULL);
 
 
 --
 -- Data for Name: report_card_grades; Type: TABLE DATA; Schema: public; Owner: rosariosis
 --
 
-INSERT INTO report_card_grades VALUES (1, 2015, 1, 'A+', 1, 4.00, 97, 'Consistently superior', 1, NULL);
-INSERT INTO report_card_grades VALUES (2, 2015, 1, 'A', 2, 4.00, 93, 'Superior', 1, NULL);
-INSERT INTO report_card_grades VALUES (3, 2015, 1, 'A-', 3, 3.75, 90, NULL, 1, NULL);
-INSERT INTO report_card_grades VALUES (4, 2015, 1, 'B+', 4, 3.50, 87, NULL, 1, NULL);
-INSERT INTO report_card_grades VALUES (5, 2015, 1, 'B', 5, 3.00, 83, 'Above average', 1, NULL);
-INSERT INTO report_card_grades VALUES (6, 2015, 1, 'B-', 6, 2.75, 80, NULL, 1, NULL);
-INSERT INTO report_card_grades VALUES (7, 2015, 1, 'C+', 7, 2.50, 77, NULL, 1, NULL);
-INSERT INTO report_card_grades VALUES (8, 2015, 1, 'C', 8, 2.00, 73, 'Average', 1, NULL);
-INSERT INTO report_card_grades VALUES (9, 2015, 1, 'C-', 9, 1.75, 70, NULL, 1, NULL);
-INSERT INTO report_card_grades VALUES (10, 2015, 1, 'D+', 10, 1.50, 67, NULL, 1, NULL);
-INSERT INTO report_card_grades VALUES (11, 2015, 1, 'D', 11, 1.00, 63, 'Below average', 1, NULL);
-INSERT INTO report_card_grades VALUES (12, 2015, 1, 'D-', 12, 0.75, 60, NULL, 1, NULL);
-INSERT INTO report_card_grades VALUES (13, 2015, 1, 'F', 13, 0.00, 0, 'Failing', 1, NULL);
-INSERT INTO report_card_grades VALUES (14, 2015, 1, 'I', 14, 0.00, 0, 'Incomplete', 1, NULL);
-INSERT INTO report_card_grades VALUES (15, 2015, 1, 'N/A', 15, 0.00, NULL, NULL, 1, NULL);
+INSERT INTO report_card_grades VALUES (1, 2017, 1, 'A+', 1, 4.00, 97, 'Consistently superior', 1, NULL);
+INSERT INTO report_card_grades VALUES (2, 2017, 1, 'A', 2, 4.00, 93, 'Superior', 1, NULL);
+INSERT INTO report_card_grades VALUES (3, 2017, 1, 'A-', 3, 3.75, 90, NULL, 1, NULL);
+INSERT INTO report_card_grades VALUES (4, 2017, 1, 'B+', 4, 3.50, 87, NULL, 1, NULL);
+INSERT INTO report_card_grades VALUES (5, 2017, 1, 'B', 5, 3.00, 83, 'Above average', 1, NULL);
+INSERT INTO report_card_grades VALUES (6, 2017, 1, 'B-', 6, 2.75, 80, NULL, 1, NULL);
+INSERT INTO report_card_grades VALUES (7, 2017, 1, 'C+', 7, 2.50, 77, NULL, 1, NULL);
+INSERT INTO report_card_grades VALUES (8, 2017, 1, 'C', 8, 2.00, 73, 'Average', 1, NULL);
+INSERT INTO report_card_grades VALUES (9, 2017, 1, 'C-', 9, 1.75, 70, NULL, 1, NULL);
+INSERT INTO report_card_grades VALUES (10, 2017, 1, 'D+', 10, 1.50, 67, NULL, 1, NULL);
+INSERT INTO report_card_grades VALUES (11, 2017, 1, 'D', 11, 1.00, 63, 'Below average', 1, NULL);
+INSERT INTO report_card_grades VALUES (12, 2017, 1, 'D-', 12, 0.75, 60, NULL, 1, NULL);
+INSERT INTO report_card_grades VALUES (13, 2017, 1, 'F', 13, 0.00, 0, 'Failing', 1, NULL);
+INSERT INTO report_card_grades VALUES (14, 2017, 1, 'I', 14, 0.00, 0, 'Incomplete', 1, NULL);
+INSERT INTO report_card_grades VALUES (15, 2017, 1, 'N/A', 15, 0.00, NULL, NULL, 1, NULL);
 
 
 --
 -- Data for Name: resources; Type: TABLE DATA; Schema: public; Owner: rosariosis
 --
 
-INSERT INTO resources VALUES (1, 1, 'RosarioSIS Wiki', 'https://github.com/francoisjacquet/rosariosis/wiki');
-INSERT INTO resources VALUES (2, 1, 'Print Handbook', 'Help.php');
+INSERT INTO resources VALUES (1, 1, 'Print Handbook', 'Help.php');
+INSERT INTO resources VALUES (2, 1, 'RosarioSIS Wiki', 'https://github.com/francoisjacquet/rosariosis/wiki');
+INSERT INTO resources VALUES (3, 1, 'RosarioSIS Forum', 'https://www.rosariosis.org/forum/');
+INSERT INTO resources VALUES (4, 1, 'Contribute to the Project', 'https://www.rosariosis.org/contribute/');
 
 
 --
@@ -4200,46 +4264,46 @@ INSERT INTO school_gradelevels VALUES (9, 1, '08', '8th', NULL, 9);
 -- Data for Name: school_marking_periods; Type: TABLE DATA; Schema: public; Owner: rosariosis
 --
 
-INSERT INTO school_marking_periods VALUES (1, 2015, 'FY', 1, NULL, 'Full Year', 'FY', 1, '2015-06-22', '2016-06-10', NULL, NULL, NULL, NULL, NULL);
-INSERT INTO school_marking_periods VALUES (2, 2015, 'SEM', 1, 1, 'Semester 1', 'S1', 1, '2015-06-22', '2015-12-31', '2015-12-28', '2015-12-31', NULL, NULL, NULL);
-INSERT INTO school_marking_periods VALUES (3, 2015, 'SEM', 1, 1, 'Semester 2', 'S2', 2, '2016-01-01', '2016-06-10', '2016-06-08', '2016-06-10', NULL, NULL, NULL);
-INSERT INTO school_marking_periods VALUES (4, 2015, 'QTR', 1, 2, 'Quarter 1', 'Q1', 1, '2015-06-22', '2015-09-11', '2015-09-09', '2015-09-11', 'Y', 'Y', NULL);
-INSERT INTO school_marking_periods VALUES (5, 2015, 'QTR', 1, 2, 'Quarter 2', 'Q2', 2, '2015-09-12', '2015-12-31', '2015-12-28', '2015-12-31', 'Y', 'Y', NULL);
-INSERT INTO school_marking_periods VALUES (6, 2015, 'QTR', 1, 3, 'Quarter 3', 'Q3', 3, '2016-01-01', '2016-03-11', '2016-03-10', '2016-03-11', 'Y', 'Y', NULL);
-INSERT INTO school_marking_periods VALUES (7, 2015, 'QTR', 1, 3, 'Quarter 4', 'Q4', 4, '2016-03-12', '2016-06-10', '2016-06-08', '2016-06-10', 'Y', 'Y', NULL);
+INSERT INTO school_marking_periods VALUES (1, 2017, 'FY', 1, NULL, 'Full Year', 'FY', 1, '2017-06-12', '2018-06-08', NULL, NULL, NULL, NULL, NULL);
+INSERT INTO school_marking_periods VALUES (2, 2017, 'SEM', 1, 1, 'Semester 1', 'S1', 1, '2017-06-12', '2017-12-31', '2017-12-28', '2017-12-31', NULL, NULL, NULL);
+INSERT INTO school_marking_periods VALUES (3, 2017, 'SEM', 1, 1, 'Semester 2', 'S2', 2, '2018-01-02', '2018-06-08', '2018-06-06', '2018-06-08', NULL, NULL, NULL);
+INSERT INTO school_marking_periods VALUES (4, 2017, 'QTR', 1, 2, 'Quarter 1', 'Q1', 1, '2017-06-12', '2017-09-15', '2017-09-13', '2017-09-15', 'Y', 'Y', NULL);
+INSERT INTO school_marking_periods VALUES (5, 2017, 'QTR', 1, 2, 'Quarter 2', 'Q2', 2, '2017-09-18', '2017-12-31', '2017-12-28', '2017-12-31', 'Y', 'Y', NULL);
+INSERT INTO school_marking_periods VALUES (6, 2017, 'QTR', 1, 3, 'Quarter 3', 'Q3', 3, '2018-01-02', '2018-03-16', '2018-03-14', '2018-03-16', 'Y', 'Y', NULL);
+INSERT INTO school_marking_periods VALUES (7, 2017, 'QTR', 1, 3, 'Quarter 4', 'Q4', 4, '2018-03-19', '2018-06-08', '2018-06-06', '2018-06-08', 'Y', 'Y', NULL);
 
 
 --
 -- Data for Name: school_periods; Type: TABLE DATA; Schema: public; Owner: rosariosis
 --
 
-INSERT INTO school_periods VALUES (1, 2015, 1, 1, 'Full Day', 'FD', 300, NULL, NULL, NULL, 'Y', NULL);
-INSERT INTO school_periods VALUES (2, 2015, 1, 2, 'Half Day AM', 'AM', 150, NULL, NULL, NULL, 'Y', NULL);
-INSERT INTO school_periods VALUES (3, 2015, 1, 3, 'Half Day PM', 'PM', 150, NULL, NULL, NULL, 'Y', NULL);
-INSERT INTO school_periods VALUES (4, 2015, 1, 4, 'Period 1', '01', 0, NULL, NULL, NULL, 'Y', NULL);
-INSERT INTO school_periods VALUES (5, 2015, 1, 5, 'Period 2', '02', 0, NULL, NULL, NULL, 'Y', NULL);
-INSERT INTO school_periods VALUES (6, 2015, 1, 6, 'Period 3', '03', 0, NULL, NULL, NULL, 'Y', NULL);
-INSERT INTO school_periods VALUES (7, 2015, 1, 7, 'Period 4', '04', 0, NULL, NULL, NULL, 'Y', NULL);
-INSERT INTO school_periods VALUES (8, 2015, 1, 8, 'Period 5', '05', 0, NULL, NULL, NULL, 'Y', NULL);
-INSERT INTO school_periods VALUES (9, 2015, 1, 9, 'Period 6', '06', 0, NULL, NULL, NULL, 'Y', NULL);
-INSERT INTO school_periods VALUES (10, 2015, 1, 10, 'Period 7', '07', 0, NULL, NULL, NULL, 'Y', NULL);
-INSERT INTO school_periods VALUES (11, 2015, 1, 11, 'Period 8', '08', 0, NULL, NULL, NULL, 'Y', NULL);
+INSERT INTO school_periods VALUES (1, 2017, 1, 1, 'Full Day', 'FD', 300, NULL, NULL, NULL, 'Y', NULL);
+INSERT INTO school_periods VALUES (2, 2017, 1, 2, 'Half Day AM', 'AM', 150, NULL, NULL, NULL, 'Y', NULL);
+INSERT INTO school_periods VALUES (3, 2017, 1, 3, 'Half Day PM', 'PM', 150, NULL, NULL, NULL, 'Y', NULL);
+INSERT INTO school_periods VALUES (4, 2017, 1, 4, 'Period 1', '01', 0, NULL, NULL, NULL, 'Y', NULL);
+INSERT INTO school_periods VALUES (5, 2017, 1, 5, 'Period 2', '02', 0, NULL, NULL, NULL, 'Y', NULL);
+INSERT INTO school_periods VALUES (6, 2017, 1, 6, 'Period 3', '03', 0, NULL, NULL, NULL, 'Y', NULL);
+INSERT INTO school_periods VALUES (7, 2017, 1, 7, 'Period 4', '04', 0, NULL, NULL, NULL, 'Y', NULL);
+INSERT INTO school_periods VALUES (8, 2017, 1, 8, 'Period 5', '05', 0, NULL, NULL, NULL, 'Y', NULL);
+INSERT INTO school_periods VALUES (9, 2017, 1, 9, 'Period 6', '06', 0, NULL, NULL, NULL, 'Y', NULL);
+INSERT INTO school_periods VALUES (10, 2017, 1, 10, 'Period 7', '07', 0, NULL, NULL, NULL, 'Y', NULL);
+INSERT INTO school_periods VALUES (11, 2017, 1, 11, 'Period 8', '08', 0, NULL, NULL, NULL, 'Y', NULL);
 
 
 --
 -- Data for Name: schools; Type: TABLE DATA; Schema: public; Owner: rosariosis
 --
 
-INSERT INTO schools VALUES (2015, 1, 'Default School', '500 S. Street St.', 'Springfield', 'IL', '62704', NULL, 'Mr. Principal', 'www.rosariosis.org', NULL, NULL, 4, NULL);
+INSERT INTO schools VALUES (2017, 1, 'Default School', '500 S. Street St.', 'Springfield', 'IL', '62704', NULL, 'Mr. Principal', 'www.rosariosis.org', NULL, NULL, 4, NULL);
 
 
 --
 -- Data for Name: staff; Type: TABLE DATA; Schema: public; Owner: rosariosis
 --
 
-INSERT INTO staff VALUES (2015, 1, 1, NULL, 'Admin', 'Administrator', 'A', NULL, 'admin', '$6$dc51290a001671c6$97VSmw.Qu9sL6vpctFh62/YIbbR6b3DstJJxPXal2OndrtFszsxmVhdQaV2mJvb6Z38sPACXqDDQ7/uquwadd.', NULL, NULL, 'admin', NULL, ',1,', NULL, NULL, 1, NULL);
-INSERT INTO staff VALUES (2015, 2, 1, NULL, 'Teach', 'Teacher', 'T', NULL, 'teacher', '$6$cf0dc4c40d38891f$FqKT6nlTer3ujAf8CcQi6ABIEtlow0Va2p6HYh.M6eGWUfpgLr/pfrSwdIcTlV1LDxLg52puVETGMCYKL3vOo/', NULL, NULL, 'teacher', NULL, ',1,', NULL, NULL, 2, NULL);
-INSERT INTO staff VALUES (2015, 3, 1, NULL, 'Parent', 'Parent', 'P', NULL, 'parent', '$6$947c923597601364$Kgbb0Ey3lYTYnqM66VkFRgJVFDW48cBAfNF7t0CVjokL7drcEFId61whqpLrRI1w0q2J2VPfg86Obaf1tG2Ng1', NULL, NULL, 'parent', NULL, NULL, NULL, NULL, 3, NULL);
+INSERT INTO staff VALUES (2017, 1, 1, NULL, 'Admin', 'Administrator', 'A', NULL, 'admin', '$6$dc51290a001671c6$97VSmw.Qu9sL6vpctFh62/YIbbR6b3DstJJxPXal2OndrtFszsxmVhdQaV2mJvb6Z38sPACXqDDQ7/uquwadd.', NULL, NULL, 'admin', NULL, ',1,', NULL, NULL, 1, NULL);
+INSERT INTO staff VALUES (2017, 2, 1, NULL, 'Teach', 'Teacher', 'T', NULL, 'teacher', '$6$cf0dc4c40d38891f$FqKT6nlTer3ujAf8CcQi6ABIEtlow0Va2p6HYh.M6eGWUfpgLr/pfrSwdIcTlV1LDxLg52puVETGMCYKL3vOo/', NULL, NULL, 'teacher', NULL, ',1,', NULL, NULL, 2, NULL);
+INSERT INTO staff VALUES (2017, 3, 1, NULL, 'Parent', 'Parent', 'P', NULL, 'parent', '$6$947c923597601364$Kgbb0Ey3lYTYnqM66VkFRgJVFDW48cBAfNF7t0CVjokL7drcEFId61whqpLrRI1w0q2J2VPfg86Obaf1tG2Ng1', NULL, NULL, 'parent', NULL, NULL, NULL, NULL, 3, NULL);
 
 
 --
@@ -4273,19 +4337,19 @@ INSERT INTO staff_field_categories VALUES (3, 'Food Service', 3, NULL, 'Food_Ser
 -- Data for Name: student_enrollment; Type: TABLE DATA; Schema: public; Owner: rosariosis
 --
 
-INSERT INTO student_enrollment VALUES (1, 2015, 1, 1, 7, '2015-06-22', NULL, 3, NULL, 1, 1, 1);
+INSERT INTO student_enrollment VALUES (1, 2017, 1, 1, 7, '2017-06-12', NULL, 3, NULL, 1, 1, 1);
 
 
 --
 -- Data for Name: student_enrollment_codes; Type: TABLE DATA; Schema: public; Owner: rosariosis
 --
 
-INSERT INTO student_enrollment_codes VALUES (1, 2015, 'Moved from District', 'MOVE', 'Drop', NULL, 1);
-INSERT INTO student_enrollment_codes VALUES (2, 2015, 'Expelled', 'EXP', 'Drop', NULL, 2);
-INSERT INTO student_enrollment_codes VALUES (3, 2015, 'Beginning of Year', 'EBY', 'Add', 'Y', 3);
-INSERT INTO student_enrollment_codes VALUES (4, 2015, 'From Other District', 'OTHER', 'Add', NULL, 4);
-INSERT INTO student_enrollment_codes VALUES (5, 2015, 'Transferred in District', 'TRAN', 'Drop', NULL, 5);
-INSERT INTO student_enrollment_codes VALUES (6, 2015, 'Transferred in District', 'EMY', 'Add', NULL, 6);
+INSERT INTO student_enrollment_codes VALUES (1, 2017, 'Moved from District', 'MOVE', 'Drop', NULL, 1);
+INSERT INTO student_enrollment_codes VALUES (2, 2017, 'Expelled', 'EXP', 'Drop', NULL, 2);
+INSERT INTO student_enrollment_codes VALUES (3, 2017, 'Beginning of Year', 'EBY', 'Add', 'Y', 3);
+INSERT INTO student_enrollment_codes VALUES (4, 2017, 'From Other District', 'OTHER', 'Add', NULL, 4);
+INSERT INTO student_enrollment_codes VALUES (5, 2017, 'Transferred in District', 'TRAN', 'Drop', NULL, 5);
+INSERT INTO student_enrollment_codes VALUES (6, 2017, 'Transferred in District', 'EMY', 'Add', NULL, 6);
 
 
 --
@@ -5016,7 +5080,7 @@ ALTER TABLE ONLY templates
 -- Name: address_3; Type: INDEX; Schema: public; Owner: rosariosis; Tablespace:
 --
 
-CREATE INDEX address_3 ON address USING btree (zipcode, plus4);
+CREATE INDEX address_3 ON address USING btree (zipcode);
 
 
 --

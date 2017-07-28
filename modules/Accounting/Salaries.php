@@ -4,14 +4,17 @@ require_once 'modules/Accounting/functions.inc.php';
 if (User('PROFILE')=='teacher')//limit to teacher himself
 	$_REQUEST['staff_id'] = User('STAFF_ID');
 
-if ( ! $_REQUEST['print_statements'])
+if ( ! $_REQUEST['print_statements'] )
 {
-	DrawHeader(ProgramTitle());
+	DrawHeader( ProgramTitle() );
 
-	Search('staff_id',$extra);
+	Search( 'staff_id', $extra );
 }
 
-if ( $_REQUEST['values'] && $_POST['values'] && AllowEdit())
+if ( $_REQUEST['values']
+	&& $_POST['values']
+	&& AllowEdit()
+	&& UserStaffID() )
 {
 	if ( isset( $_POST['day_values'], $_POST['month_values'], $_POST['year_values'] ) )
 	{
@@ -34,12 +37,13 @@ if ( $_REQUEST['values'] && $_POST['values'] && AllowEdit())
 
 			foreach ( (array) $columns as $column => $value)
 			{
-				$sql .= $column."='".$value."',";
+				$sql .= DBEscapeIdentifier( $column ) . "='" . $value . "',";
 			}
 			$sql = mb_substr($sql,0,-1) . " WHERE STAFF_ID='".UserStaffID()."' AND ID='".$id."'";
 			DBQuery($sql);
 		}
-		else
+		// New: check for Title
+		elseif ( $columns['TITLE'] )
 		{
 			$sql = "INSERT INTO ACCOUNTING_SALARIES ";
 
@@ -53,26 +57,32 @@ if ( $_REQUEST['values'] && $_POST['values'] && AllowEdit())
 				{
 					if ( $column=='AMOUNT')
 						$value = preg_replace('/[^0-9.-]/','',$value);
-					$fields .= $column.',';
-					$values .= "'".$value."',";
+					$fields .= DBEscapeIdentifier( $column ) . ',';
+					$values .= "'" . $value . "',";
 					$go = true;
 				}
 			}
-			$sql .= '(' . mb_substr($fields,0,-1) . ') values(' . mb_substr($values,0,-1) . ')';
+			$sql .= '(' . mb_substr( $fields, 0, -1 ) . ') values(' . mb_substr( $values, 0, -1 ) . ')';
 
 			if ( $go)
 				DBQuery($sql);
 		}
 	}
-	unset($_REQUEST['values']);
+
+	// Unset values & redirect URL.
+	RedirectURL( 'values' );
 }
 
-if ( $_REQUEST['modfunc']=='remove' && AllowEdit())
+if ( $_REQUEST['modfunc'] === 'remove'
+	&& AllowEdit() )
 {
-	if (DeletePrompt(_('Salary')))
+	if ( DeletePrompt( _( 'Salary' ) ) )
 	{
-		DBQuery("DELETE FROM ACCOUNTING_SALARIES WHERE ID='".$_REQUEST['id']."'");
-		unset($_REQUEST['modfunc']);
+		DBQuery( "DELETE FROM ACCOUNTING_SALARIES
+			WHERE ID='" . $_REQUEST['id'] . "'" );
+
+		// Unset modfunc & ID & redirect URL.
+		RedirectURL( array( 'modfunc', 'id' ) );
 	}
 }
 
@@ -113,7 +123,7 @@ if (UserStaffID() && ! $_REQUEST['modfunc'])
 		echo '<div class="center">' . SubmitButton( _( 'Save' ) ) . '</div>';
 	echo '<br />';
 
-	if ( ! $_REQUEST['print_statements'])
+	if ( ! $_REQUEST['print_statements'] )
 	{
 		$payments_total = DBGet(DBQuery("SELECT SUM(p.AMOUNT) AS TOTAL FROM ACCOUNTING_PAYMENTS p WHERE p.STAFF_ID='".UserStaffID()."' AND p.SYEAR='".UserSyear()."' AND p.SCHOOL_ID='".UserSchool()."'"));
 
@@ -121,9 +131,11 @@ if (UserStaffID() && ! $_REQUEST['modfunc'])
 
 		$table .= '<tr><td>'._('Less').': '._('Total from Staff Payments').': '.'</td><td>'.Currency($payments_total[1]['TOTAL']).'</td></tr>';
 
-		$table .= '<tr><td>'._('Balance').': <b>'.'</b></td><td><b>'.Currency(($salaries_total-$payments_total[1]['TOTAL']),'CR').'</b></td></tr></table>';
+		$table .= '<tr><td>' . _( 'Balance' ) . ': </td>
+			<td><b>' . Currency( ( $salaries_total - $payments_total[1]['TOTAL'] ), 'CR' ) .
+			'</b></td></tr></table>';
 
-		DrawHeader('','',$table);
+		DrawHeader( $table );
 
 		echo '</form>';
 	}

@@ -1,82 +1,85 @@
 <?php
 
-DrawHeader(ProgramTitle());
+DrawHeader( ProgramTitle() );
 
-if ( $_REQUEST['modfunc']=='update')
+if ( $_REQUEST['modfunc'] === 'update' )
 {
-	if ( $_REQUEST['values'] && $_POST['values'] && AllowEdit())
+	if ( $_REQUEST['values']
+		&& $_POST['values']
+		&& AllowEdit()
+		&& $_REQUEST['tab_id'] != '' )
 	{
-		if ( $_REQUEST['tab_id']!='')
+		if ( $_REQUEST['tab_id']!=='new' || !empty($_REQUEST['course_id']))
 		{
-			if ( $_REQUEST['tab_id']!=='new' || !empty($_REQUEST['course_id']))
+			if ( $_REQUEST['tab_id'] === 'new' )
 			{
-				if ( $_REQUEST['tab_id']=='new')
-					$table = 'REPORT_CARD_COMMENT_CATEGORIES';
-				else
-					$table = 'REPORT_CARD_COMMENTS';
-				foreach ( (array) $_REQUEST['values'] as $id => $columns)
-				{
-					//FJ fix SQL bug invalid sort order
-					if (empty($columns['SORT_ORDER']) || is_numeric($columns['SORT_ORDER']))
-					{
-						if ( $id!='new')
-						{
-							$sql = "UPDATE $table SET ";
-							foreach ( (array) $columns as $column => $value)
-								$sql .= $column."='".$value."',";
-
-							$sql = mb_substr($sql,0,-1) . " WHERE ID='".$id."'";
-							DBQuery($sql);
-						}
-						else
-						{
-							$sql = "INSERT INTO $table ";
-
-							$fields = "ID,SCHOOL_ID,SYEAR,COURSE_ID,".($_REQUEST['tab_id']=='new'?'':"CATEGORY_ID,");
-
-							$values = db_seq_nextval($table.'_SEQ').",'".UserSchool()."','".UserSyear()."',".($_REQUEST['tab_id']=='new'?"'".$_REQUEST['course_id']."'":($_REQUEST['tab_id']=='-1'?"NULL,NULL":($_REQUEST['tab_id']=='0'?"'0',NULL":"'".$_REQUEST['course_id']."','".$_REQUEST['tab_id']."'"))).",";
-
-							$go = false;
-
-							foreach ( (array) $columns as $column => $value )
-							{
-								if ( !empty($value) || $value=='0')
-								{
-									$fields .= $column.',';
-									$values .= "'".$value."',";
-									$go = true;
-
-									$columns_to_insert++;
-								}
-							}
-
-							// Do not INSERT if only SORT_ORDER set
-							if ( !empty( $columns['SORT_ORDER'] )
-								&& $columns_to_insert === 1 )
-							{
-								$go = false;
-							}
-
-							$sql .= '(' . mb_substr($fields,0,-1) . ') values(' . mb_substr($values,0,-1) . ')';
-
-							if ( $go )
-								DBQuery( $sql );
-						}
-					}
-					else
-						$error[] = _('Please enter a valid Sort Order.');
-				}
+				$table = 'REPORT_CARD_COMMENT_CATEGORIES';
 			}
 			else
-				$error[] = _('There are no courses setup yet.');
+			{
+				$table = 'REPORT_CARD_COMMENTS';
+			}
+
+			foreach ( (array) $_REQUEST['values'] as $id => $columns)
+			{
+				//FJ fix SQL bug invalid sort order
+				if (empty($columns['SORT_ORDER']) || is_numeric($columns['SORT_ORDER']))
+				{
+					if ( $id!='new')
+					{
+						$sql = "UPDATE " . DBEscapeIdentifier( $table ) . " SET ";
+
+						foreach ( (array) $columns as $column => $value )
+						{
+							$sql .= DBEscapeIdentifier( $column ) . "='" . $value . "',";
+						}
+
+						$sql = mb_substr($sql,0,-1) . " WHERE ID='".$id."'";
+						DBQuery($sql);
+					}
+					// New: check for Title
+					elseif ( $columns['TITLE'] )
+					{
+						$sql = "INSERT INTO $table ";
+
+						$fields = "ID,SCHOOL_ID,SYEAR,COURSE_ID,".($_REQUEST['tab_id']=='new'?'':"CATEGORY_ID,");
+
+						$values = db_seq_nextval($table.'_SEQ').",'".UserSchool()."','".UserSyear()."',".($_REQUEST['tab_id']=='new'?"'".$_REQUEST['course_id']."'":($_REQUEST['tab_id']=='-1'?"NULL,NULL":($_REQUEST['tab_id']=='0'?"'0',NULL":"'".$_REQUEST['course_id']."','".$_REQUEST['tab_id']."'"))).",";
+
+						$go = false;
+
+						foreach ( (array) $columns as $column => $value )
+						{
+							if ( !empty($value) || $value=='0')
+							{
+								$fields .= DBEscapeIdentifier( $column ) . ',';
+								$values .= "'" . $value . "',";
+								$go = true;
+							}
+						}
+
+						$sql .= '(' . mb_substr( $fields, 0, -1 ) . ') values(' . mb_substr( $values, 0, -1 ) . ')';
+
+						if ( $go )
+							DBQuery( $sql );
+					}
+				}
+				else
+					$error[] = _('Please enter a valid Sort Order.');
+			}
 		}
+		else
+			$error[] = _('There are no courses setup yet.');
 	}
-	unset($_REQUEST['modfunc']);
+
+	// Unset modfunc & redirect URL.
+	RedirectURL( 'modfunc' );
 }
 
-if ( $_REQUEST['modfunc']=='remove' && AllowEdit())
+if ( $_REQUEST['modfunc'] === 'remove'
+	&& AllowEdit() )
 {
-	if ( $_REQUEST['tab_id']=='new')
+	if ( $_REQUEST['tab_id'] == 'new' )
 	{
 		if ( DeletePrompt( _( 'Report Card Comment Category' ) ) )
 		{
@@ -86,28 +89,28 @@ if ( $_REQUEST['modfunc']=='remove' && AllowEdit())
 			DBQuery( "DELETE FROM REPORT_CARD_COMMENT_CATEGORIES
 				WHERE ID='" . $_REQUEST['id'] . "'" );
 
-			$_REQUEST['modfunc'] = false;
+			// Unset modfunc & ID & redirect URL.
+			RedirectURL( array( 'modfunc', 'id' ) );
 		}
 	}
-	elseif ( $_REQUEST['tab_id']=='-1')
+	elseif ( $_REQUEST['tab_id'] == '-1' )
 	{
 		if ( DeletePrompt( _( 'Report Card Comment' ) ) )
 		{
 			DBQuery( "DELETE FROM REPORT_CARD_COMMENTS
 				WHERE ID='" . $_REQUEST['id'] . "'" );
 
-			$_REQUEST['modfunc'] = false;
+			// Unset modfunc & ID & redirect URL.
+			RedirectURL( array( 'modfunc', 'id' ) );
 		}
 	}
-	else
+	elseif ( DeletePrompt( _( 'Report Card Comment' ) ) )
 	{
-		if ( DeletePrompt( _( 'Report Card Comment' ) ) )
-		{
-			DBQuery( "DELETE FROM REPORT_CARD_COMMENTS
-				WHERE ID='" . $_REQUEST['id'] . "'" );
+		DBQuery( "DELETE FROM REPORT_CARD_COMMENTS
+			WHERE ID='" . $_REQUEST['id'] . "'" );
 
-			$_REQUEST['modfunc'] = false;
-		}
+		// Unset modfunc & ID & redirect URL.
+		RedirectURL( array( 'modfunc', 'id' ) );
 	}
 }
 
@@ -198,8 +201,8 @@ if ( ! $_REQUEST['modfunc'] )
 		$sql = "SELECT * FROM REPORT_CARD_COMMENT_CATEGORIES WHERE COURSE_ID='".$_REQUEST['course_id']."' AND SYEAR='".UserSyear()."' AND SCHOOL_ID='".UserSchool()."' ORDER BY SORT_ORDER";
 
 		$functions = array(
-			'TITLE' => 'makeTextInput',
-			'SORT_ORDER' => 'makeTextInput',
+			'TITLE' => '_makeTextInput',
+			'SORT_ORDER' => '_makeTextInput',
 			'COLOR' => '_makeColorInput'
 		);
 
@@ -210,8 +213,8 @@ if ( ! $_REQUEST['modfunc'] )
 		);
 
 		$link['add']['html'] = array(
-			'TITLE' => makeTextInput( '', 'TITLE' ),
-			'SORT_ORDER' => makeTextInput( '', 'SORT_ORDER' ),
+			'TITLE' => _makeTextInput( '', 'TITLE' ),
+			'SORT_ORDER' => _makeTextInput( '', 'SORT_ORDER' ),
 			'COLOR' => _makeColorInput( '', 'COLOR' )
 		);
 
@@ -224,10 +227,10 @@ if ( ! $_REQUEST['modfunc'] )
 	elseif ( $_REQUEST['tab_id']=='-1')
 	{
 		$sql = "SELECT * FROM REPORT_CARD_COMMENTS WHERE SCHOOL_ID='".UserSchool()."' AND SYEAR='".UserSyear()."' AND COURSE_ID IS NULL ORDER BY SORT_ORDER";
-		$functions = array('TITLE' => 'makeTextInput','SORT_ORDER' => 'makeTextInput');
+		$functions = array('TITLE' => '_makeTextInput','SORT_ORDER' => '_makeTextInput');
 		$LO_columns = array('TITLE' => _('Comment'),'SORT_ORDER' => _('Sort Order'));
 
-		$link['add']['html'] = array('TITLE'=>makeTextInput('','TITLE'),'SORT_ORDER'=>makeTextInput('','SORT_ORDER'));
+		$link['add']['html'] = array('TITLE'=>_makeTextInput('','TITLE'),'SORT_ORDER'=>_makeTextInput('','SORT_ORDER'));
 		$link['remove']['link'] = 'Modules.php?modname='.$_REQUEST['modname'].'&modfunc=remove&subject_id='.$_REQUEST['subject_id'].'&course_id='.$_REQUEST['course_id'].'&tab_id=-1';
 		$link['remove']['variables'] = array('id' => 'ID');
 		$link['add']['html']['remove'] = button('add');
@@ -244,7 +247,7 @@ if ( ! $_REQUEST['modfunc'] )
 		foreach ( (array) $codes_RET as $code)
 			$code_select[$code['ID']] = $code['TITLE'];
 
-		$functions = array('TITLE' => 'makeCommentsInput','SCALE_ID' => 'makeCommentsInput','SORT_ORDER' => 'makeCommentsInput');
+		$functions = array('TITLE' => '_makeCommentsInput','SCALE_ID' => '_makeCommentsInput','SORT_ORDER' => '_makeCommentsInput');
 
 		$LO_columns = array('TITLE' => _('Comment'),'SCALE_ID' => _('Code Scale'),'SORT_ORDER' => _('Sort Order'));
 
@@ -259,12 +262,12 @@ if ( ! $_REQUEST['modfunc'] )
 
 			if (User('PROFILE')=='admin' && AllowEdit())
 			{
-				$functions += array('CATEGORY_ID' => 'makeCommentsInput');
+				$functions += array('CATEGORY_ID' => '_makeCommentsInput');
 				$LO_columns += array('CATEGORY_ID' => _('Category'));
 			}
 		}
 
-		$link['add']['html'] = array('TITLE'=>makeCommentsInput('','TITLE'),'SCALE_ID'=>makeCommentsInput('','SCALE_ID'),'SORT_ORDER'=>makeCommentsInput('','SORT_ORDER'));
+		$link['add']['html'] = array('TITLE'=>_makeCommentsInput('','TITLE'),'SCALE_ID'=>_makeCommentsInput('','SCALE_ID'),'SORT_ORDER'=>_makeCommentsInput('','SORT_ORDER'));
 		$link['remove']['link'] = 'Modules.php?modname='.$_REQUEST['modname'].'&modfunc=remove&subject_id='.$_REQUEST['subject_id'].'&course_id='.$_REQUEST['course_id'].'&tab_id='.$_REQUEST['tab_id'];
 		$link['remove']['variables'] = array('id' => 'ID');
 		$link['add']['html']['remove'] = button('add');
@@ -294,13 +297,26 @@ if ( ! $_REQUEST['modfunc'] )
 	echo '</form>';
 }
 
-function makeTextInput($value,$name)
-{	global $THIS_RET;
+function _makeTextInput( $value, $name )
+{
+	global $THIS_RET;
 
-	if ( $THIS_RET['ID'])
+	if ( $THIS_RET['ID'] )
+	{
 		$id = $THIS_RET['ID'];
+	}
 	else
+	{
 		$id = 'new';
+	}
+
+	$extra = '';
+
+	if ( $name === 'TITLE'
+		&& $id !== 'new' )
+	{
+		$extra .= ' required';
+	}
 
 	return TextInput(
 		$value,
@@ -310,15 +326,22 @@ function makeTextInput($value,$name)
 	);
 }
 
-function makeCommentsInput($value,$name)
-{	global $THIS_RET,$category_select,$code_select;
+function _makeCommentsInput( $value, $name )
+{
+	global $THIS_RET,
+		$category_select,
+		$code_select;
 
-	if ( $THIS_RET['ID'])
+	if ( $THIS_RET['ID'] )
+	{
 		$id = $THIS_RET['ID'];
+	}
 	else
+	{
 		$id = 'new';
+	}
 
-	if ( $name=='CATEGORY_ID')
+	if ( $name === 'CATEGORY_ID' )
 	{
 		return SelectInput(
 			$value,
@@ -328,7 +351,7 @@ function makeCommentsInput($value,$name)
 			false
 		);
 	}
-    elseif ( $name=='SCALE_ID')
+    elseif ( $name === 'SCALE_ID' )
     {
 		return SelectInput(
 			$value,
@@ -338,9 +361,18 @@ function makeCommentsInput($value,$name)
 			false
 		);
 	}
-	elseif ( $name=='SORT_ORDER')
+
+	$extra = '';
+
+	if ( $name === 'SORT_ORDER' )
 	{
-		$extra = 'size=5 maxlength=5';
+		$extra .= ' size=5 maxlength=5';
+	}
+
+	if ( $name === 'TITLE'
+		&& $id !== 'new' )
+	{
+		$extra .= ' required';
 	}
 
 	return TextInput(

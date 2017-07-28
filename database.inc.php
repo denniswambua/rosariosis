@@ -111,31 +111,15 @@ function DBQuery( $sql )
 /**
  * Return next row
  *
- * @param  PostgreSQL result resource $result Result.
+ * @param  resource PostgreSQL result resource $result Result.
  *
- * @return array 	next row in result set
+ * @return array 	Next row in result set.
  */
 function db_fetch_row( $result )
 {
-	$return = @pg_fetch_array( $result );
+	$return = @pg_fetch_array( $result, null, PGSQL_ASSOC );
 
-	if ( is_array( $return ) )
-	{
-		// Modify loop: use for instead of foreach.
-		$key = array_keys( $return );
-
-		$size = count( $key );
-
-		for ( $i = 0; $i < $size; $i++ )
-		{
-			if ( is_int( $key[ $i ] ) )
-			{
-				unset( $return[ $key[ $i ] ] );
-			}
-		}
-	}
-
-	return @array_change_key_case( $return, CASE_UPPER );
+	return is_array( $return ) ? @array_change_key_case( $return, CASE_UPPER ) : $return;
 }
 
 
@@ -376,12 +360,14 @@ function db_show_error( $sql, $failnote, $additional = '' )
 {
 	global $RosarioNotifyAddress;
 
-	echo '<br />';
-
-	PopTable( 'header', _( 'We have a problem, please contact technical support ...' ) );
-
 	// TRANSLATION: do NOT translate these since error messages need to stay in English for technical support.
 	?>
+	<br />
+	<table class="postbox cellspacing-0" ' . $table_att . '>
+		<thead><tr><th class="center">
+			<?php echo _( 'We have a problem, please contact technical support ...' ); ?>
+		</th></tr></thead>
+	<tbody><tr><td class="popTable">
 		<table class="col1-align-right">
 			<tr>
 				<td><b>Date:</b></td>
@@ -396,18 +382,19 @@ function db_show_error( $sql, $failnote, $additional = '' )
 				<td><?php echo $additional; ?></td>
 			</tr>
 		</table>
+	</td></tr></tbody></table>
 	<?php
 	// Something you have asked the system to do has thrown a database error.
 	// A system administrator has been notified, and the problem will be fixed as soon as possible.
 	// It might be that changing the input parameters sent to this program will cause it to run properly.
 	// Thanks for your patience.
-	PopTable( 'footer' );
 
 	// Dump SQL statement in an HTML comment.
 	echo '<!-- SQL STATEMENT: ' . "\n\n" . $sql . "\n\n" . ' -->';
 
-	// Send notification email if $RosarioNotifyAddress set.
-	if ( filter_var( $RosarioNotifyAddress, FILTER_VALIDATE_EMAIL ) )
+	// Send notification email if $RosarioNotifyAddress set & functions loaded.
+	if ( filter_var( $RosarioNotifyAddress, FILTER_VALIDATE_EMAIL )
+		&& function_exists( 'ParseMLField' ) )
 	{
 		// FJ add SendEmail function.
 		require_once 'ProgramFunctions/SendEmail.fnc.php';
@@ -444,4 +431,32 @@ function DBEscapeString( $input )
 {
 	// return str_replace("'","''",$input);
 	return pg_escape_string( $input );
+}
+
+
+/**
+ * Escapes identifiers (table, column) using double quotes.
+ * Security function for
+ * when you HAVE to use a variable as an identifier.
+ *
+ * @since 3.0
+ *
+ * @example $safe_sql = "SELECT COLUMN FROM " . DBEscapeIdentifier( $table ) . " WHERE " . DBEscapeIdentifier( $column ) . "='Y'";
+ *
+ * @uses pg_escape_identifier(), requires PHP 5.4.4+
+ *
+ * @param string $identifier SQL identifier (table, column).
+ *
+ * @return string Escaped identifier.
+ */
+function DBEscapeIdentifier( $identifier )
+{
+	$identifier = mb_strtolower( $identifier );
+
+	if ( ! function_exists( 'pg_escape_identifier' ) )
+	{
+		return '"' . $identifier . '"';
+	}
+
+	return pg_escape_identifier( $identifier );
 }

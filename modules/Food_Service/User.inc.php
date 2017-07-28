@@ -2,32 +2,36 @@
 
 require_once 'ProgramFunctions/TipMessage.fnc.php';
 
-if ( $_REQUEST['modfunc']=='update')
+if ( $_REQUEST['modfunc'] === 'update' )
 {
-	if (UserStaffID() && AllowEdit())
+	if ( UserStaffID()
+		&& AllowEdit() )
 	{
 		if (count($_REQUEST['food_service']))
 		{
 			$sql = "UPDATE FOOD_SERVICE_STAFF_ACCOUNTS SET ";
 			foreach ( (array) $_REQUEST['food_service'] as $column_name => $value)
-				$sql .= $column_name."='".trim($value)."',";
+				$sql .= DBEscapeIdentifier( $column_name ) . "='" . trim( $value ) . "',";
 			$sql = mb_substr($sql,0,-1)." WHERE STAFF_ID='".UserStaffID()."'";
 			DBQuery($sql);
 		}
 	}
-	//unset($_REQUEST['modfunc']);
-	unset($_REQUEST['food_service']);
-	unset($_SESSION['_REQUEST_vars']['food_service']);
+
+	// $_REQUEST['modfunc'] = false;
+
+	// Unset food service & redirect URL.
+	RedirectURL( array( 'food_service' ) );
 }
 
-if ( ! $_REQUEST['modfunc'] && UserStaffID())
+if ( ! $_REQUEST['modfunc']
+	&& UserStaffID() )
 {
 	$staff = DBGet(DBQuery("SELECT s.STAFF_ID,s.FIRST_NAME||' '||s.LAST_NAME,
 	(SELECT s.STAFF_ID FROM FOOD_SERVICE_STAFF_ACCOUNTS WHERE STAFF_ID=s.STAFF_ID) AS ACCOUNT_ID,
 	(SELECT STATUS FROM FOOD_SERVICE_STAFF_ACCOUNTS WHERE STAFF_ID=s.STAFF_ID) AS STATUS,
 	(SELECT BALANCE FROM FOOD_SERVICE_STAFF_ACCOUNTS WHERE STAFF_ID=s.STAFF_ID) AS BALANCE,
-	(SELECT BARCODE FROM FOOD_SERVICE_STAFF_ACCOUNTS WHERE STAFF_ID=s.STAFF_ID) AS BARCODE 
-	FROM STAFF s 
+	(SELECT BARCODE FROM FOOD_SERVICE_STAFF_ACCOUNTS WHERE STAFF_ID=s.STAFF_ID) AS BARCODE
+	FROM STAFF s
 	WHERE s.STAFF_ID='".UserStaffID()."'"));
 	$staff = $staff[1];
 

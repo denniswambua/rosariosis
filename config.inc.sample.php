@@ -62,12 +62,14 @@ $wkhtmltopdfPath = '';
  * Change after rollover
  * Should match the database to be able to login
  */
-$DefaultSyear = '2015';
+$DefaultSyear = '2017';
 
 
 /**
- * Notify email address
- * where to send error and new administrator notifications
+ * Notify email address where to send
+ * error,
+ * new administrator,
+ * new registration notifications
  *
  * Leave empty to not receive email notifications
  */

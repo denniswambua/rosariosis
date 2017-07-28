@@ -26,40 +26,23 @@ if ( ! isset( $_REQUEST['modfunc'] ) )
 
 $_ROSARIO['page'] = 'modules';
 
-// Not printing PDF.
-if ( ! isset( $_REQUEST['_ROSARIO_PDF'] ) )
+// Save $_REQUEST vars in session: used to recreate $_REQUEST in Bottom.php.
+if ( ! isset( $_REQUEST['_ROSARIO_PDF'] )
+	&& empty( $_REQUEST['LO_save'] )
+	&& ( mb_strpos( $modname, 'misc/' ) === false
+		|| $modname === 'misc/Portal.php'
+		|| $modname === 'misc/Registration.php'
+		|| $modname === 'misc/Export.php' )
+	&& $modname !== 'Reports/SavedReports.php' )
 {
-	// Save $_REQUEST vars in session: used to recreate $_REQUEST in Bottom.php.
-	if ( empty( $_REQUEST['LO_save'] )
-		&& ( mb_strpos( $modname, 'misc/' ) === false
-			|| $modname === 'misc/Portal.php'
-			|| $modname === 'misc/Registration.php'
-			|| $modname === 'misc/Export.php' )
-		&& $modname !== 'Reports/SavedReports.php' )
-	{
-		$_SESSION['_REQUEST_vars'] = $_REQUEST;
-	}
-
-	// Popup window detection.
-	$_ROSARIO['is_popup'] = isPopup( $modname, $_REQUEST['modfunc'] );
-
-	// AJAX request detection.
-	$_ROSARIO['not_ajax'] = empty( $_SERVER['HTTP_X_REQUESTED_WITH'] )
-		|| $_SERVER['HTTP_X_REQUESTED_WITH'] !== 'XMLHttpRequest';
-
-	// Output Header HTML.
-	if ( $_ROSARIO['is_popup']
-		|| $_ROSARIO['not_ajax'] )
-	{
-		Warehouse( 'header' );
-	}
+	$_SESSION['_REQUEST_vars'] = $_REQUEST;
 }
-// Print PDF.
-else
-{
-	// Start buffer.
-	ob_start();
-}
+
+// Set Popup window detection.
+isPopup( $modname, $_REQUEST['modfunc'] );
+
+// Output Header HTML.
+Warehouse( 'header' );
 
 
 /**
@@ -86,6 +69,11 @@ if ( ! $allowed )
 	{
 		foreach ( (array) $programs as $program => $title )
 		{
+			if ( is_int( $program ) )
+			{
+				continue;
+			}
+
 			// FJ fix bug URL Modules.php?modname=Student_Billing/Statements.php&_ROSARIO_PDF.
 			if ( $modname == $program
 				|| ( mb_strpos( $program, $modname ) === 0
@@ -113,7 +101,18 @@ if ( $allowed )
 		$_REQUEST['search_modfunc'] = 'list';
 	}
 
-	require_once 'modules/' . $modname;
+	if ( substr( $modname, -4, 4 ) !== '.php'
+		|| strpos( $modname, '..' ) !== false
+		/*|| ! is_file( 'modules/' . $modname )*/ )
+	{
+		require_once 'ProgramFunctions/HackingLog.fnc.php';
+
+		HackingLog();
+	}
+	else
+	{
+		require_once 'modules/' . $modname;
+	}
 }
 
 // Not allowed, hacking attempt?
@@ -125,7 +124,4 @@ elseif ( User( 'USERNAME' ) )
 }
 
 // Output Footer HTML.
-if ( ! isset( $_REQUEST['_ROSARIO_PDF'] ) )
-{
-	Warehouse( 'footer' );
-}
+Warehouse( 'footer' );

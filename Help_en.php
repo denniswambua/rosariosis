@@ -36,13 +36,13 @@ if ( User( 'PROFILE' ) === 'admin' ) :
 	If you select a user to work on, the user's name will also appear in the side menu. This will behave identically to the student's name.
 </p>
 <p>
-	Also, when you click on any of the program icons in the side menu, you will see a list of programs available to you in that program category. Clicking on any program title will launch the program in the main frame, and it will update the help frame to display help for that program.
+	Also, when you click on any of the module icons in the side menu, you will see a list of programs available to you in that module. Clicking on any program title will launch the program in the main frame, and it will update the help frame to display help for that program.
 </p>
 <p>
 	In many places in RosarioSIS, you will see lists of data that are modifiable. Oftentimes, you will have to first click the value you want to change to have access to an input field. Then, when you change the value and save, the value will return to its previous state.
 </p>
 <p>
-	You can logout of RosarioSIS at any time by clicking the "Logout" link at the bottom of your side menu.
+	You can logout of RosarioSIS at any time by clicking the "Logout" button in the bottom menu.
 </p>
 HTML;
 
@@ -59,13 +59,13 @@ elseif ( User( 'PROFILE' ) === 'teacher' ) :
 	As you use RosarioSIS, you will notice other items appear in your side menu. When you select a student to work on, the student's name will appear under the marking period pull-down menu preceded by a cross. As you move between programs, you will continue to work on this student. If you want to change the working student, click on the cross by the student's name. You can also quickly access the student's General Information screen by clicking on the student's name.
 </p>
 <p>
-	Also, when you click on any of the program icons in the top menu, you will see a list of programs available to you in that program category. Clicking on any program title will launch the program in the main frame, and it will update the help frame to display help for that program.
+	Also, when you click on any of the module icons in the side menu, you will see a list of programs available to you in that module. Clicking on any program title will launch the program in the main frame, and it will update the help frame to display help for that program.
 </p>
 <p>
 	In the gradebook, you will see lists of modifiable data. Oftentimes, you will have to first click the value you want to change to have access to an input field. Then, when you change the value and save, the value will return to its previous state.
 </p>
 <p>
-	You can logout of RosarioSIS at any time by clicking the "Logout" link at the bottom of your side menu.
+	You can logout of RosarioSIS at any time by clicking the "Logout" button in the bottom menu.
 </p>
 HTML;
 
@@ -73,16 +73,16 @@ elseif ( User( 'PROFILE' ) === 'parent' ) :
 
 	$help['default'] = <<<HTML
 <p>
-	As a parent, you can view your children's information, schedules, grades, eligibility, and attendance.
+	As a parent, you can view your children's information, schedules, assignments, grades, eligibility, and attendance.
 </p>
 <p>
 	To choose a child to work on, select the child's name from the pull-down menu on the left frame. The program will automatically refresh with the new child in the workspace. You can also change the school year and current marking period in a similar fashion.
 </p>
 <p>
-	As you use RosarioSIS, you will notice other items appear in your side menu. When you click on any of the program icons in the top menu, you will see a list of programs available in that program category. Clicking on any program title will launch the program in the main frame, and it will update the help frame to display help for that program.
+	As you use RosarioSIS, you will notice other items appear in your side menu. When you click on any of the module icons in the side menu, you will see a list of programs available in that module. Clicking on any program title will launch the program in the main frame, and it will update the help frame to display help for that program.
 </p>
 <p>
-	You can logout of RosarioSIS at any time by clicking the "Logout" link at the bottom of your side menu.
+	You can logout of RosarioSIS at any time by clicking the "Logout" button in the bottom menu.
 </p>
 HTML;
 
@@ -90,16 +90,16 @@ elseif ( User( 'PROFILE' ) === 'student' ) :
 
 	$help['default'] = <<<HTML
 <p>
-	As a student, you can view your demographic information, schedule, grades, eligibility, and attendance.
+	As a student, you can view your demographic information, schedule, assignments, grades, eligibility, and attendance.
 </p>
 <p>
 	You can change the school year and current marking period with the pull-down menus in the left frame.
 </p>
 <p>
-	As you use RosarioSIS, you will notice other items appear in your side menu. When you click on any of the program icons in the top menu, you will see a list of programs available in that program category. Clicking on any program title will launch the program in the main frame, and it will update the help frame to display help for that program.
+	As you use RosarioSIS, you will notice other items appear in your side menu. When you click on any of the module icons in the side menu, you will see a list of programs available in that module. Clicking on any program title will launch the program in the main frame, and it will update the help frame to display help for that program.
 </p>
 <p>
-	You can logout of RosarioSIS at any time by clicking the "Logout" link at the bottom of your side menu.
+	You can logout of RosarioSIS at any time by clicking the "Logout" link in the bottom menu.
 </p>
 HTML;
 
@@ -147,6 +147,9 @@ HTML;
 	To add a marking period, click on the Add icon (+) in the column corresponding to the type of marking period you want to add. Then, complete the marking period's information in the fields above the list of marking periods and click the "Save" button.
 </p>
 <p>
+	The "Grade Posting Begins" and "Grade Posting Ends" dates define the first and last day of the period during which teachers can enter final grades.
+</p>
+<p>
 	To change a marking period, click on the marking period you want to change, and click on whatever value you want to change in the grey area above the marking period list. Then, change the value and click the "Save" button.
 </p>
 <p>
@@ -159,13 +162,13 @@ HTML;
 
 	$help['School_Setup/Calendar.php'] = <<<HTML
 <p>
-	<i>Calendar</i> allows you to setup your school's calendar for the year. The calendar displays the current month by default. The month and year displayed can be changed by changing the month and year pull-down menus at the top of the screen and clicking the "Update" button.
+	<i>Calendars</i> allows you to setup your school's calendar for the year. The calendar displays the current month by default. The month and year displayed can be changed by changing the month and year pull-down menus at the top of the screen.
 </p>
 <p>
-	On full school days, the checkbox in the upper right-hand corner of the day's square should be checked. For partial days, the checkbox should be unchecked and the number of minutes school will be in attendance should be entered into the text box next to the checkbox. For days on which there will be no school, the checkbox should be unchecked and the text field should be blank. To uncheck the checkbox or change the number of minutes in the school day, you must first click on the value you want to change. After making any changes to the calendar, click the "Update" button at the top of the screen.
+	On full school days, the checkbox in the upper right-hand corner of the day's square should be checked. For partial days, the checkbox should be unchecked and the number of minutes school will be in attendance should be entered into the text box next to the checkbox. For days on which there will be no school, the checkbox should be unchecked and the text field should be blank. To uncheck the checkbox or change the number of minutes in the school day, you must first click on the value you want to change. After making any changes to the calendar, click the "Save" button at the top of the screen.
 </p>
 <p>
-	To setup your calendar at the beginning of the year, you should use the "Create this year's calendar" feature. By clicking on this link in the upper right-hand corner of the screen, you can setup all days in a specified timeframe as meeting all day. You can also select which days of the week that your school is in session. After selecting the beginning and ending dates of your school's school year and the day's of the week that your school meets, click the "OK" button. You can now go through the calendar and mark holidays and partial days.
+	To setup your calendar at the beginning of the year, you should use the "Create new calendar" or "Recreate this calendar" feature. By clicking on this link in the upper right-hand corner of the screen, you can setup all days in a specified timeframe as meeting all day. You can also select which days of the week that your school is in session. After selecting the beginning and ending dates of your school's school year and the day's of the week that your school meets, click the "OK" button. You can now go through the calendar and mark holidays and partial days.
 </p>
 <p>
 	The calendar is also a display of school events. This can include everything from teacher in-service days to sporting events. These events are visible by other administrators as well as parents and teachers at your school.
@@ -176,6 +179,9 @@ HTML;
 <p>
 	To modify an event, click on the event you want to modify, and change the event's information in the popup window that appears after clicking on the values you want to change. Click the "Save" button. The window will close and the calendar will automatically refresh to display the change.
 </p>
+<p>
+	If the school uses a Rotation of Numbered Days, the day's number is displayed in the day's box.
+</p>
 HTML;
 
 	$help['School_Setup/Periods.php'] = <<<HTML
@@ -184,6 +190,9 @@ HTML;
 </p>
 <p>
 	To add a period, fill in the period's title, short name, sort order, and length in minutes in the empty fields at the bottom of the periods list and click the "Save" button.
+</p>
+<p>
+	Blocks can be used to define irregular periods which happens on specific days. See the <i>Calendars</i> program for setup.
 </p>
 <p>
 	To modify a period, click on any of the period's information, change the value, and click the "Save" button.
@@ -227,7 +236,7 @@ HTML;
 			<li>
 				<i>Program Title</i> &amp; <i>Program Name</i>: rebrand RosarioSIS
 			</li>
-			<li>Set the <i>Default Theme</i>
+			<li>Set the <i>Default Theme</i>, and eventually <i>Force</i> it to override users' preferred theme.
 			</li>
 			<li>
 				<i>Create User Account</i> &amp; <i>Create Student Account</i>: activate online registration. "Create User / Student Account" links will be displayed on the login page.
@@ -263,6 +272,9 @@ HTML;
 			</li>
 			<li>
 				<i>Use Semester Comments instead of Quarter Comments</i>: have a new student comments field each semester instead of each quarter
+			</li>
+			<li>
+				<i>Limit Existing Contacts &amp; Addresses to current school</i>: global setting (applies to all schools) that will limit the lists of Persons &amp; Addresses to the ones associated with the user's current school when Adding an Existing Contact or Address
 			</li>
 		</ul>
 	</li>
@@ -314,6 +326,65 @@ HTML;
 </p>
 HTML;
 
+	$help['School_Setup/SchoolFields.php'] = <<<HTML
+<p>
+	<i>School Fields</i> allows you to add new fields to the School Information screen.
+</p>
+<p>
+	Add a new Field
+</p>
+<p>
+	Click on the "+" icon below the "No School Fields were found" text. Fill in the Field Name field(s), and then choose what type of field you wish with the "Data Type" pull-down.
+</p>
+<ul>
+<li>
+	"Pull-Down" fields create menus from which you can select one option. To create this type of field, click on "Pull-Down" and then add your options (one per line) in the "Pull-Down/Auto Pull-down/Coded Pull-Down/Select Multiple from Options" text box.
+</li>
+<li>
+	"Auto Pull-Down" fields create menus from which you can select one option, and add options. You add options by selecting the "-Edit-" option in the menu choices and click "Save". You can then edit the field by removing the red "-Edit-" from the field, entering the correct information. RosarioSIS gets all the options that have been added to this field to create the pull-down.
+</li>
+<li>
+	"Edit Pull-Down" fields are similar to Auto Pull-Down fields.
+</li>
+<li>
+	"Coded Pull-Down" fields are created by adding options to the large text box respecting the following pattern: "option shown"|"option stored in database" (where | is the "pipe" character). For example: "Two|2", where "Two" is displayed on screen to the user, or in a downloaded spreadsheet, and "2" is stored in the database.
+</li>
+<li>
+	"Export Pull-Down" fields are created by adding options to the large text box respecting the same pattern used for "Coded Pull-Down" fields ("option shown"|"option stored in database"). For example: "Two|2", where "Two" is displayed on screen to the user, and "2" is the value in a downloaded spreadsheet, but "Two" is stored in the database.
+</li>
+<li>
+	"Select Multiple from options" fields create multiple checkboxes to choose one or more options.
+</li>
+<li>
+	"Text" fields create alphanumeric text fields with a maximum capacity of 255 characters.
+</li>
+<li>
+	"Long Text" fields create large alphanumeric text boxes with a maximum length of 5000 characters.
+</li>
+<li>
+	"Checkbox" fields create checkboxes. When checked it means "yes" and when un-checked "no".
+</li>
+<li>
+	"Number" fields create text fields that stores only numeric values.
+</li>
+<li>
+	"Date" field creates pull-downs fields to pick a date from.
+</li>
+</ul>
+<p>
+	The "Required" checkbox, if checked, will make that field required so an error will be displayed if the field is empty when saving the page.
+</p>
+<p>
+	The "Sort Order" determines the order in which the fields will be displayed on the School Information screen.
+</p>
+<p>
+	Delete a field
+</p>
+<p>
+	You can delete any School field simply by clicking on the "Delete" button in the upper right corner. Please note that you will lose all your data if you delete an already used field.
+</p>
+HTML;
+
 	// Teacher & Parent & Student.
 else :
 
@@ -325,13 +396,16 @@ HTML;
 
 	$help['School_Setup/Calendar.php'] = <<<HTML
 <p>
-	<i>Calendar</i> is a display of school events and your student's assignments. The calendar also displays whether or not school is in attendance on any given day. By default, the calendar displays the current month. The month and year displayed can be changed by changing the month and year pull-down menus at the top of the screen and clicking the "Update" button.
+	<i>Calendars</i> is a display of school events and your student's assignments. The calendar also displays whether or not school is in attendance on any given day. By default, the calendar displays the current month. The month and year displayed can be changed by changing the month and year pull-down menus at the top of the screen.
 </p>
 <p>
-	The titles of school events and assignments are displayed in each date's box. Clicking on these titles will open a popup window that displays more information about the event or assignment. School assignments are preceded by a red dot and assignments are preceded by a blue dot.
+	The titles of school events and assignments are displayed in each date's box. Clicking on these titles will open a popup window that displays more information about the event or assignment. School events are preceded by a black stripe and assignments are preceded by a red stripe.
 </p>
 <p>
-	For days that school is in attendance all day, a green checkmark appears in the upper right-hand corner of the date. On partial days, the number of minutes that school is in session is displayed here instead. If the school is not in attendance at all on any given day, nothing will appear in the upper right-hand corner of the date.
+	For days that school is in attendance all day, the date's box is green. On partial days, the number of minutes that school is in session is displayed. If the school is not in attendance at all on any given day, the date's box is pink.
+</p>
+<p>
+	If the school uses a Rotation of Numbered Days, the day's number is displayed in the day's box.
 </p>
 HTML;
 
@@ -355,17 +429,20 @@ HTML;
 	<i>Associate Parents with Students</i> allows you to associate parents to students.
 </p>
 <p>
-	Once a parent's account has been set up, their children must be associated to their account with this program. If you have not already chosen a student earlier in your session, select a user by using the "Find a Student" Search screen. Next, search for a user to associate with the student. From the search result, you can select any number of users. You can select all the users in the list by checking the checkbox in the column headings above the list. After you have selected each desired user from this list, click the "Add Selected Parents" button at the top of the screen.
+	Once a parent's account has been set up, their children must be associated to their account with this program. If you have not already chosen a student earlier in your session, select a student by using the "Find a Student" Search screen. Next, search for a user to associate with the student. From the search result, you can select any number of users. You can select all the users in the list by checking the checkbox in the column headings above the list. After you have selected each desired user from this list, click the "Add Selected Parents" button at the top of the screen.
 </p>
 <p>
-	At any time after a student has been selected, you can see the parents already associated with that student. These parents are listed to the top of the user search screen / search results. These parents can be disassociated from this user by clicking the delete icon (-) next to the parent you wish to disassociate from the student. You will be asked to confirm this action.
+	At any time after a student has been selected, you can see the parents already associated with that student. These parents are listed to the top of the user search screen / search results. These parents can be disassociated from this student by clicking the delete icon (-) next to the parent you wish to disassociate from the student. You will be asked to confirm this action.
 </p>
 HTML;
 
 	$help['Students/AssignOtherInfo.php'] = <<<HTML
 <p>
-	<i>Assign Other Info</i> allows you to assign values to any of the Other Info data fields for a group of students in one action.
-</p>First, search for students. From the search result, you can select any number of students. You can select all the students in the list by checking the checkbox in the blue column headings above the list. After selecting students, fill in any of the Other Info fields in the yellow box above the student list. Fields that you leave blank will not affect the students you selected. After you have selected each desired student from this list and filled in each desired Other Info field, click the "Save" button at the top of the screen.
+	<i>Group Assign Student Info</i> allows you to assign values to any of the Student data fields for a group of students in one action.
+</p>
+<p>
+	First, search for students. From the search result, you can select any number of students. You can select all the students in the list by checking the checkbox in the column headings above the list. After selecting students, fill in any of the Student fields in the box above the student list. Fields that you leave blank will not affect the students you selected. After you have selected each desired student from this list and filled in each desired Other Info field, click the "Save" button at the top of the screen.
+</p>
 HTML;
 
 	$help['Students/Letters.php'] = <<<HTML
@@ -373,7 +450,7 @@ HTML;
 	<i>Print Letters</i> allows you to print form letters for any number of students.
 </p>
 <p>
-	To print the letters, enter the letter text in the "Letter Text" text field at the bottom of the search screen. Then search for students by filling in any desired search field, and click the "Submit" button.
+	First, search for students. From the search result, you can select any number of students. You can select all the students in the list by checking the checkbox in the column headings above the list. After selecting students, enter the letter text in the "Letter Text" text field above the student list.
 </p>
 <p>
 	You can insert certain pieces of student information into your letter with special variables:
@@ -395,7 +472,7 @@ HTML;
 		<b>RosarioSIS ID:</b> __STUDENT_ID__
 	</li>
 	<li>
-		<b>Grade:</b> __GRADE_ID__
+		<b>Grade Level:</b> __GRADE_ID__
 	</li>
 </ul>
 <p>
@@ -412,21 +489,21 @@ HTML;
 </p>
 HTML;
 
-	$help['Students/Address'] = <<<HTML
+	$help['Students/Addresses & Contacts'] = <<<HTML
 <p>
-	<i>Address</i> is a display of a student's address and contact information.
+	<i>Addresses &amp; Contacts</i> is a display of a student's address and contact information.
 </p>
 <p>
-	A student can have any number of addresses. To add an address, complete the empty fields at the bottom of the Address screen, and click the "Save" button at the top of the screen.
+	A student can have any number of addresses. To add an address, click the "Add a New Address" link and complete the empty fields in the Address box. Finally, click the "Save" button at the top of the screen.
 </p>
 <p>
 	Now, you can add a contact to this address. To do this, complete the contact's name, and again, press the "Save" button.
 </p>
 <p>
-	You can now add more information about this contact by checking the "Custody" and "Emergency" checkboxes, after first clicking on their default value of "No." Relations marked as having "Custody" of the student receive mailings and relations marked as being "Emergency" contacts can be contacted in the case of an emergency.
+	You can now add more information about this contact by checking the "Custody" and "Emergency" checkboxes, after first clicking on their default value of "No" (cross). Relations marked as having "Custody" of the student receive mailings and relations marked as being "Emergency" contacts can be contacted in the case of an emergency.
 </p>
 <p>
-	You can add other information about this contact, such as their cell phone number, fax number, occupation, workplace, etc. by filling in the title of the new data in the empty field with the default value "New Info" and its corresponding value in the empty field to the right.
+	You can add other information about this contact, such as their cell phone number, fax number, occupation, workplace, etc. by filling in the title of the new data in the "Description" field and its corresponding value in the "Value" field.
 </p>
 <p>
 	Contacts and information about contacts can be deleted by clicking on the delete icon (-) next to the information to be deleted. (Note: you will be asked to confirm all deletions.) Any information on the screen can be modified by first clicking on the information, then changing its value, and finally clicking the "Save" button at the top of the screen.
@@ -454,12 +531,12 @@ HTML;
 </p>
 HTML;
 
-	$help['Enrollment'] = <<<HTML
+	$help['Students/Enrollment'] = <<<HTML
 <p>
 	<i>Enrollment</i> can be used to enroll or drop a student from any school. A student can have only one active enrollment record at any time.
 </p>
 <p>
-	To drop a student, change the "Dropped" date and reason to the effective date of the student's drop as well as the reason for his drop. Click the "Save" button at the top of the screen.
+	To drop a student, change the "Dropped" date to the effective date of the student's drop as well as the reason for his drop. Click the "Save" button at the top of the screen.
 </p>
 <p>
 	Now you can reenroll the student. To do this, select the effective date of the student's enrollment and the reason for his enrollment from the blank line at the bottom of the list. Also, select the school at which the student should be enrolled and click the "Save" button at the top of the screen.
@@ -563,39 +640,41 @@ HTML;
 <p>
 	Click on the "+" icon below the "No Student Fields were found" text. Fill in the Field Name field(s), and then choose what type of field you wish with the "Data Type" pull-down.
 </p>
-<p>
-	"Pull-Down" fields create menus from which you can select one option. To create this type of field, click on "Pull down" and then add your options (one per line) in the "Pull-Down/Auto Pull-down/Coded Pull-Down/Select Multiple from Options" text box.
-</p>
-<p>
+<ul>
+<li>
+	"Pull-Down" fields create menus from which you can select one option. To create this type of field, click on "Pull-Down" and then add your options (one per line) in the "Pull-Down/Auto Pull-down/Coded Pull-Down/Select Multiple from Options" text box.
+</li>
+<li>
 	"Auto Pull-Down" fields create menus from which you can select one option, and add options. You add options by selecting the "-Edit-" option in the menu choices and click "Save". You can then edit the field by removing the red "-Edit-" from the field, entering the correct information. RosarioSIS gets all the options that have been added to this field to create the pull-down.
-</p>
-<p>
+</li>
+<li>
 	"Edit Pull-Down" fields are similar to Auto Pull-Down fields.
-</p>
-<p>
-	"Text" fields create alphanumeric text fields with a maximum capacity of 255 characters.
-</p>
-<p>
-	"Checkbox" fields create checkboxes. When checked it means "yes" and when un-checked "no".
-</p>
-<p>
+</li>
+<li>
 	"Coded Pull-Down" fields are created by adding options to the large text box respecting the following pattern: "option shown"|"option stored in database" (where | is the "pipe" character). For example: "Two|2", where "Two" is displayed on screen to the user, or in a downloaded spreadsheet, and "2" is stored in the database.
-</p>
-<p>
+</li>
+<li>
 	"Export Pull-Down" fields are created by adding options to the large text box respecting the same pattern used for "Coded Pull-Down" fields ("option shown"|"option stored in database"). For example: "Two|2", where "Two" is displayed on screen to the user, and "2" is the value in a downloaded spreadsheet, but "Two" is stored in the database.
-</p>
-<p>
-	"Number" fields create text fields that stores only numeric values.
-</p>
-<p>
+</li>
+<li>
 	"Select Multiple from options" fields create multiple checkboxes to choose one or more options.
-</p>
-<p>
-	"Date" field creates pull-downs fields to pick a date from.
-</p>
-<p>
+</li>
+<li>
+	"Text" fields create alphanumeric text fields with a maximum capacity of 255 characters.
+</li>
+<li>
 	"Long Text" fields create large alphanumeric text boxes with a maximum length of 5000 characters.
-</p>
+</li>
+<li>
+	"Checkbox" fields create checkboxes. When checked it means "yes" and when un-checked "no".
+</li>
+<li>
+	"Number" fields create text fields that stores only numeric values.
+</li>
+<li>
+	"Date" field creates pull-downs fields to pick a date from.
+</li>
+</ul>
 <p>
 	The "Required" checkbox, if checked, will make that field required so an error will be displayed if the field is empty when saving the page.
 </p>
@@ -613,6 +692,9 @@ HTML;
 	$help['Students/EnrollmentCodes.php'] = <<<HTML
 <p>
 	<i>Enrollment Codes</i> allows you to setup your school's enrollment codes. Enrollment codes are used in the Enrollment student screen, and specify the reason the student was enrolled or dropped from a school. These codes apply to all schools system-wide.
+</p>
+<p>
+	The "Rollover default" column sets the code used by the Rollover program when enrolling students in the next school year. There must be exactly one Rollover default enrollment code (of type "Add").
 </p>
 <p>
 	To add an enrollment code, fill in the enrollment code's title, short name, and type in the empty fields at the bottom of the enrollment codes list. Click the "Save" button.
@@ -634,18 +716,30 @@ else :
 </p>
 HTML;
 
-	$help['Students/Address'] = <<<HTML
+	$help['Students/Addresses & Contacts'] = <<<HTML
 <p>
-	<i>Address</i> is a display of a student's address and contact information.
+	<i>Addresses &amp; Contacts</i> is a display of a student's address and contact information.
 </p>
 <p>
-	A student can have any number addresses.
+	A student can have any number of addresses.
 </p>
 HTML;
 
 	$help['Students/Enrollment'] = <<<HTML
 <p>
 	<i>Enrollment</i> is a display of the student's enrollment history.
+</p>
+HTML;
+
+	$help['Custom/Registration.php'] = <<<HTML
+<p>
+	<i>Registration</i> will let you register your child's contacts details.
+</p>
+<p>
+	Fill in the form fields with your contacts details and their associated addresses. Then, enter or update the student information.
+</p>
+<p>
+	Once you have completed the forms, click the "Save" button at the bottom of the screen.
 </p>
 HTML;
 
@@ -672,7 +766,7 @@ HTML;
 	<i>Associate Students with Parents</i> allows you to associate students to parents.
 </p>
 <p>
-	Once a parent's account has been set up, their children must be associated to their account with this program. If you have not already chosen a user earlier in your session, select a user by using the "Find a User" Search screen. Next, search for a student to add to the user's account. From the search result, you can select any number of students. You can select all the students in the list by checking the checkbox in the blue column headings above the list. After you have selected each desired student from this list, click the "Add Selected Students" button at the top of the screen.
+	Once a parent's account has been set up, their children must be associated to their account with this program. If you have not already chosen a user earlier in your session, select a user by using the "Find a User" Search screen. Next, search for a student to add to the user's account. From the search result, you can select any number of students. You can select all the students in the list by checking the checkbox in the column headings above the list. After you have selected each desired student from this list, click the "Add Selected Students" button at the top of the screen.
 </p>
 <p>
 	At any time after a user has been selected, you can see the students already associated with that user. These students are listed to the top of the student search screen / search results. These students can be disassociated from this user by clicking the delete icon (-) next to the student you wish to disassociate from the user. You will be asked to confirm this action.
@@ -693,7 +787,7 @@ HTML;
 	Student Listing tab
 </p>
 <p>
-	"Student Sorting" lets you choose to have the students in listings listed by just their "Name" or by their Grade Level and Name. "File Export Type" lets you choose between Tabulation delimited files, designed for Excel, or CSV files (comma-separated values) designed for Open Office. "Date Export Format" lets you choose betwwen different date formats when date fields are exported using the "Download Icon". "Display Student Search Screen" should remain checked, unless instructed otherwise.
+	"Student Sorting" lets you choose to have the students in listings listed by just their "Name" or by their Grade Level and Name. "File Export Type" lets you choose between Tabulation delimited files, designed for Excel, or CSV files (comma-separated values) designed for LibreOffice, or XML files. "Date Export Format" lets you choose between different date formats when date fields are exported using the "Download Icon". "Display Student Search Screen" should remain checked, unless instructed otherwise.
 </p>
 <p>
 	Password tab
@@ -729,6 +823,12 @@ HTML;
 	Administrators have access to almost all pages, to read or to write information on that page. By default, they cannot see the "Comments" tab in the Student Info program, but can access and can modify all other pages.
 </p>
 <p>
+	You can restrict the User Profile edition if you uncheck the <i>Users > User Info > General Info > User Profile</i> checkbox. Administrators will then loose the ability to assign user profiles (and permissions).
+</p>
+<p>
+	You can restrict the User Schools edition if you uncheck the <i>Users > User Info > General Info > Schools</i> checkbox. Administrators will then loose the ability to add or remove schools to/from a user.
+</p>
+<p>
 	Teacher Profile
 </p>
 <p>
@@ -759,10 +859,10 @@ HTML;
 
 	$help['Users/Exceptions.php'] = <<<HTML
 <p>
-	<i>Admin Permissions</i> allows you to deny access and/or write privileges to any program for any admin user.
+	<i>User Permissions</i> allows you to deny access and/or write privileges to any program for any user.
 </p>
 <p>
-	To assign privileges to an admin user, first select an administrator by searching for one and clicking on his name on the list. Then, use the checkboxes to define which programs the administrator can use and which programs he can use to modify information. If a user cannot use a particular program, the program will not be displayed on his menu. If he can use the program, but can't edit information with the program, the program will display the data, but won't let him change it. After you have completed the program checkboxes, click the "Save" button to save the administrator's permissions.
+	To assign privileges to a user, first select a user by searching and clicking on his name on the list. Then, use the checkboxes to define which programs the user can use and which programs he can use to modify information. If a user cannot use a particular program, the program will not be displayed on his menu. If he can use the program, but can't edit information with the program, the program will display the data, but won't let him change it. After you have completed the program checkboxes, click the "Save" button to save the user's permissions.
 </p>
 HTML;
 
@@ -788,39 +888,41 @@ HTML;
 <p>
 	Click on the "+" icon below the "No User Fields were found" text. Fill in the Field Name field(s), and then choose what type of field you wish with the "Data Type" pull-down.
 </p>
-<p>
-	"Pull-Down" fields create menus from which you can select one option. To create this type of field, click on "Pull down" and then add your options (one per line) in the "Pull-Down/Auto Pull-down/Coded Pull-Down/Select Multiple from Options" text box.
-</p>
-<p>
+<ul>
+<li>
+	"Pull-Down" fields create menus from which you can select one option. To create this type of field, click on "Pull-Down" and then add your options (one per line) in the "Pull-Down/Auto Pull-down/Coded Pull-Down/Select Multiple from Options" text box.
+</li>
+<li>
 	"Auto Pull-Down" fields create menus from which you can select one option, and add options. You add options by selecting the "-Edit-" option in the menu choices and click "Save". You can then edit the field by removing the red "-Edit-" from the field, entering the correct information. RosarioSIS gets all the options that have been added to this field to create the pull-down.
-</p>
-<p>
+</li>
+<li>
 	"Edit Pull-Down" fields are similar to Auto Pull-Down fields.
-</p>
-<p>
-	"Text" fields create alphanumeric text fields with a maximum capacity of 255 characters.
-</p>
-<p>
-	"Checkbox" fields create checkboxes. When checked it means "yes" and when un-checked "no".
-</p>
-<p>
+</li>
+<li>
 	"Coded Pull-Down" fields are created by adding options to the large text box respecting the following pattern: "option shown"|"option stored in database" (where | is the "pipe" character). For example: "Two|2", where "Two" is displayed on screen to the user, or in a downloaded spreadsheet, and "2" is stored in the database.
-</p>
-<p>
+</li>
+<li>
 	"Export Pull-Down" fields are created by adding options to the large text box respecting the same pattern used for "Coded Pull-Down" fields ("option shown"|"option stored in database"). For example: "Two|2", where "Two" is displayed on screen to the user, and "2" is the value in a downloaded spreadsheet, but "Two" is stored in the database.
-</p>
-<p>
-	"Number" fields create text fields that stores only numeric values.
-</p>
-<p>
+</li>
+<li>
 	"Select Multiple from options" fields create multiple checkboxes to choose one or more options.
-</p>
-<p>
-	"Date" field creates pull-downs fields to pick a date from.
-</p>
-<p>
+</li>
+<li>
+	"Text" fields create alphanumeric text fields with a maximum capacity of 255 characters.
+</li>
+<li>
 	"Long Text" fields create large alphanumeric text boxes with a maximum length of 5000 characters.
-</p>
+</li>
+<li>
+	"Checkbox" fields create checkboxes. When checked it means "yes" and when un-checked "no".
+</li>
+<li>
+	"Number" fields create text fields that stores only numeric values.
+</li>
+<li>
+	"Date" field creates pull-downs fields to pick a date from.
+</li>
+</ul>
 <p>
 	The "Required" checkbox, if checked, will make that field required so an error will be displayed if the field is empty when saving the page.
 </p>
@@ -837,13 +939,16 @@ HTML;
 
 	$help['Users/TeacherPrograms.php&include=Grades/InputFinalGrades.php'] = <<<HTML
 <p>
-	<i>Teacher Programs: Input Final Grades</i> allows you to enter quarter, semester grades for all the selected teacher's students in the current period. By default, this program will list the students in the selected teacher's first period class for the current quarter. You can alter the period by changing the period pull-down menu at the top of the screen. Also, you can alter the quarter by changing the marking period pull-down menu on the left frame. Furthermore, you can select the current semester or semester final by changing the marking period pull-down menu at the top of the screen to the desired marking period.
+	<i>Teacher Programs: Input Final Grades</i> allows you to enter quarter, semester or progress period grades for all the selected teacher's students in the current period. By default, this program will list the students in the selected teacher's first period class for the current quarter. You can alter the period by changing the period pull-down menu at the top of the screen. Also, you can alter the quarter by changing the marking period pull-down menu on the left frame. Furthermore, you can select the current semester or progress period by changing the marking period pull-down menu at the top of the screen to the desired marking period.
 </p>
 <p>
 	Once you are in the correct marking period, you can enter student grades by selecting the earned grade for each student and entering comments as desired. Once all the grades and comments have been entered, click the "Save" button at the top of the screen.
 </p>
 <p>
-	If the selected teacher is using the Gradebook, you can have RosarioSIS calculate each student's quarter grades by clicking on the "Use Gradebook Grades" link at the top of the list. Clicking this link will automatically save each student's grades and refresh the list.
+	If the selected teacher is using the Gradebook, you can have RosarioSIS calculate each student's quarter grades by clicking on the "Get Gradebook Grades" link at the top of the list. Clicking this link will automatically save each student's grades and refresh the list.
+</p>
+<p>
+	If the marking period you are in is a Progress Period, when clicking on the "Get Gradebook Grades" link, the gades taken in account will be limited to the one for which the Assignment Due Date is comprised within the Progress Period, or the ones with no Due Dates.
 </p>
 HTML;
 
@@ -894,7 +999,7 @@ if ( User( 'PROFILE' ) === 'admin' ) :
 
 	$help['Scheduling/Schedule.php'] = <<<HTML
 <p>
-	<i>Schedule</i> allows you to modify a student's course schedule.
+	<i>Student Schedule</i> allows you to modify a student's course schedule.
 </p>
 <p>
 	You must first select a student by using the "Find a Student" search screen. You can search for students who have requested a specific course or request by clicking on the "Choose" link next to the search options "Course" and "Request" respectively and choosing a course from the popup window that appears.
@@ -903,37 +1008,38 @@ if ( User( 'PROFILE' ) === 'admin' ) :
 	To add a course to the student's schedule, click on the "Add a Course" link next to the add icon (+) and select a course from the popup window that appears. The screen will automatically refresh to show the course addition.
 </p>
 <p>
-	To drop an existing course, click on the delete icon (-) next to the course you want to drop from the student's schedule.
+	To drop an existing course, select the "Dropped" date next to the course you want to drop from the student's schedule.
+	If you select a "Dropped" date prior to the "Enrolled" date, the course will be removed and you will be asked to confirm the removal of the associated absences and grades records.
 </p>
 <p>
 	To change the course period of a course for the student, click on the "Period - Teacher" of the course you want to change and select the new course period. You can also change the term in the same fashion.
 </p>
 <p>
-	All additions, deletions, and modifications to a student's schedule are not made permanent until you click the "Save" button at the top of the screen and confirm your modifications. In addition, you will have to specify the effective date (the date on which your changes should take effect) on the confirmation screen.
+	All deletions, and modifications to a student's schedule are not made permanent until you click the "Save" button at the top of the screen.
 </p>
 HTML;
 
 	$help['Scheduling/Requests.php'] = <<<HTML
 <p>
-	<i>Requests</i> allows you to specify which courses a student intends to take in the next school year. These requests are used by the Scheduler when filling a student's schedule.
+	<i>Student Requests</i> allows you to specify which courses a student intends to take in the next school year. These requests are used by the Scheduler when filling a student's schedule.
 </p>
 <p>
 	You must first select a student by using the "Find a Student" search screen. You can search for students who have requested a specific request by clicking on the "Choose" link next to the search option "Request" and choosing a course from the popup window that appears.
 </p>
 <p>
-	You can add a request by selecting the course you want to add from under the corresponding subject heading. You can add requests from each subject in the same way, or you can add another request in the same subject by clicking on the add icon (+) next to the subject name. Doing this will cause another set of request pull-down menus to appear under the subject heading. Once you have added all the desired requests, click the "Save" button at the top of the screen.
+	You can add a request by selecting the course you want to add from under the corresponding subject heading. You can add requests from each subject in the same way, or you can add another request in the same subject by clicking on the on the subject name in the last line of the list with the add icon (+). Doing this will cause another set of request pull-down menus to appear under the subject heading. Once you have added all the desired requests, click the "Save" button at the top of the screen.
 </p>
 <p>
-	When you save the student's requests, the Requests program will run the Scheduler without saving the schedule for the current student to notify you of any conflicts. The Scheduler output will also tell you if any course requested has zero available seats. If a request could not be met, you can change the requests accordingly to ensure complete scheduling. You will also be given the option to schedule the student with the requests you entered.
+	When you save the student's requests, the Student Requests program will run the Scheduler without saving the schedule for the current student to notify you of any conflicts. The Scheduler output will also tell you if any course requested has zero available seats. If a request could not be met, you can change the requests accordingly to ensure complete scheduling. You will also be given the option to schedule the student with the requests you entered.
 </p>
 <p>
-	Furthermore, when you have saved the student's requests, you will have the option to specify a teacher or period and to exclude a teacher or period. To do this, select the teacher or period from the "With" and "Without" pull-down menus respectively. You can also delete a request that you entered by changing the course and weight to "Not Specified." Once you have made all the desired modifications, click the "Save" button again.
+	Furthermore, when you have saved the student's requests, you will have the option to specify a teacher or period and to exclude a teacher or period. To do this, select the teacher or period from the "With" and "Without" pull-down menus respectively. Once you have made all the desired modifications, click the "Save" button. You can also delete a request that you entered by clicking on the delete icon (-).
 </p>
 HTML;
 
 	$help['Scheduling/MassSchedule.php'] = <<<HTML
 <p>
-	<i>Group Schedule</i> allows you to schedule a group of students into a course in one action.
+	<i>Group Schedule</i> allows you to schedule a group of students into one or more courses in one action.
 </p>
 <p>
 	You must first select a (group of) student(s) by using the "Find a Student" search screen. You can search for students who have requested a specific course or request by clicking on the "Choose" link next to the search options "Course" and "Request" respectively and choosing a course from the popup window that appears.
@@ -942,15 +1048,32 @@ HTML;
 	Select a course period to add by clicking the "Choose a Course" link at the top of the screen and choosing the course from the popup screen that appears. The window will close and the course period will now show on the page.
 </p>
 <p>
+	Repeat the last step to select and add another course period.
+</p>
+<p>
 	Then, select the proper "Start Date" (the date that the students will first attend this course period), and the appropriate "Marking Period".
 </p>
 <p>
-	From the search result, you can select any number of students. To select all the students in the list, check the checkbox in the column headings above the list. After you have selected each desired student from this list, click the "Add Course for Selected Students" button at the top of the screen.
+	From the search result, you can select any number of students. To select all the students in the list, check the checkbox in the column headings above the list. After you have selected each desired student from this list, click the "Add Courses to Selected Students" button at the top of the screen.
 </p>
 HTML;
 
 	$help['Scheduling/MassRequests.php'] = <<<HTML
-<p><i>Mass Requests</i> allows you to add a request to a group of students in one action.</p><p>You must first select a (group of) student(s) by using the "Find a Student" search screen. You can search for students who have requested a specific request by clicking on the "Choose" link next to the search option "Request" and choosing a course from the popup window that appears. Notice that you can search for students who already have a certain request or are in a certain activity. This can be useful since you can add a laboratory course request to all students who requested chemistry. Or you can add a P.E. course request to all students in Boy's Basketball.</p><p>Select a course to be added as a request by clicking the "Choose a Course" link at the top of the screen and choosing the course from the popup screen that appears.</p><p>Then, select the proper "With" or "Without" Teacher, and the correct Period.</p><p>From the search result, you can select any number of students. To select all the students in the list, check the checkbox in column headings above the list. After you have selected each desired student from this list, click the "Add Request to Selected Students" button at the top of the screen. If you have not yet chosen a course to add as a request, you must do that before you click this button.</p>
+<p>
+	<i>Group Requests</i> allows you to add a request to a group of students in one action.
+</p>
+<p>
+	You must first select a (group of) student(s) by using the "Find a Student" search screen. You can search for students who have requested a specific request by clicking on the "Choose" link next to the search option "Request" and choosing a course from the popup window that appears. Notice that you can search for students who already have a certain request or are in a certain activity. This can be useful since you can add a laboratory course request to all students who requested chemistry. Or you can add a P.E. course request to all students in Boy's Basketball.
+</p>
+<p>
+	Select a course to be added as a request by clicking the "Choose a Course" link at the top of the screen and choosing the course from the popup screen that appears.
+</p>
+<p>
+	Then, select the proper "With" or "Without" Teacher, and the correct Period.
+</p>
+<p>
+	From the search result, you can select any number of students. To select all the students in the list, check the checkbox in column headings above the list. After you have selected each desired student from this list, click the "Add Request to Selected Students" button at the top of the screen. If you have not yet chosen a course to add as a request, you must do that before you click this button.
+</p>
 HTML;
 
 	$help['Scheduling/MassDrops.php'] = <<<HTML
@@ -982,7 +1105,7 @@ HTML;
 	Also, you can choose to print the schedules with mailing labels. The schedules will have mailing labels positioned in such a way as to be visible in a windowed envelope when the sheet is folded in thirds. More than one schedule may be printed per student if the student has guardians residing at more than one address.
 </p>
 <p>
-	The schedules will be automatically downloaded to your computer in the printable PDF format when you click the "Submit" button.
+	The schedules will be automatically downloaded to your computer in the printable PDF format when you click the "Create Schedules for Selected Students" button.
 </p>
 HTML;
 
@@ -1027,13 +1150,13 @@ HTML;
 	<i>Schedule Report</i> is a report that shows the students who are scheduled into each course, the students who requested the course but weren't successfully scheduled into it, and the number of requests, open seats, and total seats in each course.
 </p>
 <p>
-	To navigate through this report, first click on any one of the subjects. You will now see each course in that subject as well as the number of requests for that course and open and total seats available for that course. If you choose a course by clicking on it, you will see a list of the course weights, and the requests, open, and total seats numbers will be broken down by each weight. Here, you can also see a list of students scheduled in the course or a list of students who requested the course but weren't scheduled into it by clicking the "List Students" and "List Unscheduled Students" links respectively.
+	To navigate through this report, first click on any one of the subjects. You will now see each course in that subject as well as the number of requests for that course and open and total seats available for that course. If you choose a course by clicking on it, you will see a list of the course periods, and the requests, open, and total seats numbers will be broken down by each period. Here, you can also see a list of students scheduled in the course or a list of students who requested the course but weren't scheduled into it by clicking the "List Students" and "List Unscheduled Students" links respectively.
 </p>
 <p>
-	If you select a weight by clicking on it, the open / total seats will be broken down even farther by each period. Here again you can list scheduled and unscheduled students. Also, you can select a single course period and list the scheduled and unscheduled students.
+	If you select a course period by clicking on it, you can display a list of students scheduled in the course or a list of students who requested the course but weren't scheduled into it by clicking the "List Students" and "List Unscheduled Students" links respectively.
 </p>
 <p>
-	At any point after selecting a subject, you can navigate backwards by clicking on the links that appear in the grey bar at the top of the screen. These links also show you which students you are viewing.
+	At any point after selecting a subject, you can navigate backwards by clicking on the links that appear in the grey bar at the top of the screen.
 </p>
 HTML;
 
@@ -1081,13 +1204,13 @@ HTML;
 
 	$help['Scheduling/Courses.php'] = <<<HTML
 <p>
-	<i>Courses</i> allows you to setup your school's courses. There are four tiers of courses: Subjects, Courses, Course Weights, and Course Periods.
+	<i>Courses</i> allows you to setup your school's courses. There are three tiers of courses: Subjects, Courses, and Course Periods.
 </p>
 <p>
-	To add any of these four things, click on the Add icon (+) in the column corresponding to what you want to add. Then, fill in the information requested in the fields above the list of marking periods and click the "Save" button.
+	To add any of these three things, click on the Add icon (+) in the column corresponding to what you want to add. Then, fill in the information requested in the fields above the list of courses and click the "Save" button.
 </p>
 <p>
-	To change any of these four things, click on the item you want to change, and click on whatever value you want to change in the grey area above the lists. Then, change the value and click the "Save" button.
+	To change any of these three things, click on the item you want to change, and click on whatever value you want to change in the grey area above the lists. Then, change the value and click the "Save" button.
 </p>
 <p>
 	Finally, to delete something, select it by clicking on its title on the list and click the "Delete" button at the top of the screen. You will be asked to confirm the deletion.
@@ -1102,7 +1225,7 @@ HTML;
 	You first must confirm the Scheduler run. Here, you can also choose to run the scheduler in "Test Mode" which will not save the student schedules.
 </p>
 <p>
-	Once the scheduler has run, which could take several minutes, it will notify you of any conflicts. The Scheduler output will also tell you if any course requested has zero available seats. If a request could not be met, you can change the requests accordingly to ensure complete scheduling. If you ran the Scheduler in "Test Mode," you will be given the option to run the scheduler saving the schedules. Once the schedules have been saved, you will be given the option to view the Schedule Report.
+	Once the scheduler has run, which could take several minutes, it will notify you of any conflicts. The Scheduler output will also tell you if any course requested has zero available seats. If a request could not be met, you can change the requests accordingly to ensure complete scheduling. Once the schedules have been saved, you will be given the option to view the Schedule Report.
 </p>
 HTML;
 
@@ -1146,7 +1269,7 @@ if ( User( 'PROFILE' ) === 'admin' ) :
 	Before printing the report cards, you must select which marking periods to display on the report card by checking desired marking period checkboxes.
 </p>
 <p>
-	The report cards will be automatically downloaded to your computer in the printable PDF format when you click the "Submit" button.
+	The report cards will be automatically downloaded to your computer in the printable PDF format when you click the "Create Report Cards for Selected Students" button.
 </p>
 HTML;
 
@@ -1167,10 +1290,10 @@ HTML;
 
 	$help['Grades/CalcGPA.php'] = <<<HTML
 <p>
-	<i>Calculate GPA</i> calculates and saves the GPA and class rank of each student in your school based upon their semester grades.
+	<i>Calculate GPA</i> calculates and saves the GPA and class rank of each student in your school based upon their grades.
 </p>
 <p>
-	You must confirm your intention to calculate GPA. Here, you can also specify what number your weighted scale is based upon and whether to base class rank upon weighted or unweighted GPA.
+	You must confirm your intention to calculate GPA. Here, you can also specify for which marking period the GPA is calculated. The GPA is calculated using the "Base grading scale" specified in the school setup.
 </p>
 <p>
 	The Calculate GPA program calculates the weighted GPA earned per course by multiplying the GPA value of the grade earned by the GPA multiplier of the course weight. Then, it divides that value by the number you specified as the base for your weighted scale. For unweighted GPA, the Calculate GPA program simply takes the GPA value of the grade the student earned. After finding the GPA points earned for each course, the program averages these values to determine the student's to-date GPA. It then sorts these values to determine the class rank. If more than one student has the same GPA, they will share a position in class rank.
@@ -1200,7 +1323,7 @@ HTML;
 	The red checks indicate that a teacher has failed to enter the current marking period's grades for that period.
 </p>
 <p>
-	You can select the current quarter, semester from the pull-down menu at the top of the screen. To change the current quarter, change the marking period pull-down menu on the left frame. You can also show only one period by choosing that period from the period pull-down menu at the top of the screen. After choosing a marking period or period, click the "Go" button to refresh the list with the new parameters.
+	You can select the current quarter, semester from the pull-down menu at the top of the screen. To change the current quarter, change the marking period pull-down menu on the left frame. You can also show only one period by choosing that period from the period pull-down menu at the top of the screen.
 </p>
 HTML;
 
@@ -1215,13 +1338,10 @@ HTML;
 
 	$help['Grades/StudentGrades.php'] = <<<HTML
 <p>
-	<i>Student Grades</i> allows you to view the grades earned by any number of students.
+	<i>Student Grades</i> allows you to view the grades earned by a student.
 </p>
 <p>
 	You can search for students who are enrolled in a specific course by clicking the "Choose" link next to the "Course" search option and choosing a course from the popup window that appears. You can also limit your search based on weighted/unweighted GPA, class rank, and letter grade by filling in the upper and lower bounds of the GPA and class rank range and checking the desired letter grade checkboxes. For example, this allows you to search for all students in the top ten of their class, all students who are failing, or all students who have failed at least one course in the marking periods selected.
-</p>
-<p>
-	Before searching, you must select which marking periods to display by checking desired marking period checkboxes.
 </p>
 HTML;
 
@@ -1257,7 +1377,7 @@ HTML;
 
 	$help['Grades/ReportCardGrades.php'] = <<<HTML
 <p>
-	<i>Report Card Grades</i> allows you to setup your school's report card grades. Report card grades are used in the Input Final Grades program by teachers and in most of the Grades reports. Report card grades include letter grades as well as grade comments that a teacher can choose from when entering grades.
+	<i>Grading Scales</i> allows you to setup your school's report card grades. Report card grades are used in the Input Final Grades program by teachers and in most of the Grades reports. Report card grades include letter grades as well as grade comments that a teacher can choose from when entering grades.
 </p>
 <p>
 	To add a report card grade, fill in the grade's title, GPA value, and sort order in the empty fields at the bottom of the grades list and click the "Save" button.
@@ -1271,6 +1391,9 @@ HTML;
 <p>
 	To delete either type of grade, click the delete icon (-) next to the grade you want to delete. You will be asked to confirm the deletion.
 </p>
+<p>
+	To add or edit a grade scale, first click the plus icon (+) tab. For each grade scale you should adjust their scale value, minimum passing grade (minimum grade to earn credits), along with various honor roll minimum GPAs.
+</p>
 HTML;
 
 	$help['Grades/ReportCardComments.php'] = <<<HTML
@@ -1281,7 +1404,7 @@ HTML;
 	The "All Courses" tab is where you create Comments that apply to All Courses, for example to grade conduct, or a quality of the students that all courses share in common. The (+) tab is where you add other comments, specifically course-specific comment tabs and comments.
 </p>
 <p>
-	The "General" tab contains the comments that are added when entering students' grades in the "Input Final Grades" program. Teachers can use the pull-down menu under the "General" tab to add one or more pre-designed comments to the report card. Please note that RosarioSIS has placeholder symbols that can be used in these comments: "^n" will be replaced by the student's first name, while "^s" will be replaced a gender-appropriate pronoun. For example, the comment "^n Comes to ^s Class Unprepared" will be translated to "John Comes to his Class Unprepared" in John Smith's report card. Those comments are used in the pull-down menu under the "General" tab in the "Input Final Grades" program.
+	The "General" tab contains the comments that are added when entering students' grades in the "Input Final Grades" program. Teachers can use the pull-down menu under the "General" tab to add one or more pre-designed comments to the report card. Please note that RosarioSIS has placeholder symbols that can be used in these comments: "^n" will be replaced by the student's first name, while "^s" will be replaced a gender-appropriate pronoun. For example, the comment "^n Comes to ^s Class Unprepared" will be translated to "John Comes to his Class Unprepared" in John Smith's report card.
 </p>
 <p>
 	The "All Courses" tab allows you to create Comments that apply to All Courses. Enter the Comment name and associate it to a "Code Scale" (created in the "Comment Codes" program) using the pull-down menu. The result will be a new column for the comment in the "Input Final Grades" program, under the "All Courses" tab. The column will display a pull-down menu with the comment codes of the scale associated.
@@ -1296,7 +1419,7 @@ HTML;
 	<i>Comment Codes</i> allows you to create comment scales that will generate pull-down menus of grading codes in the Input Final Grades program. Then, those codes will be displayed with their associated comment in the Report Card.
 </p>
 <p>
-	To create a new Comment Scale, click on the tab with the (+) icon. Give a name to your comment scale, add an optional comment and then click "Save". A new tab will appear with the name of your new Comment Scale. Click on the tab of the comment scale to select it and then you will be able to add, one by one, the comment scale codes by filling in their respective "Title" (enter here the code), "Short Name" and "Comment" (entry that will appear on the report card).
+	To create a new Comment Scale, click on the tab with the (+) icon. Give a name to your comment scale, add an optional comment and then click "Save". A new tab will appear with the name of your new Comment Scale. Click on the tab of the comment scale to select it and then you will be able to add, one by one, the comment scale codes by filling in their respective "Title" (enter here the code), "Short Name" and "Comment" (entry / code legend that will appear on the report card).
 </p>
 HTML;
 
@@ -1330,17 +1453,44 @@ HTML;
 </p>
 HTML;
 
+	$help['Grades/MassCreateAssignments.php'] = <<<HTML
+<p>
+	<i>Mass Create Assignments</i> allows you to create assignments for multiple courses at once. There are two tiers involved with assignments: assignment types and assignments.
+</p>
+<p>
+	You will probably have assignment types called "Homework", "Tests", and perhaps "Quizzes". Assignment types are set for every period of a given course.
+</p>
+<p>
+	To add an assignment type, click on the Add icon (+) in the assignment type column. Then, fill in the information in the fields above the list of assignment types. Select the Courses in the list at the bottom of the screen and click the "Create Assignment Type for Selected Courses" button.
+</p>
+<p>
+	If you set the "Percent of Final Grade", teachers will see it only if they have checked the "Weight Grades" checkbox in their Gradebook Configuration.
+</p>
+<p>
+	To add an assignment, click on the desired assignment type in the assignment type column. Then, fill in the information in the fields above the list of assignment types. Select the Course Periods in the list at the bottom of the screen and click the "Create Assignment for Selected Course Periods" button.
+</p>
+<p>
+	If you enter 0 "Points", this will let you give Students Extra Credit.
+</p>
+<p>
+	If you check "Enable Assignment Submission", Students (or Parents) can submit the assignment (upload a file and/or leave a message). Submissions are opened from the assigned date and until the due date. If no due date has been set, submissions are open until the end of the quarter. Teachers can later consult the submissions in the "Grades" program.
+</p>
+HTML;
+
 elseif ( User( 'PROFILE' ) === 'teacher' ) :
 
 	$help['Grades/InputFinalGrades.php'] = <<<HTML
 <p>
-	<i>Input Final Grades</i> allows you to enter quarter, semester grades for all your students in the current period. By default, this program will list the students in your first period class for the current quarter. You can alter the quarter by changing the marking period pull-down menu on the left frame. Also, you can select the current semester or semester final by changing the marking period pull-down menu at the top of the screen to the desired marking period.
+	<i>Input Final Grades</i> allows you to enter quarter, semester or progress period grades for all your students in the current period. By default, this program will list the students in your first period class for the current quarter. You can alter the quarter by changing the marking period pull-down menu on the left frame. Also, you can select the current semester or progress period by changing the marking period pull-down menu at the top of the screen to the desired marking period.
 </p>
 <p>
 	Once you are in the correct marking period, you can enter student grades by selecting the earned grade for each student and entering comments as desired. Once all the grades and comments have been entered, click the "Save" button at the top of the screen.
 </p>
 <p>
 	If you are using the Gradebook, you can have RosarioSIS calculate each student's quarter grades by clicking on the "Use Gradebook Grades" link at the top of the list. Clicking this link will automatically save each student's grades and refresh the list.
+</p>
+<p>
+	If the marking period you are in is a Progress Period, when clicking on the "Get Gradebook Grades" link, the gades taken in account will be limited to the one for which the Assignment Due Date is comprised within the Progress Period, or the ones with no Due Dates.
 </p>
 HTML;
 
@@ -1407,6 +1557,15 @@ HTML;
 </p>
 <p>
 	The progress reports will be automatically downloaded to your computer in the printable PDF format when you click the "Submit" button.
+</p>
+HTML;
+
+	$help['Grades/AnomalousGrades.php'] = <<<HTML
+<p>
+	<i>Anomalous Grades</i> is a report that will help you to keep track of missing, inappropriate and excused grades. The grades appearing on this report are NOT problematic, but you MAY wish to review them. Missing, excused &amp; negative grades, or grades that are extra credit or that exceed 100% are shown. The "Problem" column indicates the reason why the grade is anomalous.
+</p>
+<p>
+	You can select the class using the course period pull-down in the left menu. You can also select which type of "anomalous" grades you wish the report to display.
 </p>
 HTML;
 
@@ -1497,9 +1656,12 @@ HTML;
 	$help['Attendance/AddAbsences.php'] = <<<HTML
 <p>
 	<i>Add Absences</i> allows you to add an absence to a group of students in one action.
-</p>First, search for students. Notice that you can search for students who are enrolled in a specific course or are in a certain activity. This can be useful since you can add an absence record for each period to all of Mrs. Smith's first period students or the football team who will be on an all day field trip.
+</p>
 <p>
-	From the search result, you can select any number of students. You can select all the students in the list by checking the checkbox in the blue column headings above the list. You can also specify the periods to mark the selected students, the absence code, the absence reason, and the date in the yellow box above the student list. After you have selected each desired student from this list, all the desired periods, the absence code, absence reason, and absence date, click the "Save" button at the top of the screen.
+	First, search for students. Notice that you can search for students who are enrolled in a specific course or are in a certain activity. This can be useful since you can add an absence record for each period to all of Mrs. Smith's first period students or the football team who will be on an all day field trip.
+</p>
+<p>
+	From the search result, you can select any number of students. You can select all the students in the list by checking the checkbox in the column headings above the list. You can also specify the periods to mark the selected students, the absence code, the absence reason, and the date in the yellow box above the student list. After you have selected each desired student from this list, all the desired periods, the absence code, absence reason, and absence date, click the "Save" button at the top of the screen.
 </p>
 HTML;
 
@@ -1523,7 +1685,7 @@ HTML;
 
 	$help['Attendance/DailySummary.php'] = <<<HTML
 <p>
-	<i>Daily Summary</i> is a report that shows the daily attendance status of any number of students for every date during any timeframe.
+	<i>Attendance Chart</i> is a report that shows the daily attendance status of any number of students for every date during any timeframe.
 </p>
 <p>
 	After searching for students, you can alter the date range by changing the date pull-down menus at the top of the screen and clicking the "Go" button. The list shows each student's daily attendance value for each day with color codes. A red box signifies that the student was absent all day, a yellow box signifies that a student was absent half-day, and a green box signifies that a student was present all day long.
@@ -1550,7 +1712,7 @@ HTML;
 	The red checks indicate that a teacher has failed to enter the current day's attendance for that period.
 </p>
 <p>
-	You can select the current date from the pull-down menu at the top of the screen. You can also show only one period by choosing that period from the period pull-down menu at the top of the screen. After choosing a date or period, click the "Go" button to refresh the list with the new parameters.
+	You can select the current date from the pull-down menu at the top of the screen. You can also show only one period by choosing that period from the period pull-down menu at the top of the screen. After choosing a date or period, the list will be automtically refreshed with the new parameters.
 </p>
 HTML;
 
@@ -1610,6 +1772,27 @@ elseif ( User( 'PROFILE' ) === 'teacher' ) :
 </p>
 HTML;
 
+	$help['Attendance/DailySummary.php'] = <<<HTML
+<p>
+	<i>Daily Summary</i> is a report that shows the daily attendance status of any number of students for every date during any timeframe.
+</p>
+<p>
+	After searching for students, you can alter the date range by changing the date pull-down menus at the top of the screen and clicking the "Go" button. The list shows each student's daily attendance value for each day with color codes. A red box signifies that the student was absent all day, a yellow box signifies that a student was absent half-day, and a green box signifies that a student was present all day long.
+</p>
+<p>
+	You can see the attendance records for each period for any student by clicking on a student's name from the list. Here, the absence code is displayed in the color-coded box.
+</p>
+HTML;
+
+	$help['Attendance/StudentSummary.php'] = <<<HTML
+<p>
+	<i>Student Summary</i> is a report that shows the days for which a student has an absence.
+</p>
+<p>
+	After selecting a student, you can alter the date range by changing the date pull-down menus at the top of the screen and clicking the "Go" button. The list shows the student's absences for each period of each day that he had an absence. A red "x" indicates the student was absent in the corresponding period.
+</p>
+HTML;
+
 	// Parent & Student.
 else :
 
@@ -1651,7 +1834,7 @@ HTML;
 	<i>Add Activity</i> allows you to add an activity to a group of students in one action.
 </p>
 <p>
-	First, select an activity to be added from the pull-down menu at the top of the screen. You can also perform this action from the next screen. Next, search for students. Notice that you can search for students who are in a certain activity or course. From the search result, you can select any number of students. You can select all the students in the list by checking the checkbox in the column headings above the list. After you have selected each desired student from this list, click the "Add Activity to Selected Students" button at the top of the screen. If you have not yet chosen an activity, you must do that before you click this button.
+	First, search for students. Notice that you can search for students who are in a certain activity or course. From the search result, you can select any number of students. You can select all the students in the list by checking the checkbox in the column headings above the list. Next, select an activity to be added from the pull-down menu at the top of the screen. After you have selected each desired student from this list and the desired activity, click the "Add Activity to Selected Students" button at the top of the screen.
 </p>
 HTML;
 

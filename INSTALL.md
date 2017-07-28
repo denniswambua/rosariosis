@@ -2,14 +2,14 @@
 
 ## RosarioSIS Student Information System
 
-Version 2.9.1
+Version 3.4.1
 -------------
 
 NOTE: Before Installing RosarioSIS, you must read and agree to the included [license](LICENSE).
 
 RosarioSIS is a web based application which relies on other facilities such as a web server, PHP server-side scripting, and PostgreSQL database server.
 
-For RosarioSIS to work you must first have your web server working, PostgreSQL working, PHP working (including the `pgsql`, `gettext` & `mbstring` extensions). Setting these up varies a lot with platform, operating system, and distribution so it is well beyond to scope of this brief install document.
+For RosarioSIS to work you must first have your web server working, PostgreSQL working, PHP working (including the `pgsql`, `gettext`, `mbstring`, `gd`, `curl`, `xmlrpc` & `xml` extensions). Setting these up varies a lot with platform, operating system, and distribution so it is well beyond to scope of this brief install document.
 
 RosarioSIS was tested on:
 
@@ -18,12 +18,15 @@ RosarioSIS was tested on:
 - Ubuntu 12.04 with Apache 2.2.22, Postgres 9.1, and PHP 5.3.10
 - Ubuntu 14.04 with Apache 2.4.18, Postgres 9.3.10, and PHP 5.5.9
 - Debian Jessie with Apache 2.4.16, Postgres 9.4, and PHP 5.6.13
+- Shared hosting with cPanel, nginx, Postgres 8.4, and PHP 5.6.27
 - through Mozilla Firefox
 - through BrowserStack for cross-browser compatibility (not compatible with Internet Explorer 8 or lower)
 
 Minimum requirements: **PHP 5.3.2** & **Postgres 8**
 
-[Installation Directions for **Windows**](https://github.com/francoisjacquet/rosariosis/wiki/How-to-install-RosarioSIS-on-Windows)
+[Installation directions for **Windows**](https://github.com/francoisjacquet/rosariosis/wiki/How-to-install-RosarioSIS-on-Windows)
+
+[Installation directions for **cPanel**](https://github.com/francoisjacquet/rosariosis/wiki/How-to-install-RosarioSIS-on-cPanel)
 
 
 Installing the Package
@@ -40,7 +43,7 @@ Unzip the RosarioSIS distribution to a directory that is accessible to your web 
 - `$pg_dumpPath` is full path to the postgres database dump utility (pg_dump)
 - `$wkhtmltopdfPath` full path to wkhtmltopdf for PDF 'printing'
 
-- `$DefaultSyear` default school year, should be present in the database to be able to login
+- `$DefaultSyear` default school year, should match the database to be able to login
 - `$RosarioNotifyAddress` is the email address to send error and new administrator notifications to
 - `$RosarioLocales` is a comma separated list of the locale names of the translations (see `locale/` folder for available locales)
 
@@ -53,8 +56,11 @@ Unzip the RosarioSIS distribution to a directory that is accessible to your web 
 - `$PortalNotesFilesPath` path to portal notes attached files
 - `$AssignmentsFilesPath` path to student assignments files
 - `$FS_IconsPath` path to food service icons
+- `$FileUploadsPath` path to file uploads
 - `$LocalePath` path were the language packs are stored. You need to restart Apache at each change in this directory.
-- `$Timezone` sets the default time zone used by all date/time functions. See [List of Supported Timezones](http://php.net/manual/en/timezones.php).
+- `$PNGQuantPath` path to [PNGQuant](https://pngquant.org/) for PNG compression.
+- `$Timezone` sets the default time zone used by date/time functions. See [List of Supported Timezones](http://php.net/manual/en/timezones.php).
+- `$ETagCache` set to `false` to deactivate the [ETag cache](https://en.wikipedia.org/wiki/HTTP_ETag) and disable "private" session cache. See [Sessions and security](http://php.net/manual/it/session.security.php).
 
   [Debug mode: add the following line to activate]
 - `define( 'ROSARIO_DEBUG', true );`
@@ -98,26 +104,32 @@ Installation problems
 To help you spot problems, point your browser to: `http://yourdomain.com/INSTALL_LOCATION/diagnostic.php`
 
 
+Installing PHP extensions
+-------------------------
+
+Install instructions for Ubuntu 16.04:
+	`server$ sudo apt-get install php-pgsql php-gettext php-mbstring php-gd php-curl php-xmlrpc php-xml`
+
+
+Installing other languages
+--------------------------
+
+Install instructions for Ubuntu 16.04 and the _Spanish_ locale:
+	`server$ sudo apt-get install language-pack-es`
+Then restart the server.
+
+
 Installing [wkhtmltopdf](http://wkhtmltopdf.org/)
 -------------------------------------------------
 
-Install instructions for Ubuntu 14.04 64bits:
-
-1. Download the latest executable (0.12.2.1 as of 2015.02.03): `server$ wget http://download.gna.org/wkhtmltopdf/0.12/0.12.2.1/wkhtmltox-0.12.2.1_linux-trusty-amd64.deb`
-
-2. Install package: `server$ sudo dpkg --install wkhtmltox-0.12.2.1_linux-trusty-amd64.deb`
-
-3. Install the missing dependencies: `server$ sudo apt-get -f install`
-
-4. Test: `server$ wkhtmltopdf --margin-top 0 --margin-bottom 0 --margin-left 0 --margin-right 0 https://www.rosariosis.org/quick-setup-guide/ RosarioSIS_Quick_Setup_Guide.pdf`
-
-5. Set `$wkhtmltopdfPath` in RosarioSIS `config.inc.php` file: `$wkhtmltopdfPath = '/usr/local/bin/wkhtmltopdf';`
+Install instructions for Ubuntu 16.04:
+	`server$ sudo apt-get install wkhtmltopdf`
 
 
 Activate PHP mail() function
 ----------------------------
 
-Install instructions for Ubuntu 14.04 64bits:
+Install instructions for Ubuntu 16.04:
 	`server$ sudo apt-get install sendmail`
 
 

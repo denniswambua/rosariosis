@@ -20,12 +20,20 @@ if ( ! isset( $menu ) )
 	}
 }
 
-if ( $_REQUEST['profile_id']!='')
+// Sanitize requested Profile ID.
+if ( isset( $_REQUEST['profile_id'] )
+	&& $_REQUEST['profile_id'] !== (string) (int) $_REQUEST['profile_id'] )
+{
+	$_REQUEST['profile_id'] = false;
+}
+
+if ( $_REQUEST['profile_id'] !== false )
 {
 	$exceptions_RET = DBGet(DBQuery("SELECT PROFILE_ID,MODNAME,CAN_USE,CAN_EDIT FROM PROFILE_EXCEPTIONS WHERE PROFILE_ID='".$_REQUEST['profile_id']."'"),array(),array('MODNAME'));
 	$profile_RET = DBGet(DBQuery("SELECT PROFILE FROM USER_PROFILES WHERE ID='".$_REQUEST['profile_id']."'"));
 	$xprofile = $profile_RET[1]['PROFILE'];
-	if ( $xprofile=='student')
+
+	if ( $xprofile === 'student' )
 	{
 		$xprofile = 'parent';
 		//FJ enable password change for students
@@ -76,18 +84,14 @@ if ( $_REQUEST['modfunc'] === 'delete'
 			DBQuery( "DELETE FROM PROFILE_EXCEPTIONS
 				WHERE PROFILE_ID='" . $_REQUEST['profile_id'] . "'" );
 
-			unset( $_REQUEST['modfunc'] );
-			unset( $_SESSION['_REQUEST_vars']['modfunc'] );
-			unset( $_REQUEST['profile_id'] );
-			unset( $_SESSION['_REQUEST_vars']['profile_id'] );
+			// Unset modfunc & profile ID & redirect URL.
+			RedirectURL( array( 'modfunc', 'profile_id' ) );
 		}
 	}
 	else // bad or already deleted profile ID
 	{
-		unset($_REQUEST['modfunc']);
-		unset($_SESSION['_REQUEST_vars']['modfunc']);
-		unset( $_REQUEST['profile_id'] );
-		unset( $_SESSION['_REQUEST_vars']['profile_id'] );
+		// Unset modfunc & profile ID & redirect URL.
+		RedirectURL( array( 'modfunc', 'profile_id' ) );
 	}
 }
 
@@ -107,10 +111,22 @@ if ( $_REQUEST['modfunc'] === 'update'
 
 	$categories_RET = DBGet(DBQuery("SELECT ID,TITLE FROM STAFF_FIELD_CATEGORIES"));
 
-	foreach ( (array) $categories_RET as $category)
+	foreach ( (array) $categories_RET as $category )
 	{
-		$file = 'Users/User.php&category_id='.$category['ID'];
-		$tmp_menu['Users'][ $xprofile ][ $file ] = ' &nbsp; &nbsp; &rsaquo; '.$category['TITLE'];
+		$file = 'Users/User.php&category_id=' . $category['ID'];
+		$tmp_menu['Users'][ $xprofile ][ $file ] = ' &nbsp; &nbsp; &rsaquo; ' . $category['TITLE'];
+
+		if ( $xprofile === 'admin'
+			&& $category['ID'] === '1' )
+		{
+			// Admin User Profile restriction.
+			$file = 'Users/User.php&category_id=1&user_profile';
+			$tmp_menu['Users'][ $xprofile ][ $file ] = ' &nbsp; &nbsp;  &nbsp; &nbsp; &rsaquo; ' . _( 'User Profile' );
+
+			// Admin Schools restriction.
+			$file = 'Users/User.php&category_id=1&schools';
+			$tmp_menu['Users'][ $xprofile ][ $file ] = ' &nbsp; &nbsp;  &nbsp; &nbsp; &rsaquo; ' . _( 'Schools' );
+		}
 	}
 
 	//FJ fix SQL bug TeacherPrograms inserted twice as in Users and other categories
@@ -163,12 +179,9 @@ if ( $_REQUEST['modfunc'] === 'update'
 		WHERE PROFILE_ID='" . $_REQUEST['profile_id'] . "'" ), array(), array( 'MODNAME' ) );
 
 	unset($tmp_menu);
-	unset($_REQUEST['modfunc']);
-	unset($_SESSION['_REQUEST_vars']['modfunc']);
-	unset($_REQUEST['can_edit']);
-	unset($_SESSION['_REQUEST_vars']['can_edit']);
-	unset($_REQUEST['can_use']);
-	unset($_SESSION['_REQUEST_vars']['can_use']);
+
+	// Unset modfunc & can edit & can use & redirect URL.
+	RedirectURL( array( 'modfunc', 'can_edit', 'can_use' ) );
 
 	// If Admin Profile updated, reload menu.
 	if ( $_REQUEST['profile_id'] === '1' )
@@ -181,18 +194,29 @@ if ( $_REQUEST['modfunc'] === 'update'
 	}
 }
 
-if ( $_REQUEST['new_profile_title'] && AllowEdit())
+if ( $_REQUEST['modfunc']
+	&& $_REQUEST['new_profile_title']
+	&& AllowEdit() )
 {
 	$id = DBGet(DBQuery("SELECT ".db_seq_nextval('USER_PROFILES_SEQ')." AS ID"));
 	$id = $id[1]['ID'];
 	$exceptions_RET = array();
-	DBQuery("INSERT INTO USER_PROFILES (ID,TITLE,PROFILE) values('".$id."','".$_REQUEST['new_profile_title']."','".$_REQUEST['new_profile_type']."')");
-	$_REQUEST['profile_id'] = $id;
+
 	$xprofile = $_REQUEST['new_profile_type'];
-	unset($_REQUEST['new_profile_title']);
-	unset($_SESSION['_REQUEST_vars']['new_profile_title']);
-	unset($_REQUEST['new_profile_type']);
-	unset($_SESSION['_REQUEST_vars']['new_profile_type']);
+
+	if ( ! in_array( $xprofile, array( 'admin', 'teacher', 'parent' ) ) )
+	{
+		// Sanitize requested profile type.
+		$xprofile = 'parent';
+	}
+
+	DBQuery( "INSERT INTO USER_PROFILES (ID,TITLE,PROFILE)
+		values('" . $id . "','" . $_REQUEST['new_profile_title'] . "','" . $xprofile . "')");
+
+	$_REQUEST['profile_id'] = $id;
+
+	// Unset modfunc & new profile type & new profile title & redirect URL.
+	RedirectURL( array( 'modfunc', 'new_profile_title', 'new_profile_type' ) );
 }
 
 if ( $_REQUEST['modfunc']!='delete')
@@ -202,7 +226,7 @@ if ( $_REQUEST['modfunc']!='delete')
 	echo '<br />';
 	echo '<table><tr class="st"><td class="valign-top">';
 
-	echo '<table class="widefat cellspacing-0">';
+	echo '<table class="widefat">';
 
 	//$profiles_RET = DBGet(DBQuery("SELECT ID,TITLE,PROFILE FROM USER_PROFILES"));
 	$profiles_RET = DBGet(DBQuery("SELECT ID,TITLE,PROFILE FROM USER_PROFILES ORDER BY ID"),array(),array('PROFILE','ID'));
@@ -241,7 +265,7 @@ if ( $_REQUEST['modfunc']!='delete')
 			_( 'Add a User Profile' ) . '</a><br /><div id="new_profile_div"></div></td></tr>';
 	}
 
-	echo '</table>';
+	echo '</table><br />';
 	echo '</td><td></td><td>';
 
 	echo '<div id="main_div">';
@@ -249,7 +273,7 @@ if ( $_REQUEST['modfunc']!='delete')
 	{
 		PopTable('header',_('Permissions'));
 
-		echo '<table class="widefat cellspacing-0">';
+		echo '<table class="widefat">';
 		foreach ( (array) $menu as $modcat => $profiles )
 		{
 			$values = $profiles[ $xprofile ];
@@ -260,89 +284,167 @@ if ( $_REQUEST['modfunc']!='delete')
 				continue;
 			}
 
-			if ( !in_array($modcat, $RosarioCoreModules))
-				$module_title = dgettext($modcat, str_replace('_',' ',$modcat));
+			if ( isset( $values['title'] ) )
+			{
+				$module_title = $values['title'];
+			}
+			elseif ( ! in_array( $modcat, $RosarioCoreModules ) )
+			{
+				$module_title = dgettext( $modcat, str_replace( '_', ' ', $modcat ) );
+			}
 			else
-				$module_title = _(str_replace('_',' ',$modcat));
+			{
+				$module_title = _( str_replace( '_', ' ', $modcat ) );
+			}
 
-			echo '<tr><td colspan="3"><h4>'.$module_title.'</h4></td></tr>';
 
-			echo '<tr><th><label>'._('Can Use').' '.(AllowEdit()?'<input type="checkbox" name="can_use_'.$modcat.'" onclick="checkAll(this.form,this.form.can_use_'.$modcat.'.checked,\'can_use['.$modcat.'\');">':'').'</label></th>';
+			echo '<tr><td colspan="3"><h4>' . $module_title . '</h4></td></tr>';
 
-			if ( $xprofile=='admin' || $modcat=='Students' || $modcat=='Resources')
-				echo '<th><label>'._('Can Edit').' '.(AllowEdit()?'<input type="checkbox" name="can_edit_'.$modcat.'" onclick="checkAll(this.form,this.form.can_edit_'.$modcat.'.checked,\'can_edit['.$modcat.'\');">':'').'</label></th>';
+			echo '<tr><th class="align-right"><label>' . _( 'Can Use' ) . ' ' .
+				( AllowEdit() ?
+					'<input type="checkbox" name="can_use_' . $modcat .
+						'" onclick="checkAll(this.form,this.form.can_use_' . $modcat .
+						'.checked,\'can_use[' . $modcat . '\');">' :
+					'' ) .
+				'</label></th>';
+
+			if ( $xprofile === 'admin'
+				|| $modcat === 'Students'
+				|| ( $xprofile !== 'teacher'
+					&& $modcat === 'Scheduling' )
+				|| ( $_REQUEST['profile_id'] !== '0' // Student.
+					&& $modcat === 'Users' ) )
+			{
+				echo '<th class="align-right"><label>' . _( 'Can Edit' ) . ' ' .
+					( AllowEdit() ?
+						'<input type="checkbox" name="can_edit_' . $modcat .
+							'" onclick="checkAll(this.form,this.form.can_edit_' . $modcat .
+							'.checked,\'can_edit[' . $modcat . '\');">' :
+						'' ) .
+					'</label></th>';
+			}
 			else
+			{
 				echo '<th>&nbsp;</th>';
+			}
 
 			echo '<th>&nbsp;</th></tr>';
-			if (count($values))
+
+			foreach ( (array) $values as $file => $title )
 			{
-				foreach ( (array) $values as $file => $title)
+				if ( !is_numeric( $file )
+					&& $file !== 'default'
+					&& $file !== 'title' )
 				{
-					if ( !is_numeric( $file )
-						&& $file !== 'default'
-						&& $file !== 'title' )
+					$can_use = $exceptions_RET[ $file ][1]['CAN_USE'];
+					$can_edit = $exceptions_RET[ $file ][1]['CAN_EDIT'];
+
+					echo '<tr><td class="align-right"><input type="checkbox" name="can_use[' .
+						str_replace( '.', '_', $file ) . ']" value="true"' .
+						( $can_use === 'Y' ? ' checked' : '' ) .
+						( AllowEdit() ? '' : ' disabled' ) . '></td>';
+
+					if ( $xprofile === 'admin'
+						|| ( $xprofile !== 'teacher'
+							&& $file === 'Scheduling/Requests.php' ) )
 					{
-						$can_use = $exceptions_RET[ $file ][1]['CAN_USE'];
-						$can_edit = $exceptions_RET[ $file ][1]['CAN_EDIT'];
+						echo '<td class="align-right"><input type="checkbox" name="can_edit[' .
+							str_replace( '.', '_', $file ) . ']" value="true"' .
+							( $can_edit === 'Y' ? ' checked' : '' ) .
+							( AllowEdit() ? '' : ' disabled' ) . ' /></td>';
+					}
+					else
+						echo '<td>&nbsp;</td>';
 
-						//echo '<tr><td>&nbsp;</td><td>&nbsp;</td>';
+					echo'<td>' . $title . '</td></tr>';
 
-						echo '<tr><td class="align-right"><input type="checkbox" name="can_use['.str_replace('.','_',$file).']" value="true"'.($can_use=='Y'?' checked':'').(AllowEdit()?'':' DISABLED').'></td>';
-
-						if ( $xprofile=='admin' || $modcat=='Resources')
-								echo '<td class="align-right"><input type="checkbox" name="can_edit['.str_replace('.','_',$file).']" value="true"'.($can_edit=='Y'?' checked':'').(AllowEdit()?'':' DISABLED').' /></td>';
-						else
-							echo '<td>&nbsp;</td>';
-
-						echo'<td>'.$title.'</td></tr>';
-
-						if ( $modcat=='Students' && $file=='Students/Student.php')
+					if ( $modcat === 'Students'
+						&& $file === 'Students/Student.php' )
+					{
+						$categories_RET = DBGet(DBQuery("SELECT ID,TITLE FROM STUDENT_FIELD_CATEGORIES ORDER BY SORT_ORDER,TITLE"));
+						foreach ( (array) $categories_RET as $category)
 						{
-							$categories_RET = DBGet(DBQuery("SELECT ID,TITLE FROM STUDENT_FIELD_CATEGORIES ORDER BY SORT_ORDER,TITLE"));
-							foreach ( (array) $categories_RET as $category)
-							{
-								$file = 'Students/Student.php&category_id='.$category['ID'];
-								$title = '&nbsp;&nbsp;&rsaquo; '.ParseMLField($category['TITLE']);
-								$can_use = $exceptions_RET[ $file ][1]['CAN_USE'];
-								$can_edit = $exceptions_RET[ $file ][1]['CAN_EDIT'];
+							$file = 'Students/Student.php&category_id='.$category['ID'];
+							$title = '&nbsp;&nbsp;&rsaquo; '.ParseMLField($category['TITLE']);
+							$can_use = $exceptions_RET[ $file ][1]['CAN_USE'];
+							$can_edit = $exceptions_RET[ $file ][1]['CAN_EDIT'];
 
-								//echo '<tr><td>&nbsp;</td><td>&nbsp;</td>';
-								echo '<tr><td class="align-right"><input type="checkbox" name="can_use['.str_replace('.','_',$file).']" value="true"'.($can_use=='Y'?' checked':'').(AllowEdit()?'':' DISABLED').' /></td>';
+							//echo '<tr><td>&nbsp;</td><td>&nbsp;</td>';
+							echo '<tr><td class="align-right"><input type="checkbox" name="can_use['.str_replace('.','_',$file).']" value="true"'.($can_use=='Y'?' checked':'').(AllowEdit()?'':' DISABLED').' /></td>';
 
-								echo '<td class="align-right"><input type="checkbox" name="can_edit['.str_replace('.','_',$file).']" value="true"'.($can_edit=='Y'?' checked':'').(AllowEdit()?'':' DISABLED').' /></td>';
+							echo '<td class="align-right"><input type="checkbox" name="can_edit['.str_replace('.','_',$file).']" value="true"'.($can_edit=='Y'?' checked':'').(AllowEdit()?'':' DISABLED').' /></td>';
 
-								echo '<td>'.$title.'</td></tr>';
-							}
+							echo '<td>'.$title.'</td></tr>';
 						}
-						elseif ( $modcat=='Users' && $file=='Users/User.php')
+					}
+					elseif ( $modcat === 'Users'
+						&& $file === 'Users/User.php' )
+					{
+						$categories_profiles_where = DBEscapeIdentifier( $xprofile ) . "='Y'";
+
+						if ( $xprofile === 'admin' )
 						{
-							$categories_RET = DBGet(DBQuery("SELECT ID,TITLE FROM STAFF_FIELD_CATEGORIES ORDER BY SORT_ORDER,TITLE"));
-							foreach ( (array) $categories_RET as $category)
+							// Admins can access all profiles, hence their tabs too.
+							$categories_profiles_where .= " OR TEACHER='Y' OR PARENT='Y' OR NONE='Y'";
+						}
+						elseif ( $xprofile === 'teacher' )
+						{
+							// Teachers can access themselves and parents, hence their tabs too.
+							$categories_profiles_where .= " OR PARENT='Y'";
+						}
+
+						$categories_RET = DBGet( DBQuery( "SELECT ID,TITLE
+							FROM STAFF_FIELD_CATEGORIES
+							WHERE " . $categories_profiles_where .
+							" ORDER BY SORT_ORDER,TITLE" ) );
+
+						foreach ( (array) $categories_RET as $category )
+						{
+							$file = 'Users/User.php&category_id=' . $category['ID'];
+							$title = '&nbsp;&nbsp;&rsaquo; ' . ParseMLField( $category['TITLE'] );
+							$can_use = $exceptions_RET[ $file ][1]['CAN_USE'];
+							$can_edit = $exceptions_RET[ $file ][1]['CAN_EDIT'];
+
+							echo '<tr><td class="align-right"><input type="checkbox" name="can_use['.str_replace('.','_',$file).']" value="true"'.($can_use=='Y'?' checked':'').(AllowEdit()?'':' DISABLED').'></td>';
+
+							echo '<td class="align-right"><input type="checkbox" name="can_edit['.str_replace('.','_',$file).']" value="true"'.($can_edit=='Y'?' checked':'').(AllowEdit()?'':' DISABLED').' /></td>';
+
+							echo '<td>' . $title . '</td></tr>';
+
+							if ( $xprofile === 'admin'
+								&& $category['ID'] === '1' )
 							{
-								$file = 'Users/User.php&category_id='.$category['ID'];
-								$title = '&nbsp;&nbsp;&rsaquo; '.ParseMLField($category['TITLE']);
+								// Admin User Profile restriction.
+								$file = 'Users/User.php&category_id=1&user_profile';
+								$title = ' &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rsaquo; ' . _( 'User Profile' );
 								$can_use = $exceptions_RET[ $file ][1]['CAN_USE'];
 								$can_edit = $exceptions_RET[ $file ][1]['CAN_EDIT'];
 
-								//echo '<tr><td>&nbsp;</td><td>&nbsp;</td>';
 								echo '<tr><td class="align-right"><input type="checkbox" name="can_use['.str_replace('.','_',$file).']" value="true"'.($can_use=='Y'?' checked':'').(AllowEdit()?'':' DISABLED').'></td>';
 
-								if ( $xprofile=='admin')
-									echo '<td class="align-right"><input type="checkbox" name="can_edit['.str_replace('.','_',$file).']" value="true"'.($can_edit=='Y'?' checked':'').(AllowEdit()?'':' DISABLED').' /></td>';
-								else
-									echo '<td>&nbsp;</td>';
+								echo '<td class="align-right"><input type="checkbox" name="can_edit['.str_replace('.','_',$file).']" value="true"'.($can_edit=='Y'?' checked':'').(AllowEdit()?'':' DISABLED').' /></td>';
 
-								echo '<td>'.$title.'</td></tr>';
+								echo '<td>' . $title . '</td></tr>';
+
+								// Admin Schools restriction.
+								$file = 'Users/User.php&category_id=1&schools';
+								$title = ' &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&rsaquo; ' . _( 'Schools' );
+								$can_use = $exceptions_RET[ $file ][1]['CAN_USE'];
+								$can_edit = $exceptions_RET[ $file ][1]['CAN_EDIT'];
+
+								echo '<tr><td class="align-right"><input type="checkbox" name="can_use['.str_replace('.','_',$file).']" value="true"'.($can_use=='Y'?' checked':'').(AllowEdit()?'':' DISABLED').'></td>';
+
+								echo '<td class="align-right"><input type="checkbox" name="can_edit['.str_replace('.','_',$file).']" value="true"'.($can_edit=='Y'?' checked':'').(AllowEdit()?'':' DISABLED').' /></td>';
+
+								echo '<td>' . $title . '</td></tr>';
 							}
 						}
 					}
-					elseif ( $file !== 'default'
-						&& $file !== 'title' )
-					{
-						echo '<tr><td colspan="3" class="center">- '.$title.' -</td></tr>';
-					}
-
+				}
+				elseif ( $file !== 'default'
+					&& $file !== 'title' )
+				{
+					echo '<tr><td colspan="3" class="center">- '.$title.' -</td></tr>';
 				}
 			}
 			//echo '<tr><td colspan="3" style="text-align:center; height:20px;"></td></tr>';

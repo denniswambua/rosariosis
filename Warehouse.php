@@ -11,11 +11,13 @@
  * Update RosarioSIS
  * Warehouse() function (Output HTML header (including Bottom & Side menus), or footer)
  * isPopup() function (Popup window detection)
+ * isAJAX() function (AJAX request detection)
+ * ETagCache() function (ETag cache system)
  *
  * @package RosarioSIS
  */
 
-define( 'ROSARIO_VERSION', '2.9.1' );
+define( 'ROSARIO_VERSION', '3.4.1' );
 
 /**
  * Include config.inc.php file.
@@ -63,6 +65,11 @@ if ( ! isset( $UserPicturesPath ) )
 	$UserPicturesPath = 'assets/UserPhotos/';
 }
 
+if ( ! isset( $FileUploadsPath ) )
+{
+	$FileUploadsPath = 'assets/FileUploads/';
+}
+
 if ( ! isset( $LocalePath ) )
 {
 	// Path were the language packs are stored. You need to restart Apache at each change in this directory.
@@ -76,6 +83,12 @@ if ( isset( $Timezone ) ) // Sets the default time zone used by all date/time fu
 	{
 		DBQuery( "SET TIMEZONE TO '" . $Timezone . "'" );
 	}
+}
+
+// ETag cache system.
+if ( ! isset( $ETagCache ) )
+{
+	$ETagCache = true;
 }
 
 
@@ -96,7 +109,7 @@ foreach ( $functions as $function )
 session_name( 'RosarioSIS' );
 
 // See http://php.net/manual/en/session.security.php.
-$cookie_path = dirname( $_SERVER['SCRIPT_NAME'] ) == '/' ?
+$cookie_path = dirname( $_SERVER['SCRIPT_NAME'] ) === DIRECTORY_SEPARATOR ?
 	'/' :
 	dirname( $_SERVER['SCRIPT_NAME'] ) . '/';
 
@@ -340,7 +353,11 @@ function _LoadAddons( $addons, $folder )
  *
  * @example  Warehouse( 'header' );
  *
- * @global $_ROSARIO Uses $_ROSARIO['is_popup'], $_ROSARIO['not_ajax'], $_ROSARIO['ProgramLoaded']
+ * @global $_ROSARIO  Uses $_ROSARIO['ProgramLoaded']
+ *
+ * @uses isPopup()
+ * @uses isAJAX()
+ * @uses ETagCache()
  *
  * @param  string $mode 'header' or 'footer'.
  */
@@ -348,10 +365,35 @@ function Warehouse( $mode )
 {
 	global $_ROSARIO;
 
+	if ( isset( $_REQUEST['_ROSARIO_PDF'] ) )
+	{
+		if ( $mode === 'header' )
+		{
+			// Start buffer.
+			ob_start();
+		}
+
+		// Printing PDF, skip, see PDF.fnc.php.
+		return;
+	}
+
 	switch ( $mode )
 	{
 		// Header HTML.
 		case 'header':
+
+			ETagCache( 'start' );
+
+			if ( isAJAX() )
+			{
+				// If jQuery not available, log out.
+				if ( $_ROSARIO['page'] === 'modules' ) : ?>
+<script>if (!window.$) window.location.href = 'index.php?modfunc=logout';</script>
+				<?php endif;
+
+				// AJAX: we only need to generate #body content.
+				break;
+			}
 
 			$lang_2_chars = mb_substr( $_SESSION['locale'], 0, 2 );
 
@@ -367,6 +409,7 @@ function Warehouse( $mode )
 	<meta charset="UTF-8" />
 	<meta name="viewport" content="width=device-width" />
 	<meta name="apple-mobile-web-app-capable" content="yes" />
+	<meta name="mobile-web-app-capable" content="yes" />
 	<noscript>
 		<meta http-equiv="REFRESH" content="0;url=index.php?modfunc=logout&amp;reason=javascript" />
 	</noscript>
@@ -374,23 +417,26 @@ function Warehouse( $mode )
 	<link rel="icon" href="apple-touch-icon.png" sizes="128x128" />
 	<link rel="stylesheet" href="assets/themes/<?php echo Preferences( 'THEME' ); ?>/stylesheet.css?v=<?php echo ROSARIO_VERSION; ?>" />
 	<style>.highlight,.highlight-hover:hover{background-color:<?php echo Preferences( 'HIGHLIGHT' ); ?> !important;}</style>
-	<?php if ( $_ROSARIO['page'] === 'modules' ) : ?>
+	<?php if ( $_ROSARIO['page'] === 'modules'
+		|| $_ROSARIO['page'] === 'create-account' ) : ?>
 	<script src="assets/js/jquery.js"></script>
 	<script src="assets/js/plugins.min.js?v=<?php echo ROSARIO_VERSION; ?>"></script>
-	<script src="assets/js/warehouse.js?v=<?php echo ROSARIO_VERSION; ?>"></script>
+	<script src="assets/js/warehouse.min.js?v=<?php echo ROSARIO_VERSION; ?>"></script>
 	<script src="assets/js/jscalendar/lang/calendar-<?php echo file_exists( 'assets/js/jscalendar/lang/calendar-' . $lang_2_chars . '.js' ) ? $lang_2_chars : 'en'; ?>.js"></script>
 	<script>var scrollTop = "<?php echo Preferences( 'SCROLL_TOP' ); ?>";</script>
-	<?php endif; ?>
+		<?php if ( file_exists( 'assets/themes/' . Preferences( 'THEME' ) . '/scripts.js' ) ) : ?>
+		<script src="assets/themes/<?php echo Preferences( 'THEME' ); ?>/scripts.js"></script>
+		<?php endif;
+	endif; ?>
 </head>
 <body class="<?php echo $_ROSARIO['page']; ?>">
 <?php 	if ( $_ROSARIO['page'] === 'modules' ) :
-				// If popup window, verify it is an actual popup.
-				if ( $_ROSARIO['is_popup'] ) :
+			// If popup window, verify it is an actual popup.
+			if ( isPopup() ) :
 ?>
-<script>if(window == top  && (!window.opener)) window.location.href = "index.php";</script>
+<script>if(window == top  && (!window.opener)) window.location.href = "Modules.php?modname=misc/Portal.php";</script>
 <?php
-				// Else if not AJAX request.
-				elseif ( $_ROSARIO['not_ajax'] ) :
+			else :
 ?>
 <div id="wrap">
 	<footer id="footer" class="mod">
@@ -402,17 +448,18 @@ function Warehouse( $mode )
 	</aside>
 
 <?php
-				endif;
+			endif;
+		endif;
 ?>
 	<div id="body" tabindex="0" role="main" class="mod">
 <?php
-			endif;
 		break;
 
 		// Footer HTML.
 		case 'footer':
 ?>
 <br />
+<?php 	if ( $_ROSARIO['page'] === 'modules' ) : ?>
 <script>
 	var modname = "<?php echo isset( $_ROSARIO['ProgramLoaded'] ) ? $_ROSARIO['ProgramLoaded'] : ''; ?>";
 	if (typeof menuStudentID !== 'undefined'
@@ -420,22 +467,16 @@ function Warehouse( $mode )
 			|| menuStaffID != "<?php echo UserStaffID(); ?>"
 			|| menuSchool != "<?php echo UserSchool(); ?>"
 			|| menuCoursePeriod != "<?php echo UserCoursePeriod(); ?>")) {
-		ajaxLink( 'Side.php' );
+		ajaxLink( 'Side.php?sidefunc=update' );
 	}
-<?php 		if ( ! empty( $_ROSARIO['ProgramLoaded'] ) ) : ?>
-	else
-		openMenu( modname );
-<?php		endif; ?>
 </script>
-<?php
-			// If popup window or if not AJAX request.
-			if ( $_ROSARIO['is_popup']
-				|| $_ROSARIO['not_ajax'] ) :
+<?php		// If not AJAX request.
+			if ( ! isAJAX() ) :
 ?>
 	</div><!-- #body -->
+	<div class="ajax-error"></div>
 <?php
-				if ( $_ROSARIO['not_ajax']
-					&& ! $_ROSARIO['is_popup'] ) :
+				if ( ! isPopup() ) :
 ?>
 	<div style="clear:both;"></div>
 </div><!-- #wrap -->
@@ -445,6 +486,13 @@ function Warehouse( $mode )
 </body></html>
 <?php
 			endif;
+		else : // Other pages (not modules). ?>
+	</div><!-- #body -->
+</body></html>
+<?php
+		endif;
+
+		ETagCache( 'stop' );
 
 		break;
 	} // End switch.
@@ -456,16 +504,31 @@ function Warehouse( $mode )
  *
  * @link http://www.securiteam.com/securitynews/6S02U1P6BI.html
  *
- * @example $_ROSARIO['is_popup'] = isPopup( $modname, $_REQUEST['modfunc'] );
+ * Set it once in Modules.php:
+ * @example isPopup( $modname, $_REQUEST['modfunc'] );
+ * Later call it:
+ * @example if ( isPopup() )
  *
- * @param  string $modname Mod name.
- * @param  string $modfunc Mod function.
+ * @param  string $modname Mod name. Optional, defaults to ''.
+ * @param  string $modfunc Mod function. Optional, defaults to ''.
  *
  * @return boolean True if popup, else false
  */
-function isPopup( $modname, $modfunc )
+function isPopup( $modname = '', $modfunc = '' )
 {
+	static $is_popup = null;
+
+	if ( ! is_null( $is_popup ) )
+	{
+		return $is_popup;
+	}
+
 	$is_popup = false;
+
+	if ( ! $modname )
+	{
+		return $is_popup;
+	}
 
 	/**
 	 * Popup window detection.
@@ -498,4 +561,107 @@ function isPopup( $modname, $modfunc )
 	}
 
 	return $is_popup;
+}
+
+
+/**
+ * AJAX request detection
+ *
+ * @since 3.0.1
+ *
+ * @example if ( isAJAX() )
+ *
+ * @return boolean True if is AJAX, else false
+ */
+function isAJAX()
+{
+	static $is_ajax = null;
+
+	if ( ! is_null( $is_ajax ) )
+	{
+		return $is_ajax;
+	}
+
+	$is_ajax = isset( $_SERVER['HTTP_X_REQUESTED_WITH'] )
+		&& $_SERVER['HTTP_X_REQUESTED_WITH'] === 'XMLHttpRequest';
+
+	return $is_ajax;
+}
+
+
+/**
+ * ETag cache system.
+ * Start buffer, or stop buffer
+ * and calculate ETag:
+ * If ETag === If-None-Match, then send 403
+ * Else send content (buffer) + ETag.
+ * If no mode is set, will only check if $ETagCache activated.
+ *
+ * @since  3.1
+ *
+ * @global $ETagCache ETag cache system.
+ *
+ * @param  string  $mode Mode: start|stop. Optional, defaults to ''.
+ *
+ * @return boolean       True if ETagCache activated, else false.
+ */
+function ETagCache( $mode = '' )
+{
+	global $ETagCache,
+		$_ROSARIO;
+
+	static $ob_started = false;
+
+	if ( ! $ETagCache )
+	{
+		return false;
+	}
+
+	if ( $mode === 'start'
+		&& ! $ob_started )
+	{
+		// Start buffer (to generate ETag).
+		$ob_started = ob_start();
+	}
+	elseif ( $mode === 'stop'
+		&& $ob_started )
+	{
+		// Stop & get buffer buffer (to generate ETag).
+		$etag_buffer = ob_get_clean();
+
+		/**
+		 * Generate ETag
+		 * Weak ETag ("W/").
+		 *
+		 * @link https://en.wikipedia.org/wiki/HTTP_ETag
+		 */
+		$etag = 'W/' . md5( $etag_buffer );
+
+		// If-None-Match header sent by client.
+		if ( isset( $_SERVER['HTTP_IF_NONE_MATCH'] )
+			&& $_SERVER['HTTP_IF_NONE_MATCH'] === $etag )
+		{
+			header( "Cache-Control: private, must-revalidate" );
+
+			// Page cached: send 304 + empty content.
+			header( $_SERVER['SERVER_PROTOCOL'] . ' 304 Not Modified' );
+
+			exit;
+
+		} else {
+
+			// FJ fix headers already sent error when program outputs buffer.
+			if ( ! headers_sent() )
+			{
+				header( "Cache-Control: private, must-revalidate" );
+
+				// Send ETag + content (buffer).
+				header( 'ETag: ' . $etag );
+			}
+
+			echo $etag_buffer;
+		}
+	}
+
+	return true;
 }

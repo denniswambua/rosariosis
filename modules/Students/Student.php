@@ -49,17 +49,25 @@ else
 	}
 }
 
-if (User('PROFILE')!='admin')
+// Allow update for Parents, Students & Teachers if have Edit permissions.
+if ( User( 'PROFILE' ) !== 'admin' )
 {
-	if (User('PROFILE')!='student')
-		if (User('PROFILE_ID'))
-			$can_edit_RET = DBGet(DBQuery("SELECT MODNAME FROM PROFILE_EXCEPTIONS WHERE PROFILE_ID='".User('PROFILE_ID')."' AND MODNAME='Students/Student.php&category_id=".$category_id."' AND CAN_EDIT='Y'"));
-		else
-			$can_edit_RET = DBGet(DBQuery("SELECT MODNAME FROM STAFF_EXCEPTIONS WHERE USER_ID='".User('STAFF_ID')."' AND MODNAME='Students/Student.php&category_id=".$category_id."' AND CAN_EDIT='Y'"),array(),array('MODNAME'));
-	else
-		$can_edit_RET = DBGet(DBQuery("SELECT MODNAME FROM PROFILE_EXCEPTIONS WHERE PROFILE_ID='0' AND MODNAME='Students/Student.php&category_id=".$category_id."' AND CAN_EDIT='Y'"));
-	if ( $can_edit_RET)
+	$can_edit_from_where = " FROM PROFILE_EXCEPTIONS WHERE PROFILE_ID='" . User( 'PROFILE_ID' ) . "'";
+
+	if ( User( 'PROFILE' ) !== 'student'
+		&& ! User( 'PROFILE_ID' ) )
+	{
+		$can_edit_from_where = " FROM STAFF_EXCEPTIONS WHERE USER_ID='" . User( 'STAFF_ID' ) . "'";
+	}
+
+	$can_edit_RET = DBGet( DBQuery( "SELECT MODNAME " . $can_edit_from_where .
+		" AND MODNAME='Students/Student.php&category_id=" . $category_id . "'
+		AND CAN_EDIT='Y'" ) );
+
+	if ( $can_edit_RET )
+	{
 		$_ROSARIO['allow_edit'] = true;
+	}
 }
 
 if ( $_REQUEST['modfunc'] === 'update'
@@ -149,7 +157,7 @@ if ( $_REQUEST['modfunc'] === 'update'
 							continue;
 						}
 
-						if ( !is_array($value))
+						if ( ! is_array( $value ) )
 						{
 							//FJ add password encryption
 							if ( $column!=='PASSWORD')
@@ -166,17 +174,24 @@ if ( $_REQUEST['modfunc'] === 'update'
 						}
 						else
 						{
-							//FJ fix bug none selected not saved
-							$sql .= $column."='";
+							// FJ fix bug none selected not saved.
 							$sql_multiple_input = '';
-							foreach ( (array) $value as $val)
+
+							foreach ( (array) $value as $val )
 							{
-								if ( $val)
-									$sql_multiple_input .= str_replace('&quot;','"',$val).'||';
+								if ( $val )
+								{
+									$sql_multiple_input .= $val . '||';
+								}
 							}
-							if ( !empty($sql_multiple_input))
-								$sql .= "||".$sql_multiple_input;
-							$sql .= "',";
+
+							if ( $sql_multiple_input )
+							{
+								$sql_multiple_input = "||" . $sql_multiple_input;
+							}
+
+							$sql .= $column . "='" . $sql_multiple_input . "',";
+
 							$go = true;
 						}
 					}
@@ -240,12 +255,12 @@ if ( $_REQUEST['modfunc'] === 'update'
 							continue;
 						}
 
-						$fields .= $column.',';
+						$fields .= DBEscapeIdentifier( $column ) . ',';
 						if ( !is_array($value))
 						{
 							//FJ add password encryption
 							if ( $column!=='PASSWORD')
-								$values .= "'".$value."',";
+								$values .= "'" . $value . "',";
 							else
 							{
 								$value = str_replace("''","'",$value);
@@ -265,7 +280,7 @@ if ( $_REQUEST['modfunc'] === 'update'
 					}
 				}
 
-				$sql .= '(' . mb_substr($fields,0,-1) . ') values(' . mb_substr($values,0,-1) . ')';
+				$sql .= '(' . mb_substr( $fields, 0, -1 ) . ') values(' . mb_substr( $values, 0, -1 ) . ')';
 				DBQuery($sql);
 
 				// create default food service account for this student
@@ -288,12 +303,23 @@ if ( $_REQUEST['modfunc'] === 'update'
 			}
 		}
 
-		if (UserStudentID() && $_FILES['photo'])
+		if ( UserStudentID()
+			&& isset( $_FILES['photo'] )
+			&& is_array( $_FILES['photo'] ) )
 		{
-			$new_photo_file = FileUpload('photo', $StudentPicturesPath.UserSyear().'/', array('.jpg', '.jpeg'), 2, $error, '.jpg', UserStudentID());
+			// $new_photo_file = FileUpload('photo', $StudentPicturesPath.UserSyear().'/', array('.jpg', '.jpeg'), 2, $error, '.jpg', UserStudentID());
 
-			//hook
-			do_action('Students/Student.php|upload_student_photo');
+			$new_photo_file = ImageUpload(
+				'photo',
+				array( 'width' => 150, 'height' => '150' ),
+				$StudentPicturesPath . UserSyear() . '/',
+				array(),
+				'.jpg',
+				UserStudentID()
+			);
+
+			// Hook.
+			do_action( 'Students/Student.php|upload_student_photo' );
 		}
 	}
 
@@ -310,20 +336,29 @@ if ( $_REQUEST['modfunc'] === 'update'
 	}
 
 	if ( $error
-		&& !UserStudentID() )
+		&& ! UserStudentID() )
 	{
 		$_REQUEST['student_id'] = 'new';
 	}
 
-	unset( $_REQUEST['modfunc'] );
+	// Unset modfunc, students (& values if no current Student).
+	$unset_request = array( 'modfunc', 'students' );
+
+	if ( ! UserStudentID() )
+	{
+		$unset_request[] = 'values';
+	}
+
+	// Unset & redirect URL.
+	RedirectURL( $unset_request );
 
 	// SHOULD THIS BE HERE???
-	if ( !UserStudentID() )
+	/*if ( !UserStudentID() )
 		unset( $_REQUEST['values'] );
 
-	unset( $_SESSION['_REQUEST_vars']['modfunc'] );
+	$_SESSION['_REQUEST_vars']['modfunc'] = false;
 	unset( $_SESSION['_REQUEST_vars']['students'] );
-	unset( $_SESSION['_REQUEST_vars']['values'] );
+	unset( $_SESSION['_REQUEST_vars']['values'] );*/
 }
 
 if (basename($_SERVER['PHP_SELF'])!='index.php')
@@ -345,6 +380,7 @@ elseif ( !UserStudentID())
 //account created, return to index
 else
 {
+	do_action( 'Students/Student.php|account_created' );
 ?>
 	<script>window.location.href = "index.php?modfunc=logout&reason=account_created";</script>
 <?php
@@ -354,21 +390,37 @@ else
 
 echo ErrorMessage( $error );
 
-Search('student_id');
+Search( 'student_id' );
 
-if (UserStudentID() || $_REQUEST['student_id']=='new')
+if ( UserStudentID()
+	|| $_REQUEST['student_id'] === 'new' )
 {
-	if (User('PROFILE')!='student')
-		if (User('PROFILE_ID'))
-			$can_use_RET = DBGet(DBQuery("SELECT MODNAME FROM PROFILE_EXCEPTIONS WHERE PROFILE_ID='".User('PROFILE_ID')."' AND CAN_USE='Y'"),array(),array('MODNAME'));
-		else
-			$can_use_RET = DBGet(DBQuery("SELECT MODNAME FROM STAFF_EXCEPTIONS WHERE USER_ID='".User('STAFF_ID')."' AND CAN_USE='Y'"),array(),array('MODNAME'));
+	// MODNAME LIKE 'Students/Student.php%'.
+	if ( User( 'PROFILE_ID' )
+		|| User( 'PROFILE' ) === 'student' )
+	{
+		$can_use_sql = "SELECT MODNAME
+			FROM PROFILE_EXCEPTIONS
+			WHERE PROFILE_ID='" . User( 'PROFILE_ID' ) . "'
+			AND CAN_USE='Y'
+			AND MODNAME LIKE 'Students/Student.php%'";
+	}
 	else
-		$can_use_RET = DBGet(DBQuery("SELECT MODNAME FROM PROFILE_EXCEPTIONS WHERE PROFILE_ID='0' AND CAN_USE='Y'"),array(),array('MODNAME'));
+	{
+		$can_use_sql = "SELECT MODNAME
+			FROM STAFF_EXCEPTIONS
+			WHERE USER_ID='" . User( 'STAFF_ID' ) . "'
+			AND CAN_USE='Y'
+			AND MODNAME LIKE 'Students/Student.php%'";
+	}
 
-	//FJ create account
-	if (basename($_SERVER['PHP_SELF'])=='index.php')
+	$can_use_RET = DBGet( DBQuery( $can_use_sql ), array(), array( 'MODNAME' ) );
+
+	// FJ create account.
+	if ( basename( $_SERVER['PHP_SELF'] ) === 'index.php' )
+	{
 		$can_use_RET['Students/Student.php&category_id=1'] = true;
+	}
 
 	//FJ General_Info only for new student
 	//$categories_RET = DBGet(DBQuery("SELECT ID,TITLE,INCLUDE FROM STUDENT_FIELD_CATEGORIES ORDER BY SORT_ORDER,TITLE"));
@@ -388,11 +440,19 @@ if (UserStudentID() || $_REQUEST['student_id']=='new')
 			$school = DBGet(DBQuery("SELECT SCHOOL_ID,GRADE_ID FROM STUDENT_ENROLLMENT WHERE STUDENT_ID='".UserStudentID()."' AND SYEAR='".UserSyear()."' AND ('".DBDate()."' BETWEEN START_DATE AND END_DATE OR END_DATE IS NULL)"));
 		}
 
-		if (basename($_SERVER['PHP_SELF'])!='index.php')
-			echo '<form name="student" action="Modules.php?modname='.$_REQUEST['modname'].'&category_id='.$category_id.'&modfunc=update" method="POST" enctype="multipart/form-data">';
-		//FJ create account
+		if ( basename( $_SERVER['PHP_SELF'] ) !== 'index.php' )
+		{
+			$form_action = 'Modules.php?modname=' . $_REQUEST['modname'] .
+				'&category_id=' . $category_id . '&student_id=' . UserStudentID() . '&modfunc=update';
+		}
 		else
-			echo '<form action="index.php?create_account=student&student_id=new&modfunc=update" method="POST" enctype="multipart/form-data">';
+		{
+			// FJ create account.
+			$form_action = 'index.php?create_account=student&student_id=new&modfunc=update';
+		}
+
+		echo '<form name="student" id="student"	action="' . $form_action . '"
+			method="POST" enctype="multipart/form-data">';
 
 		if ( $_REQUEST['student_id']!='new')
 			$name = $student['FIRST_NAME'].' '.$student['MIDDLE_NAME'].' '.$student['LAST_NAME'].' '.$student['NAME_SUFFIX'].' - '.$student['STUDENT_ID'];
@@ -420,11 +480,16 @@ if (UserStudentID() || $_REQUEST['student_id']=='new')
 				else
 					$include = 'Other_Info';*/
 
-				$tabs[] = array('title' => $category['TITLE'],'link'=>($_REQUEST['student_id']!='new' ? 'Modules.php?modname='.$_REQUEST['modname'].'&category_id='.$category['ID'] : ''));
+				$tabs[] = array(
+					'title' => $category['TITLE'],
+					'link' => ( $_REQUEST['student_id'] !== 'new' ?
+						'Modules.php?modname=' . $_REQUEST['modname'] . '&category_id=' . $category['ID'] . '&student_id=' . UserStudentID() :
+						'' ),
+				);
 			}
 		}
 
-		$_ROSARIO['selected_tab'] = 'Modules.php?modname='.$_REQUEST['modname'].'&category_id='.$category_id;
+		$_ROSARIO['selected_tab'] = 'Modules.php?modname=' . $_REQUEST['modname'] . '&category_id=' . $category_id . '&student_id=' . UserStudentID();
 
 		echo '<br />';
 		echo PopTable('header',$tabs,'width="100%"');

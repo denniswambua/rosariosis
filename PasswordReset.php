@@ -122,7 +122,8 @@ if ( isset( $_POST['email'] )
 // Password reset form.
 if ( isset( $_REQUEST['h'] )
 	&& ! empty( $_REQUEST['h'] )
-	&& mb_strlen( $_REQUEST['h'] ) == 106
+	&& ( mb_strlen( $_REQUEST['h'] ) == 106
+		|| mb_strlen( $_REQUEST['h'] ) == 105 )
 	&& mb_substr( $_REQUEST['h'], 0, 3 ) == '$6$' )
 {
 	// Select Staff where last login > now.
@@ -298,7 +299,7 @@ _printPageHead( _( 'Forgot your password?' ) );
 
 	<?php PopTable( 'header', _( 'Forgot your password?' ) ); ?>
 
-		<label><input type="text" name="email" id="email" size="25" maxlength="100" tabindex="1" required autofocus />
+		<label><input type="text" name="email" id="email" size="25" maxlength="255" tabindex="1" pattern="[^ @]*@[^ @]*" required autofocus />
 		<br />
 		<?php echo _( 'Email' ); ?></label>
 		<br />
@@ -308,10 +309,10 @@ _printPageHead( _( 'Forgot your password?' ) );
 	<?php PopTable( 'footer' ); ?>
 
 </form>
-<br />
-</body>
-</html>
 <?php
+
+Warehouse( 'footer' );
+
 
 unset( $_SESSION['USERNAME'] );
 unset( $_SESSION['STAFF_ID'] );
@@ -374,7 +375,7 @@ function _sendPasswordResetEmail( $user_id, $user_type = 'staff', $email )
 	}
 
 	// Last login = now + 2 hours.
-	$last_login = date( 'Y-m-d G:i:s', time() + 7200 );
+	$last_login = date( 'Y-m-d H:i:s', time() + 7200 );
 
 	// Generate hash from user ID, username, name, password, email & last login.
 	$hash = encrypt_password( $user_id . $username . $name . $password . $email . $last_login );
@@ -385,8 +386,9 @@ function _sendPasswordResetEmail( $user_id, $user_type = 'staff', $email )
 	// Send email.
 	require_once 'ProgramFunctions/SendEmail.fnc.php';
 
-	$message = _( 'Please visit the following link to reset your password' ) . ":\n\n" . $link .
-		"\n\n" . _( 'Please permanently delete this email once you are done.' );
+	$message = _( 'Please visit the following link to reset your password' ) . ':<br />' .
+		'<a href="' . $link . '">' . $link . '</a><br /><br />' .
+		_( 'Please permanently delete this email once you are done.' );
 
 	$email_sent = SendEmail( $email, _( 'Password Reset' ), $message );
 
@@ -419,7 +421,8 @@ function _currentPageURL()
 
 	$page_url .= '://';
 
-	if ( $_SERVER['SERVER_PORT'] != '80' )
+	if ( $_SERVER['SERVER_PORT'] != '80'
+		&& $_SERVER['SERVER_PORT'] != '443' )
 	{
 		$page_url .= $_SERVER['SERVER_NAME'] . ':' . $_SERVER['SERVER_PORT'] . $_SERVER['REQUEST_URI'];
 	}
@@ -450,8 +453,9 @@ function _passwordResetForm( $hash, $user_id )
 		<?php PopTable( 'header', _( 'Reset your password' ) ); ?>
 
 			<input type="password" name="PASSWORD" id="PASSWORD" size="25" maxlength="42" tabindex="1" required />
-			<?php echo FormatInputTitle( _( 'Password' ), 'PASSWORD', true ); ?>
+			<?php echo FormatInputTitle( _( 'New Password' ), 'PASSWORD', true ); ?>
 
+			<br />
 			<input type="password" name="VERIFY" id="VERIFY" size="25" maxlength="42" tabindex="2" required />
 			<?php echo FormatInputTitle( _( 'Verify New Password' ), 'VERIFY', true ); ?>
 
@@ -461,10 +465,8 @@ function _passwordResetForm( $hash, $user_id )
 		<?php PopTable( 'footer' ); ?>
 
 	</form>
-	<br />
-	</body>
-	</html>
 	<?php
+	Warehouse( 'footer' );
 }
 
 

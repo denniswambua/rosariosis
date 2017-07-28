@@ -21,7 +21,13 @@ if (empty($course_period_id))
 //FJ add Credit Hours
 //FJ add explicit type cast
 //$course_RET = DBGet(DBQuery("SELECT cp.COURSE_ID,c.TITLE as COURSE_NAME, cp.TITLE, cp.GRADE_SCALE_ID, credit($course_period_id, '".$_REQUEST['mp']."') AS CREDITS, (SELECT ATTENDANCE FROM SCHOOL_PERIODS WHERE PERIOD_ID=cp.PERIOD_ID) AS ATTENDANCE FROM COURSE_PERIODS cp, COURSES c WHERE cp.COURSE_ID = c.COURSE_ID AND cp.COURSE_PERIOD_ID='".$course_period_id."'"));
-$course_RET = DBGet(DBQuery("SELECT cp.COURSE_ID,c.TITLE as COURSE_NAME, cp.TITLE, cp.GRADE_SCALE_ID, credit(CAST(".$course_period_id." AS integer), CAST('".$_REQUEST['mp']."' AS character varying)) AS CREDITS, DOES_CLASS_RANK AS CLASS_RANK, c.CREDIT_HOURS FROM COURSE_PERIODS cp, COURSES c WHERE cp.COURSE_ID = c.COURSE_ID AND cp.COURSE_PERIOD_ID='".$course_period_id."'"));
+$course_RET = DBGet( DBQuery( "SELECT cp.COURSE_ID,c.TITLE as COURSE_NAME,cp.TITLE,
+	cp.GRADE_SCALE_ID, credit(CAST(" . $course_period_id . " AS integer),
+	CAST( '" . $_REQUEST['mp'] . "' AS character varying)) AS CREDITS,
+	DOES_CLASS_RANK AS CLASS_RANK,c.CREDIT_HOURS
+	FROM COURSE_PERIODS cp,COURSES c
+	WHERE cp.COURSE_ID=c.COURSE_ID
+	AND cp.COURSE_PERIOD_ID='" . $course_period_id . "'" ) );
 
 if ( ! $course_RET[1]['GRADE_SCALE_ID'])
 	ErrorMessage(array(_('You cannot enter grades for this course period.')),'fatal');
@@ -30,28 +36,58 @@ $course_title = $course_RET[1]['TITLE'];
 $grade_scale_id = $course_RET[1]['GRADE_SCALE_ID'];
 $course_id = $course_RET[1]['COURSE_ID'];
 
-$current_RET = DBGet(DBQuery("SELECT g.STUDENT_ID,g.REPORT_CARD_GRADE_ID,g.GRADE_PERCENT,g.REPORT_CARD_COMMENT_ID,g.COMMENT FROM STUDENT_REPORT_CARD_GRADES g,COURSE_PERIODS cp WHERE cp.COURSE_PERIOD_ID=g.COURSE_PERIOD_ID AND cp.COURSE_PERIOD_ID='".$course_period_id."' AND g.MARKING_PERIOD_ID='".$_REQUEST['mp']."'"),array(),array('STUDENT_ID'));
+$current_RET = DBGet( DBQuery( "SELECT g.STUDENT_ID,g.REPORT_CARD_GRADE_ID,g.GRADE_PERCENT,
+	g.REPORT_CARD_COMMENT_ID,g.COMMENT
+	FROM STUDENT_REPORT_CARD_GRADES g,COURSE_PERIODS cp
+	WHERE cp.COURSE_PERIOD_ID=g.COURSE_PERIOD_ID
+	AND cp.COURSE_PERIOD_ID='" . $course_period_id . "'
+	AND g.MARKING_PERIOD_ID='" . $_REQUEST['mp'] . "'" ), array(), array( 'STUDENT_ID' ) );
 
-$current_completed = count(DBGet(DBQuery("SELECT '' FROM GRADES_COMPLETED WHERE STAFF_ID='".User('STAFF_ID')."' AND MARKING_PERIOD_ID='".$_REQUEST['mp']."' AND COURSE_PERIOD_ID='".$course_period_id."'")));
+$current_completed = count( DBGet( DBQuery( "SELECT ''
+	FROM GRADES_COMPLETED
+	WHERE STAFF_ID='" . User( 'STAFF_ID' ) . "'
+	AND MARKING_PERIOD_ID='" . $_REQUEST['mp'] . "'
+	AND COURSE_PERIOD_ID='" . $course_period_id . "'" ) ) );
 
-$grades_RET = DBGet(DBQuery("SELECT rcg.ID,rcg.TITLE,rcg.GPA_VALUE AS WEIGHTED_GP, rcg.UNWEIGHTED_GP ,gs.GP_SCALE  FROM REPORT_CARD_GRADES rcg, REPORT_CARD_GRADE_SCALES gs WHERE rcg.grade_scale_id = gs.id AND rcg.SYEAR='".UserSyear()."' AND rcg.SCHOOL_ID='".UserSchool()."' AND rcg.GRADE_SCALE_ID='".$grade_scale_id."' ORDER BY rcg.BREAK_OFF IS NOT NULL DESC,rcg.BREAK_OFF DESC,rcg.SORT_ORDER"),array(),array('ID'));
+$grades_RET = DBGet( DBQuery( "SELECT rcg.ID,rcg.TITLE,rcg.GPA_VALUE AS WEIGHTED_GP,
+	rcg.UNWEIGHTED_GP,gs.GP_SCALE,gs.GP_PASSING_VALUE
+	FROM REPORT_CARD_GRADES rcg, REPORT_CARD_GRADE_SCALES gs
+	WHERE rcg.grade_scale_id = gs.id
+	AND rcg.SYEAR='" . UserSyear() . "'
+	AND rcg.SCHOOL_ID='" . UserSchool() . "'
+	AND rcg.GRADE_SCALE_ID='" . $grade_scale_id . "'
+	ORDER BY rcg.BREAK_OFF IS NOT NULL DESC,rcg.BREAK_OFF DESC,rcg.SORT_ORDER" ), array(), array( 'ID' ) );
 
-$categories_RET = DBGet(DBQuery("SELECT rc.ID,rc.TITLE,rc.COLOR,1,rc.SORT_ORDER
-FROM REPORT_CARD_COMMENT_CATEGORIES rc
-WHERE rc.COURSE_ID='".$course_id."'
-AND (SELECT count(1) FROM REPORT_CARD_COMMENTS WHERE COURSE_ID=rc.COURSE_ID AND CATEGORY_ID=rc.ID)>0
-UNION
-SELECT 0,'"._('All Courses')."',NULL,2,NULL
-WHERE (SELECT count(1) FROM REPORT_CARD_COMMENTS WHERE SCHOOL_ID='".UserSchool()."' AND COURSE_ID='0' AND SYEAR='".UserSyear()."')>0
-UNION
-SELECT -1,'"._('General')."',NULL,3,NULL
-WHERE (SELECT count(1) FROM REPORT_CARD_COMMENTS WHERE SCHOOL_ID='".UserSchool()."' AND COURSE_ID IS NULL AND SYEAR='".UserSyear()."')>0
-ORDER BY 4,SORT_ORDER"),array(),array('ID'));
+$categories_RET = DBGet( DBQuery( "SELECT rc.ID,rc.TITLE,rc.COLOR,1,rc.SORT_ORDER
+	FROM REPORT_CARD_COMMENT_CATEGORIES rc
+	WHERE rc.COURSE_ID='".$course_id."'
+	AND (SELECT count(1)
+		FROM REPORT_CARD_COMMENTS
+		WHERE COURSE_ID=rc.COURSE_ID
+		AND CATEGORY_ID=rc.ID)>0
+	UNION
+	SELECT 0,'" . DBEscapeString( _( 'All Courses' ) ) . "',NULL,2,NULL
+	WHERE (SELECT count(1)
+		FROM REPORT_CARD_COMMENTS
+		WHERE SCHOOL_ID='" . UserSchool() . "'
+		AND COURSE_ID='0'
+		AND SYEAR='" . UserSyear() . "')>0
+	UNION
+	SELECT -1,'" . DBEscapeString( _( 'General' ) ) . "',NULL,3,NULL
+	WHERE (SELECT count(1)
+		FROM REPORT_CARD_COMMENTS
+		WHERE SCHOOL_ID='" . UserSchool() . "'
+		AND COURSE_ID IS NULL
+		AND SYEAR='" . UserSyear() . "')>0
+	ORDER BY 4,SORT_ORDER" ), array(), array( 'ID' ) );
 
 if ( $_REQUEST['tab_id']=='' || ! $categories_RET[$_REQUEST['tab_id']])
 	$_REQUEST['tab_id'] = key($categories_RET).'';
 
-$comment_codes_RET = DBGet(DBQuery("SELECT SCALE_ID,TITLE,SHORT_NAME,COMMENT FROM REPORT_CARD_COMMENT_CODES WHERE SCHOOL_ID='".UserSchool()."' ORDER BY SORT_ORDER,ID"),array(),array('SCALE_ID'));
+$comment_codes_RET = DBGet( DBQuery( "SELECT SCALE_ID,TITLE,SHORT_NAME,COMMENT
+	FROM REPORT_CARD_COMMENT_CODES
+	WHERE SCHOOL_ID='" . UserSchool() . "'
+	ORDER BY SORT_ORDER,ID" ), array(), array( 'SCALE_ID' ) );
 
 $commentsA_select = array();
 
@@ -114,7 +150,7 @@ elseif (is_array($commentsB_RET))
 	foreach ( (array) $commentsB_RET as $id => $comment)
 		$commentsB_select += array($id => array($comment[1]['SORT_ORDER'].' - '.(mb_strlen($comment[1]['TITLE']) > 99+3?mb_substr($comment[1]['TITLE'],0,99).'...':$comment[1]['TITLE']),$comment[1]['TITLE']));
 
-if ( $_REQUEST['modfunc']=='gradebook')
+if ( $_REQUEST['modfunc'] === 'gradebook' )
 {
 	if ( $_REQUEST['mp'])
 	{
@@ -128,14 +164,58 @@ if ( $_REQUEST['modfunc']=='gradebook')
 		{
 			// Note: The 'active assignment' determination is not fully correct.  It would be easy to be fully correct here but the same determination
 			// as in Grades.php is used to avoid apparent inconsistencies in the grade calculations.  See also the note at top of Grades.php.
-			$extra['SELECT_ONLY'] = "s.STUDENT_ID, gt.ASSIGNMENT_TYPE_ID,sum(".db_case(array('gg.POINTS',"'-1'","'0'",'gg.POINTS')).") AS PARTIAL_POINTS,sum(".db_case(array('gg.POINTS',"'-1'","'0'",'ga.POINTS')).") AS PARTIAL_TOTAL,    gt.FINAL_GRADE_PERCENT";
-			$extra['FROM'] = " JOIN GRADEBOOK_ASSIGNMENTS ga ON ((ga.COURSE_PERIOD_ID=cp.COURSE_PERIOD_ID OR ga.COURSE_ID=cp.COURSE_ID AND ga.STAFF_ID=cp.TEACHER_ID) AND ga.MARKING_PERIOD_ID='".UserMP()."') LEFT OUTER JOIN GRADEBOOK_GRADES gg ON (gg.STUDENT_ID=s.STUDENT_ID AND gg.ASSIGNMENT_ID=ga.ASSIGNMENT_ID AND gg.COURSE_PERIOD_ID=cp.COURSE_PERIOD_ID),GRADEBOOK_ASSIGNMENT_TYPES gt";
-			$extra['WHERE'] = " AND gt.ASSIGNMENT_TYPE_ID=ga.ASSIGNMENT_TYPE_ID AND gt.COURSE_ID=cp.COURSE_ID AND (gg.POINTS IS NOT NULL OR (ga.ASSIGNED_DATE IS NULL OR CURRENT_DATE>=ga.ASSIGNED_DATE) AND (ga.DUE_DATE IS NULL OR CURRENT_DATE>=ga.DUE_DATE) OR CURRENT_DATE>(SELECT END_DATE FROM SCHOOL_MARKING_PERIODS WHERE MARKING_PERIOD_ID=ga.MARKING_PERIOD_ID))";
-			$extra['WHERE'] .=" AND (gg.POINTS IS NOT NULL OR ga.DUE_DATE IS NULL OR ((ga.DUE_DATE>=ss.START_DATE AND (ss.END_DATE IS NULL OR ga.DUE_DATE<=ss.END_DATE)) AND (ga.DUE_DATE>=ssm.START_DATE AND (ssm.END_DATE IS NULL OR ga.DUE_DATE<=ssm.END_DATE))))";
-			$extra['GROUP'] = "gt.ASSIGNMENT_TYPE_ID,gt.FINAL_GRADE_PERCENT,s.STUDENT_ID";
-			$extra['group'] = array('STUDENT_ID');
+			$extra['SELECT_ONLY'] = "s.STUDENT_ID, gt.ASSIGNMENT_TYPE_ID,sum(" .
+				db_case( array( 'gg.POINTS', "'-1'", "'0'", 'gg.POINTS' ) ) . ") AS PARTIAL_POINTS,sum(" .
+				db_case( array( 'gg.POINTS', "'-1'", "'0'", 'ga.POINTS' ) ) . ") AS PARTIAL_TOTAL,gt.FINAL_GRADE_PERCENT";
 
-			$points_RET = GetStuList($extra);
+			$extra['FROM'] = " JOIN GRADEBOOK_ASSIGNMENTS ga ON
+				((ga.COURSE_PERIOD_ID=cp.COURSE_PERIOD_ID
+						OR ga.COURSE_ID=cp.COURSE_ID
+						AND ga.STAFF_ID=cp.TEACHER_ID)
+					AND ga.MARKING_PERIOD_ID='" . UserMP() . "')
+				LEFT OUTER JOIN GRADEBOOK_GRADES gg ON
+				(gg.STUDENT_ID=s.STUDENT_ID
+					AND gg.ASSIGNMENT_ID=ga.ASSIGNMENT_ID
+					AND gg.COURSE_PERIOD_ID=cp.COURSE_PERIOD_ID),GRADEBOOK_ASSIGNMENT_TYPES gt";
+
+			// Check Current date.
+			$extra['WHERE'] = " AND gt.ASSIGNMENT_TYPE_ID=ga.ASSIGNMENT_TYPE_ID
+				AND gt.COURSE_ID=cp.COURSE_ID
+				AND (gg.POINTS IS NOT NULL
+					OR (ga.ASSIGNED_DATE IS NULL OR CURRENT_DATE>=ga.ASSIGNED_DATE)
+					AND (ga.DUE_DATE IS NULL OR CURRENT_DATE>=ga.DUE_DATE)
+					OR CURRENT_DATE>(SELECT END_DATE
+						FROM SCHOOL_MARKING_PERIODS
+						WHERE MARKING_PERIOD_ID=ga.MARKING_PERIOD_ID))";
+
+			// Check Student enrollment.
+			$extra['WHERE'] .= " AND (gg.POINTS IS NOT NULL
+				OR ga.DUE_DATE IS NULL
+				OR ((ga.DUE_DATE>=ss.START_DATE
+					AND (ss.END_DATE IS NULL OR ga.DUE_DATE<=ss.END_DATE))
+				AND (ga.DUE_DATE>=ssm.START_DATE
+					AND (ssm.END_DATE IS NULL OR ga.DUE_DATE<=ssm.END_DATE))))";
+
+			if ( GetMP( $_REQUEST['mp'], 'MP' ) === 'PRO' )
+			{
+				// FJ: limit Assignments to the ones due during the Progress Period.
+				$extra['WHERE'] .= " AND ((ga.ASSIGNED_DATE IS NULL OR (SELECT END_DATE
+						FROM SCHOOL_MARKING_PERIODS
+						WHERE MARKING_PERIOD_ID='" . $_REQUEST['mp'] . "')>=ga.ASSIGNED_DATE)
+					AND (ga.DUE_DATE IS NULL
+						OR (SELECT END_DATE
+							FROM SCHOOL_MARKING_PERIODS
+							WHERE MARKING_PERIOD_ID='" . $_REQUEST['mp'] . "')>=ga.DUE_DATE
+						AND (SELECT START_DATE
+							FROM SCHOOL_MARKING_PERIODS
+							WHERE MARKING_PERIOD_ID='" . $_REQUEST['mp'] . "')<=ga.DUE_DATE))";
+			}
+
+			$extra['GROUP'] = "gt.ASSIGNMENT_TYPE_ID,gt.FINAL_GRADE_PERCENT,s.STUDENT_ID";
+
+			$extra['group'] = array( 'STUDENT_ID' );
+
+			$points_RET = GetStuList( $extra );
 			//echo '<pre>'; var_dump($points_RET); echo '</pre>';
 
 			unset($extra);
@@ -146,15 +226,27 @@ if ( $_REQUEST['modfunc']=='gradebook')
 				{
 					$total = $total_percent = 0;
 
-					foreach ( (array) $student as $partial_points)
-						if ( $partial_points['PARTIAL_TOTAL']!=0 || $gradebook_config['WEIGHT']!='Y')
+					foreach ( (array) $student as $partial_points )
+					{
+						if ( $partial_points['PARTIAL_TOTAL'] != 0
+							|| $gradebook_config['WEIGHT'] != 'Y' )
 						{
-							$total += $partial_points['PARTIAL_POINTS']*($gradebook_config['WEIGHT']=='Y'?$partial_points['FINAL_GRADE_PERCENT']/$partial_points['PARTIAL_TOTAL']:1);
-							$total_percent += ($gradebook_config['WEIGHT']=='Y'?$partial_points['FINAL_GRADE_PERCENT']:$partial_points['PARTIAL_TOTAL']);
-						}
+							$total += $partial_points['PARTIAL_POINTS'] * ( $gradebook_config['WEIGHT'] == 'Y' ?
+								$partial_points['FINAL_GRADE_PERCENT'] / $partial_points['PARTIAL_TOTAL'] :
+								1
+							);
 
-					if ( $total_percent!=0)
+							$total_percent += ( $gradebook_config['WEIGHT'] == 'Y' ?
+								$partial_points['FINAL_GRADE_PERCENT'] :
+								$partial_points['PARTIAL_TOTAL']
+							);
+						}
+					}
+
+					if ( $total_percent != 0 )
+					{
 						$total /= $total_percent;
+					}
 
 					$import_RET[ $student_id ] = array(1 => array('REPORT_CARD_GRADE_ID'=>_makeLetterGrade($total,$course_period_id,0,'ID'),'GRADE_PERCENT'=>round(100*$total,1)));
 				}
@@ -204,16 +296,21 @@ if ( $_REQUEST['modfunc']=='gradebook')
 
 			$percents_RET = DBGet(DBQuery("SELECT STUDENT_ID,GRADE_PERCENT,MARKING_PERIOD_ID FROM STUDENT_REPORT_CARD_GRADES WHERE COURSE_PERIOD_ID='".$course_period_id."' AND MARKING_PERIOD_ID IN ($mps)"),array(),array('STUDENT_ID'));
 
-			foreach ( (array) $percents_RET as $student_id => $percents)
+			foreach ( (array) $percents_RET as $student_id => $percents )
 			{
 				$total = $total_percent = 0;
 
-				foreach ( (array) $percents as $percent)
+				foreach ( (array) $percents as $percent )
 				{
-					$total += $percent['GRADE_PERCENT'] * $gradebook_config[$prefix.$percent['MARKING_PERIOD_ID']];
-					$total_percent += $gradebook_config[$prefix.$percent['MARKING_PERIOD_ID']];
+					$total += $percent['GRADE_PERCENT'] * $gradebook_config[ $prefix . $percent['MARKING_PERIOD_ID'] ];
+
+					$total_percent += $gradebook_config[ $prefix . $percent['MARKING_PERIOD_ID'] ];
 				}
-				$total /= $total_percent;
+
+				if ( $total_percent != 0 )
+				{
+					$total /= $total_percent;
+				}
 
 				$import_RET[ $student_id ] = array(1 => array('REPORT_CARD_GRADE_ID'=>_makeLetterGrade($total/100,$course_period_id,0,'ID'),'GRADE_PERCENT'=>round($total,1)));
 
@@ -228,31 +325,33 @@ if ( $_REQUEST['modfunc']=='gradebook')
 
 		}
 	}
-	unset($_SESSION['_REQUEST_vars']['modfunc']);
+
+	// Unset modfunc & redirect URL.
+	RedirectURL( array( 'modfunc' ) );
 }
 
-if ( $_REQUEST['modfunc']=='grades')
+if ( $_REQUEST['modfunc'] === 'grades' )
 {
-	if ( $_REQUEST['prev_mp'])
+	if ( $_REQUEST['prev_mp'] )
 	{
 		require_once 'ProgramFunctions/_makePercentGrade.fnc.php';
 
 		$import_RET = DBGet(DBQuery("SELECT g.STUDENT_ID,g.REPORT_CARD_GRADE_ID,g.GRADE_PERCENT FROM STUDENT_REPORT_CARD_GRADES g,COURSE_PERIODS cp WHERE cp.COURSE_PERIOD_ID=g.COURSE_PERIOD_ID AND cp.COURSE_PERIOD_ID='".$course_period_id."' AND g.MARKING_PERIOD_ID='".$_REQUEST['prev_mp']."'"),array(),array('STUDENT_ID'));
 
-		foreach ( (array) $import_RET as $student_id => $grade)
+		foreach ( (array) $import_RET as $student_id => $grade )
 		{
 			$import_RET[ $student_id ][1]['GRADE_PERCENT'] = _makePercentGrade($grade[1]['REPORT_CARD_GRADE_ID'],$course_period_id);
 			$import_RET[ $student_id ][1]['REPORT_CARD_GRADE_ID'] = $grade[1]['REPORT_CARD_GRADE_ID'];
 		}
-
-		unset($_SESSION['_REQUEST_vars']['prev_mp']);
 	}
-	unset($_SESSION['_REQUEST_vars']['modfunc']);
+
+	// Unset modfunc & prev MP & redirect URL.
+	RedirectURL( array( 'modfunc', 'prev_mp' ) );
 }
 
-if ( $_REQUEST['modfunc']=='comments')
+if ( $_REQUEST['modfunc'] === 'comments' )
 {
-	if ( $_REQUEST['prev_mp'])
+	if ( $_REQUEST['prev_mp'] )
 	{
 		$import_comments_RET = DBGet(DBQuery("SELECT g.STUDENT_ID,g.REPORT_CARD_COMMENT_ID,g.COMMENT
 		FROM STUDENT_REPORT_CARD_GRADES g
@@ -272,18 +371,22 @@ if ( $_REQUEST['modfunc']=='comments')
 		AND g.MARKING_PERIOD_ID='".$_REQUEST['prev_mp']."'
 		AND g.REPORT_CARD_COMMENT_ID IN (SELECT ID FROM REPORT_CARD_COMMENTS WHERE COURSE_ID IS NULL)"),array(),array('STUDENT_ID'));
 
-		foreach ( (array) $import_commentsB_RET as $comments)
-			if (count($comments)>$max_current_commentsB)
-				$max_current_commentsB = count($comments);
-
-		unset($_SESSION['_REQUEST_vars']['prev_mp']);
+		foreach ( (array) $import_commentsB_RET as $comments )
+		{
+			if ( count( $comments ) > $max_current_commentsB )
+			{
+				$max_current_commentsB = count( $comments );
+			}
+		}
 	}
-	unset($_SESSION['_REQUEST_vars']['modfunc']);
+
+	// Unset modfunc & prev MP & redirect URL.
+	RedirectURL( array( 'modfunc', 'prev_mp' ) );
 }
 
-if ( $_REQUEST['modfunc']=='clearall')
+if ( $_REQUEST['modfunc'] === 'clearall' )
 {
-	foreach ( (array) $current_RET as $student_id => $prev)
+	foreach ( (array) $current_RET as $student_id => $prev )
 	{
 		$current_RET[ $student_id ][1]['REPORT_CARD_GRADE_ID'] = '';
 		$current_RET[ $student_id ][1]['GRADE_PERCENT'] = '';
@@ -301,17 +404,23 @@ if ( $_REQUEST['modfunc']=='clearall')
 			foreach ( (array) $comment as $i => $comment)
 				$current_commentsB_RET[ $student_id ][ $i ] = '';
 	}
-	unset($_SESSION['_REQUEST_vars']['modfunc']);
+
+	// Unset modfunc & redirect URL.
+	RedirectURL( 'modfunc' );
 }
 
-if ( $_REQUEST['values'] && $_POST['values'])
+if ( $_REQUEST['values']
+	&& $_POST['values'] )
 {
 	require_once 'ProgramFunctions/_makeLetterGrade.fnc.php';
 	require_once 'ProgramFunctions/_makePercentGrade.fnc.php';
 	$completed = true;
 
 	//FJ add precision to year weighted GPA if not year course period
-	$course_period_mp = DBGet(DBQuery("SELECT MP FROM COURSE_PERIODS WHERE COURSE_PERIOD_ID='".$course_period_id."'"));
+	$course_period_mp = DBGet( DBQuery( "SELECT MP
+		FROM COURSE_PERIODS
+		WHERE COURSE_PERIOD_ID='" . $course_period_id . "'" ) );
+
 	$course_period_mp = $course_period_mp[1]['MP'];
 
 	foreach ( (array) $_REQUEST['values'] as $student_id => $columns)
@@ -345,17 +454,20 @@ if ( $_REQUEST['values'] && $_POST['values'])
 					{
 						$weighted = $percent/100*$grades_RET[ $grade ][1]['GP_SCALE'];
 					}
+
 					$scale = $grades_RET[ $grade ][1]['GP_SCALE'];
+
+					$gp_passing = $grades_RET[ $grade ][1]['GP_PASSING_VALUE'];
 				}
 				else
-					$grade = $letter = $weighted = $unweighted = $scale = '';
+					$grade = $letter = $weighted = $unweighted = $scale = $gp_passing = '';
 
 				$sql .= "GRADE_PERCENT='".$percent."'";
 				$sql .= ",REPORT_CARD_GRADE_ID='".$grade."',GRADE_LETTER='".$letter."',WEIGHTED_GP='".$weighted."',UNWEIGHTED_GP='".$unweighted."',GP_SCALE='".$scale."'";
 				//bjj can we use $percent all the time?  TODO: rework this so updates to credits occur when grade is changed
 				$sql .= ",COURSE_TITLE='".$course_RET[1]['COURSE_NAME']."'";
 				$sql .= ",CREDIT_ATTEMPTED='".$course_RET[1]['CREDITS']."'";
-				$sql .= ",CREDIT_EARNED='".($weighted&&$weighted>0?$course_RET[1]['CREDITS']:'0')."'";
+				$sql .= ",CREDIT_EARNED='" . ( (float) $weighted && $weighted >= $gp_passing ? $course_RET[1]['CREDITS'] : '0' ) . "'";
 				$sep = ',';
 			}
 			elseif ( $columns['grade'])
@@ -372,12 +484,16 @@ if ( $_REQUEST['values'] && $_POST['values'])
 				}
 
 				$unweighted = $grades_RET[ $grade ][1]['UNWEIGHTED_GP'];
+
 				$scale = $grades_RET[ $grade ][1]['GP_SCALE'];
+
+				$gp_passing = $grades_RET[ $grade ][1]['GP_PASSING_VALUE'];
+
 				$sql .= "GRADE_PERCENT='".$percent."'";
 				$sql .= ",REPORT_CARD_GRADE_ID='".$grade."',GRADE_LETTER='".$letter."',WEIGHTED_GP='".$weighted."',UNWEIGHTED_GP='".$unweighted."',GP_SCALE='".$scale."'";
 				$sql .= ",COURSE_TITLE='".$course_RET[1]['COURSE_NAME']."'";
 				$sql .= ",CREDIT_ATTEMPTED='".$course_RET[1]['CREDITS']."'";
-				$sql .= ",CREDIT_EARNED='".($weighted&&$weighted>0?$course_RET[1]['CREDITS']:'0')."'";
+				$sql .= ",CREDIT_EARNED='" . ( (float) $weighted && $weighted >= $gp_passing ? $course_RET[1]['CREDITS'] : '0' ) . "'";
 				$sep = ',';
 			}
 			elseif (isset($columns['percent']) || isset($columns['grade']))
@@ -401,8 +517,14 @@ if ( $_REQUEST['values'] && $_POST['values'])
 			if (isset($columns['comment']))
 				$sql .= $sep."COMMENT='".$columns['comment']."'";
 
-			if ( $sql)
-				$sql = "UPDATE STUDENT_REPORT_CARD_GRADES SET ".$sql." WHERE STUDENT_ID='".$student_id."' AND COURSE_PERIOD_ID='".$course_period_id."' AND MARKING_PERIOD_ID='".$_REQUEST['mp']."'";
+			if ( $sql )
+			{
+				$sql = "UPDATE STUDENT_REPORT_CARD_GRADES
+					SET " . $sql . "
+					WHERE STUDENT_ID='" . $student_id . "'
+					AND COURSE_PERIOD_ID='" . $course_period_id . "'
+					AND MARKING_PERIOD_ID='" . $_REQUEST['mp'] . "'";
+			}
 		}
 		elseif ( $columns['percent']!='' || $columns['grade'] || $columns['comment'])
 		{
@@ -434,34 +556,75 @@ if ( $_REQUEST['values'] && $_POST['values'])
 					}
 
 					$scale = $grades_RET[ $grade ][1]['GP_SCALE'];
+
+					$gp_passing = $grades_RET[ $grade ][1]['GP_PASSING_VALUE'];
 				}
 				else
-					$grade = $letter = $weighted = $unweighted = $scale = '';
+					$grade = $letter = $weighted = $unweighted = $scale = $gp_passing = '';
 			}
 			elseif ( $columns['grade'])
 			{
-					$percent = _makePercentGrade($columns['grade'],$course_period_id);
-					$grade = $columns['grade'];
-					$letter = $grades_RET[ $grade ][1]['TITLE'];
-					$weighted = $grades_RET[ $grade ][1]['WEIGHTED_GP'];
+				$percent = _makePercentGrade($columns['grade'],$course_period_id);
+				$grade = $columns['grade'];
+				$letter = $grades_RET[ $grade ][1]['TITLE'];
+				$weighted = $grades_RET[ $grade ][1]['WEIGHTED_GP'];
 
-					//FJ add precision to year weighted GPA if not year course period
-					if (GetMP($_REQUEST['mp'],'MP')=='FY' && $course_period_mp!='FY')
-					{
-						$weighted = $percent/100*$grades_RET[ $grade ][1]['GP_SCALE'];
-					}
+				//FJ add precision to year weighted GPA if not year course period
+				if (GetMP($_REQUEST['mp'],'MP')=='FY' && $course_period_mp!='FY')
+				{
+					$weighted = $percent/100*$grades_RET[ $grade ][1]['GP_SCALE'];
+				}
 
-					$unweighted = $grades_RET[ $grade ][1]['UNWEIGHTED_GP'];
-					$scale = $grades_RET[ $grade ][1]['GP_SCALE'];
+				$unweighted = $grades_RET[ $grade ][1]['UNWEIGHTED_GP'];
+
+				$scale = $grades_RET[ $grade ][1]['GP_SCALE'];
+
+				$gp_passing = $grades_RET[ $grade ][1]['GP_PASSING_VALUE'];
 			}
 			else
-				$percent = $grade = $letter = $weighted = $unweighted = $scale = '';
+				$percent = $grade = $letter = $weighted = $unweighted = $scale = $gp_passing = '';
 //FJ fix bug SQL ID=NULL
 //FJ add CLASS_RANK
 //FJ add Credit Hours
-			$sql = "INSERT INTO STUDENT_REPORT_CARD_GRADES
-			(ID, SYEAR, SCHOOL_ID, STUDENT_ID, COURSE_PERIOD_ID, MARKING_PERIOD_ID, REPORT_CARD_GRADE_ID, GRADE_PERCENT, COMMENT, GRADE_LETTER, WEIGHTED_GP, UNWEIGHTED_GP, GP_SCALE, COURSE_TITLE, CREDIT_ATTEMPTED, CREDIT_EARNED, CLASS_RANK, CREDIT_HOURS)
-			values(".db_seq_nextval('student_report_card_grades_seq').",'".UserSyear()."','".UserSchool()."','".$student_id."','".$course_period_id."','".$_REQUEST['mp']."','".$grade."','".$percent."','".$columns['comment']."','".$grades_RET[ $grade ][1]['TITLE']."','".$weighted."','".$unweighted."','".$scale."','".DBEscapeString($course_RET[1]['COURSE_NAME'])."','".$course_RET[1]['CREDITS']."','".($weighted&&$weighted>0?$course_RET[1]['CREDITS']:'0')."','".$course_RET[1]['CLASS_RANK']."',".(is_null($course_RET[1]['CREDIT_HOURS']) ? 'NULL' : $course_RET[1]['CREDIT_HOURS']).")";
+			$sql = "INSERT INTO STUDENT_REPORT_CARD_GRADES (
+				ID,
+				SYEAR,
+				SCHOOL_ID,
+				STUDENT_ID,
+				COURSE_PERIOD_ID,
+				MARKING_PERIOD_ID,
+				REPORT_CARD_GRADE_ID,
+				GRADE_PERCENT,
+				COMMENT,
+				GRADE_LETTER,
+				WEIGHTED_GP,
+				UNWEIGHTED_GP,
+				GP_SCALE,
+				COURSE_TITLE,
+				CREDIT_ATTEMPTED,
+				CREDIT_EARNED,
+				CLASS_RANK,
+				CREDIT_HOURS
+			) values (
+				" . db_seq_nextval( 'student_report_card_grades_seq' ) . ",'" .
+				UserSyear() . "','" .
+				UserSchool() . "','" .
+				$student_id . "','" .
+				$course_period_id . "','" .
+				$_REQUEST['mp'] . "','" .
+				$grade . "','" .
+				$percent . "','" .
+				$columns['comment'] . "','" .
+				$grades_RET[ $grade ][1]['TITLE'] . "','" .
+				$weighted . "','" .
+				$unweighted . "','" .
+				$scale . "','" .
+				DBEscapeString( $course_RET[1]['COURSE_NAME'] ) . "','" .
+				$course_RET[1]['CREDITS'] . "','" .
+				( (float) $weighted && $weighted >= $gp_passing ? $course_RET[1]['CREDITS'] : '0' ) . "','" .
+				$course_RET[1]['CLASS_RANK'] . "'," .
+				( is_null( $course_RET[1]['CREDIT_HOURS'] ) ? 'NULL' : $course_RET[1]['CREDIT_HOURS'] ) .
+			")";
 		}
 		else
 			$percent = $grade = '';
@@ -629,12 +792,8 @@ if ( $_REQUEST['values'] && $_POST['values'])
 
 	$current_completed = count(DBGet(DBQuery("SELECT '' FROM GRADES_COMPLETED WHERE STAFF_ID='".User('STAFF_ID')."' AND MARKING_PERIOD_ID='".$_REQUEST['mp']."' AND COURSE_PERIOD_ID='".$course_period_id."'")));
 
-	unset($_SESSION['_REQUEST_vars']['values']);
-}
-
-if ( $_REQUEST['values'] && $_POST['values'] && $_REQUEST['submit']['cancel'])
-{
-	unset($_SESSION['_REQUEST_vars']['values']);
+	// Unset values & redirect URL.
+	RedirectURL( 'values' );
 }
 
 $mps_onchange_URL = "'Modules.php?modname=" . $_REQUEST['modname'] .
@@ -877,8 +1036,7 @@ if (GetMP($_REQUEST['mp'],'DOES_COMMENTS')=='Y')
 		$LO_columns += array('CB'.$i => _('Add Comment'));
 }
 
-if ( !ProgramConfig( 'grades', 'GRADES_HIDE_NON_ATTENDANCE_COMMENT' )
-	|| $course_RET[1]['ATTENDANCE'] == 'Y' )
+if ( ! ProgramConfig( 'grades', 'GRADES_HIDE_NON_ATTENDANCE_COMMENT' ) )
 {
 	$LO_columns += array( 'COMMENT' => _( 'Comment' ) );
 }

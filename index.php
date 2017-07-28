@@ -13,7 +13,8 @@ $default_session_name = session_name();
 require_once 'Warehouse.php';
 
 // Logout.
-if ( $_REQUEST['modfunc'] === 'logout' )
+if ( isset( $_REQUEST['modfunc'] )
+	&& $_REQUEST['modfunc'] === 'logout' )
 {
 	// FJ set logout page to old session locale.
 	$old_session_locale = $_SESSION['locale'];
@@ -116,6 +117,8 @@ elseif ( isset( $_POST['USERNAME'] )
 			SET LAST_LOGIN=CURRENT_TIMESTAMP,FAILED_LOGIN=NULL
 			WHERE STAFF_ID='" . $login_RET[1]['STAFF_ID'] . "'" );
 
+		$login_status = 'Y';
+
 		// If 1st login, Confirm Successful Installation screen.
 		if ( Config( 'LOGIN' ) === 'No' ) :
 
@@ -123,7 +126,7 @@ elseif ( isset( $_POST['USERNAME'] )
 
 			Warehouse( 'header' ); ?>
 
-	<form action="index.php" method="POST">
+	<form action="Modules.php?modname=misc/Portal.php" method="POST">
 
 	<?php PopTable( 'header', _( 'Confirm Successful Installation' ) ); ?>
 
@@ -151,10 +154,9 @@ elseif ( isset( $_POST['USERNAME'] )
 	<?php PopTable( 'footer' ); ?>
 
 	</form>
-
-</body>
-</html>
 <?php
+			Warehouse( 'footer' );
+
 			// Set Config( 'LOGIN' ) to Yes.
 			DBQuery( "UPDATE CONFIG
 				SET CONFIG_VALUE='Yes'
@@ -186,6 +188,8 @@ elseif ( isset( $_POST['USERNAME'] )
 		DBQuery( "UPDATE STUDENTS
 			SET LAST_LOGIN=CURRENT_TIMESTAMP,FAILED_LOGIN=NULL
 			WHERE STUDENT_ID='" . $student_RET[1]['STUDENT_ID'] . "'" );
+
+		$login_status = 'Y';
 	}
 
 	// Failed login.
@@ -193,7 +197,7 @@ elseif ( isset( $_POST['USERNAME'] )
 	{
 		DBQuery( "UPDATE STAFF
 			SET FAILED_LOGIN=" . db_case( array( 'FAILED_LOGIN', "''", '1', 'FAILED_LOGIN+1' ) ) . "
-			WHERE UPPER(USERNAME)=UPPER('".$username."')
+			WHERE UPPER(USERNAME)=UPPER('" . $username . "')
 			AND SYEAR='" . Config( 'SYEAR' ) . "'" );
 
 		DBQuery( "UPDATE STUDENTS
@@ -202,7 +206,33 @@ elseif ( isset( $_POST['USERNAME'] )
 
 		$error[] = _( 'Incorrect username or password.' ) . '&nbsp;'
 			. _( 'Please try logging in again.' );
+
+		$login_status = '';
 	}
+
+	// Access Log.
+	if ( ! function_exists( 'AccessLogRecord' ) )
+	{
+		DBQuery( "INSERT INTO ACCESS_LOG
+			(SYEAR,USERNAME,PROFILE,LOGIN_TIME,IP_ADDRESS,USER_AGENT,STATUS)
+			values('" . Config( 'SYEAR' ) . "',
+			'" . $username . "',
+			'" . User( 'PROFILE' ) . "',
+			CURRENT_TIMESTAMP,
+			'" . ( isset( $_SERVER['HTTP_X_FORWARDED_FOR'] ) ?
+				$_SERVER['HTTP_X_FORWARDED_FOR'] : $_SERVER['REMOTE_ADDR'] ) . "',
+			'" . DBEscapeString( $_SERVER['HTTP_USER_AGENT'] ) .
+			"','" . $login_status . "' )" );
+	}
+
+	// Set current SchoolYear on login.
+	if ( $login_status === 'Y'
+		&& ! UserSyear() )
+	{
+		$_SESSION['UserSyear'] = Config( 'SYEAR' );
+	}
+
+	do_action( 'index.php|login_check', $username );
 }
 
 // FJ create account.
@@ -210,13 +240,13 @@ elseif ( isset( $_REQUEST['create_account'] ) )
 {
 	$include = false;
 
-	if ( $_REQUEST['create_account'] == 'user'
+	if ( $_REQUEST['create_account'] === 'user'
 		&& Config( 'CREATE_USER_ACCOUNT' ) )
 	{
 		$include = 'Users/User.php';
 	}
 
-	elseif ( $_REQUEST['create_account'] == 'student'
+	elseif ( $_REQUEST['create_account'] === 'student'
 		&& Config( 'CREATE_STUDENT_ACCOUNT' ) )
 	{
 		$include = 'Students/Student.php';
@@ -224,7 +254,8 @@ elseif ( isset( $_REQUEST['create_account'] ) )
 
 	if ( ! $include )
 	{
-		unset( $_REQUEST['create_account'] );
+		// Do not use RedirectURL() here (no JS loaded).
+		header( 'Location: index.php' );
 	}
 	else
 	{
@@ -348,7 +379,7 @@ if ( empty( $_SESSION['STAFF_ID'] )
 				</tr>
 				<tr>
 					<td colspan="2">
-						<a href="PasswordReset.php"><?php echo _( 'Password help' ); ?></a>
+						<a href="PasswordReset.php" rel="nofollow"><?php echo _( 'Password help' ); ?></a>
 					</td>
 				</tr>
 			</table>
@@ -359,7 +390,7 @@ if ( empty( $_SESSION['STAFF_ID'] )
 			<?php if ( Config( 'CREATE_USER_ACCOUNT' ) ) : ?>
 
 				<div class="center">[
-					<a href="index.php?create_account=user&amp;staff_id=new">
+					<a href="index.php?create_account=user&amp;staff_id=new" rel="nofollow">
 						<?php echo _( 'Create User Account' ); ?>
 					</a>
 				]</div>
@@ -369,7 +400,7 @@ if ( empty( $_SESSION['STAFF_ID'] )
 			if ( Config( 'CREATE_STUDENT_ACCOUNT' ) ) : ?>
 
 				<div class="center">[
-					<a href="index.php?create_account=student&amp;student_id=new">
+					<a href="index.php?create_account=student&amp;student_id=new" rel="nofollow">
 						<?php echo _( 'Create Student Account' ); ?>
 					</a>
 				]</div>
@@ -381,34 +412,36 @@ if ( empty( $_SESSION['STAFF_ID'] )
 		</tr>
 	</table>
 	<?php // System disclaimer. ?>
-	<p class="size-3">
-		<?php
-			echo sprintf(
-				_( 'This is a restricted network. Use of this network, its equipment, and resources is monitored at all times and requires explicit permission from the network administrator and %s. If you do not have this permission in writing, you are violating the regulations of this network and can and will be prosecuted to the full extent of the law. By continuing into this system, you are acknowledging that you are aware of and agree to these terms.'),
-				ParseMLField( Config( 'TITLE' ) )
-			);
-		?>
-	</p>
-	<p class="center">
-		<?php echo sprintf( _( '%s version %s' ), 'RosarioSIS', ROSARIO_VERSION ); ?>
-	</p>
-	<p class="center size-1">
-		&copy; 2004-2009 <a href="http://www.centresis.org" noreferrer>The Miller Group &amp; Learners Circle</a>
-		<br />&copy; 2012-2016 <a href="https://www.rosariosis.org" noreferrer>François Jacquet</a>
-	</p>
+	<input class="toggle" type="checkbox" id="toggle1" />
+	<label class="toggle" for="toggle1"><?php echo _( 'About' ); ?></label>
+	<div class="toggle-me">
+		<p class="size-3">
+			<?php
+				echo sprintf(
+					_( 'This is a restricted network. Use of this network, its equipment, and resources is monitored at all times and requires explicit permission from the network administrator and %s. If you do not have this permission in writing, you are violating the regulations of this network and can and will be prosecuted to the full extent of the law. By continuing into this system, you are acknowledging that you are aware of and agree to these terms.'),
+					ParseMLField( Config( 'TITLE' ) )
+				);
+			?>
+		</p>
+		<p class="center">
+			<?php echo sprintf( _( '%s version %s' ), 'RosarioSIS', ROSARIO_VERSION ); ?>
+		</p>
+		<p class="center size-1">
+			&copy; 2004-2009 <a href="http://www.centresis.org" noreferrer>The Miller Group &amp; Learners Circle</a>
+			<br />&copy; 2012-2017 <a href="https://www.rosariosis.org" noreferrer>RosarioSIS</a>
+		</p>
+	</div>
 
-<?php PopTable( 'footer' ); ?>
+<?php PopTable( 'footer' );
 
-</body>
-</html>
-<?php
-
+	Warehouse( 'footer' );
 }
 
 // Successfully logged in, display Portal.
 elseif ( ! isset( $_REQUEST['create_account'] ) )
 {
-	$_REQUEST['modname'] = 'misc/Portal.php';
+	// Fix #173 resend login form: redirect to Modules.php.
+	header( 'Location: Modules.php?modname=misc/Portal.php' );
 
-	require_once 'Modules.php';
+	exit;
 }

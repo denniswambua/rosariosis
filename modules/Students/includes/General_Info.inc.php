@@ -1,14 +1,17 @@
 <?php
-echo '<table class="width-100p valign-top fixed-col"><tr class="st"><td rowspan="3">';
+echo '<table class="general-info width-100p valign-top fixed-col"><tr class="st"><td rowspan="3">';
 
-// IMAGE
-if (AllowEdit() && !isset($_REQUEST['_ROSARIO_PDF'])):
+// IMAGE.
+if ( AllowEdit()
+	&& ! isset( $_REQUEST['_ROSARIO_PDF'] ) ) :
 ?>
-	<a href="#" onclick="switchUserPhoto(); return false;"><?php echo button('add', '', '', 'smaller'); ?>&nbsp;<?php echo _('Student Photo'); ?></a><br />
+	<a href="#" onclick="$('.user-photo-form,.user-photo').toggle(); return false;"><?php
+		echo button( 'add', '', '', 'smaller' ) . '&nbsp;' . _( 'Student Photo' );
+	?></a><br />
 	<div class="user-photo-form hide">
-		<br />
 		<input type="file" id="photo" name="photo" accept="image/*" /><span class="loading"></span>
-		<br /><span class="legend-gray"><?php echo _('Student Photo'); ?> (.jpg)</span>
+		<br />
+		<span class="legend-gray"><?php echo _( 'Student Photo' ); ?> (.jpg, .png, .gif)</span>
 	</div>
 <?php endif;
 
@@ -17,7 +20,7 @@ if ( $_REQUEST['student_id']!='new' && ($file = @fopen($picture_path=$StudentPic
 ?>
 	<img src="<?php echo $picture_path.(!empty($new_photo_file)? '?cacheKiller='.rand():''); ?>" class="user-photo" />
 <?php endif;
-// END IMAGE
+// END IMAGE.
 
 echo '</td><td colspan="2">';
 
@@ -104,36 +107,39 @@ echo '</td><td>';
 //FJ Moodle integrator
 //username, password required
 
-$required = $_REQUEST['moodle_create_student'] || $old_student_in_moodle || basename($_SERVER['PHP_SELF'])=='index.php';
-$legend_red = $required && ! $student['USERNAME'];
+$required = $_REQUEST['moodle_create_student'] || $old_student_in_moodle || basename( $_SERVER['PHP_SELF'] ) == 'index.php';
 
-echo TextInput($student['USERNAME'],'students[USERNAME]',($legend_red ? '<span class="legend-red">':'')._('Username').(($_REQUEST['moodle_create_student'] || $old_student_in_moodle) && ! $student['USERNAME']?'</span>':''),($required ? 'required' : ''), ($_REQUEST['moodle_create_student'] ? false : true));
+echo TextInput(
+	$student['USERNAME'],
+	'students[USERNAME]',
+	_( 'Username' ),
+	( $required ? 'required ' : '' ) .
+		( Config( 'STUDENTS_EMAIL_FIELD' ) === 'USERNAME' ?
+			'type="email" pattern="[^ @]*@[^ @]*" placeholder="' . _( 'Email' ) . '"' :
+			'' ),
+	! $_REQUEST['moodle_create_student']
+);
 
 echo '</td></tr><tr class="st"><td>';
-
-$required = $required;
-$legend_red = $required && ! $student['PASSWORD'];
 
 echo TextInput(
 	( ! $student['PASSWORD']
 		|| $_REQUEST['moodle_create_student'] ? '' : str_repeat( '*', 8 ) ),
 	'students[PASSWORD]',
-	( $legend_red ? '<span class="legend-red">' : '<span class="legend-gray">' ) .
-		_( 'Password' ) .
+	_( 'Password' ) .
 		( $_REQUEST['moodle_create_student']
 			|| $old_student_in_moodle ?
 		'<div class="tooltip"><i>' .
 			_( 'The password must have at least 8 characters, at least 1 digit, at least 1 lower case letter, at least 1 upper case letter, at least 1 non-alphanumeric character' ) .
 		'</i></div>' :
-		'' ) .
-		'</span>',
+		'' ),
 	'autocomplete=off' . ( $required ? ' required' : '' ),
 	( $_REQUEST['moodle_create_student'] ? false : true )
 );
 
 echo '</td><td>';
 
-echo NoInput(makeLogin($student['LAST_LOGIN']),_('Last Login'));
+echo NoInput( makeLogin( $student['LAST_LOGIN'] ), _( 'Last Login' ) );
 
 echo '</td></tr></table>';
 

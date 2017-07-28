@@ -1,73 +1,85 @@
 <?php
 //echo '<pre>'; var_dump($_REQUEST); echo '</pre>';
 
-DrawHeader(ProgramTitle());
+DrawHeader( ProgramTitle() );
 
-if ( $_REQUEST['modfunc']=='update')
+if ( $_REQUEST['modfunc'] === 'update' )
 {
-	if ( $_REQUEST['values'] && $_POST['values'] && AllowEdit())
+	if ( $_REQUEST['values']
+		&& $_POST['values']
+		&& AllowEdit()
+		&& $_REQUEST['tab_id'] )
 	{
-		if ( $_REQUEST['tab_id'])
+		foreach ( (array) $_REQUEST['values'] as $id => $columns )
 		{
-			foreach ( (array) $_REQUEST['values'] as $id => $columns)
+			// FJ fix SQL bug invalid numeric data.
+			if ( ( empty( $columns['SORT_ORDER'] ) || is_numeric( $columns['SORT_ORDER'] ) )
+				&& ( empty( $columns['BREAK_OFF'] ) || is_numeric( $columns['BREAK_OFF'] ) )
+				&& ( empty( $columns['GPA_VALUE'] ) || is_numeric( $columns['GPA_VALUE'] ) )
+				&& ( empty( $columns['UNWEIGHTED_GP'] ) || is_numeric( $columns['UNWEIGHTED_GP'] ) )
+				&& ( empty( $columns['GP_SCALE'] ) || is_numeric( $columns['GP_SCALE'] ) )
+				&& ( empty( $columns['GP_PASSING_VALUE'] ) || is_numeric( $columns['GP_PASSING_VALUE'] ) )
+				&& ( empty( $columns['HR_GPA_VALUE'] ) || is_numeric( $columns['HR_GPA_VALUE'] ) )
+				&& ( empty( $columns['HHR_GPA_VALUE'] ) || is_numeric( $columns['HHR_GPA_VALUE'] ) )
+				&& ( empty( $columns['HRS_GPA_VALUE'] ) || is_numeric( $columns['HRS_GPA_VALUE'] ) ) )
 			{
-		//FJ fix SQL bug invalid numeric data
-				if ((empty($columns['SORT_ORDER']) || is_numeric($columns['SORT_ORDER'])) && (empty($columns['BREAK_OFF']) || is_numeric($columns['BREAK_OFF'])) && (empty($columns['GPA_VALUE']) || is_numeric($columns['GPA_VALUE'])) && (empty($columns['UNWEIGHTED_GP']) || is_numeric($columns['UNWEIGHTED_GP'])))
+				if ( $id!='new')
 				{
-					if ( $id!='new')
+					if ( $_REQUEST['tab_id']!='new')
+						$sql = "UPDATE REPORT_CARD_GRADES SET ";
+					else
+						$sql = "UPDATE REPORT_CARD_GRADE_SCALES SET ";
+
+					foreach ( (array) $columns as $column => $value)
+						$sql .= DBEscapeIdentifier( $column ) . "='" . $value . "',";
+
+					if ( $_REQUEST['tab_id']!='new')
+						$sql = mb_substr($sql,0,-1) . " WHERE ID='".$id."'";
+					else
+						$sql = mb_substr($sql,0,-1) . " WHERE ID='".$id."'";
+					DBQuery($sql);
+				}
+				// New: check for Title
+				elseif ( $columns['TITLE'] )
+				{
+					if ( $_REQUEST['tab_id']!='new')
 					{
-						if ( $_REQUEST['tab_id']!='new')
-							$sql = "UPDATE REPORT_CARD_GRADES SET ";
-						else
-							$sql = "UPDATE REPORT_CARD_GRADE_SCALES SET ";
-
-						foreach ( (array) $columns as $column => $value)
-							$sql .= $column."='".$value."',";
-
-						if ( $_REQUEST['tab_id']!='new')
-							$sql = mb_substr($sql,0,-1) . " WHERE ID='".$id."'";
-						else
-							$sql = mb_substr($sql,0,-1) . " WHERE ID='".$id."'";
-						DBQuery($sql);
+						$sql = 'INSERT INTO REPORT_CARD_GRADES ';
+						$fields = 'ID,SCHOOL_ID,SYEAR,GRADE_SCALE_ID,';
+						$values = db_seq_nextval('REPORT_CARD_GRADES_SEQ').',\''.UserSchool().'\',\''.UserSyear().'\',\''.$_REQUEST['tab_id'].'\',';
 					}
 					else
 					{
-						if ( $_REQUEST['tab_id']!='new')
-						{
-							$sql = 'INSERT INTO REPORT_CARD_GRADES ';
-							$fields = 'ID,SCHOOL_ID,SYEAR,GRADE_SCALE_ID,';
-							$values = db_seq_nextval('REPORT_CARD_GRADES_SEQ').',\''.UserSchool().'\',\''.UserSyear().'\',\''.$_REQUEST['tab_id'].'\',';
-						}
-						else
-						{
-							$sql = 'INSERT INTO REPORT_CARD_GRADE_SCALES ';
-							$fields = 'ID,SCHOOL_ID,SYEAR,';
-							$values = db_seq_nextval('REPORT_CARD_GRADE_SCALES_SEQ').',\''.UserSchool().'\',\''.UserSyear().'\',';
-						}
-
-						$go = false;
-						foreach ( (array) $columns as $column => $value)
-							if ( !empty($value) || $value=='0')
-							{
-								$fields .= $column.',';
-								$values .= '\''.$value.'\',';
-								$go = true;
-							}
-						$sql .= '(' . mb_substr($fields,0,-1) . ') values(' . mb_substr($values,0,-1) . ')';
-
-						if ( $go)
-							DBQuery($sql);
+						$sql = 'INSERT INTO REPORT_CARD_GRADE_SCALES ';
+						$fields = 'ID,SCHOOL_ID,SYEAR,';
+						$values = db_seq_nextval('REPORT_CARD_GRADE_SCALES_SEQ').',\''.UserSchool().'\',\''.UserSyear().'\',';
 					}
+
+					$go = false;
+					foreach ( (array) $columns as $column => $value)
+						if ( !empty($value) || $value=='0')
+						{
+							$fields .= DBEscapeIdentifier( $column ) . ',';
+							$values .= "'" . $value . "',";
+							$go = true;
+						}
+					$sql .= '(' . mb_substr( $fields, 0, -1 ) . ') values(' . mb_substr( $values, 0, -1 ) . ')';
+
+					if ( $go)
+						DBQuery($sql);
 				}
-				else
-					$error[] = _('Please enter valid Numeric data.');
 			}
+			else
+				$error[] = _( 'Please enter valid Numeric data.' );
 		}
 	}
-	unset($_REQUEST['modfunc']);
+
+	// Unset modfunc & redirect URL.
+	RedirectURL( 'modfunc' );
 }
 
-if ( $_REQUEST['modfunc']=='remove' && AllowEdit())
+if ( $_REQUEST['modfunc'] === 'remove'
+	&& AllowEdit() )
 {
 	if ( $_REQUEST['tab_id']!='new')
 	{
@@ -76,21 +88,20 @@ if ( $_REQUEST['modfunc']=='remove' && AllowEdit())
 			DBQuery( "DELETE FROM REPORT_CARD_GRADES
 				WHERE ID='" . $_REQUEST['id'] . "'" );
 
-			$_REQUEST['modfunc'] = false;
+			// Unset modfunc & ID & redirect URL.
+			RedirectURL( array( 'modfunc', 'id' ) );
 		}
 	}
-	else
+	elseif ( DeletePrompt( _( 'Report Card Grading Scale' ) ) )
 	{
-		if ( DeletePrompt( _( 'Report Card Grading Scale' ) ) )
-		{
-			DBQuery( "DELETE FROM REPORT_CARD_GRADES
-				WHERE GRADE_SCALE_ID='" . $_REQUEST['id'] . "'" );
+		DBQuery( "DELETE FROM REPORT_CARD_GRADES
+			WHERE GRADE_SCALE_ID='" . $_REQUEST['id'] . "'" );
 
-			DBQuery( "DELETE FROM REPORT_CARD_GRADE_SCALES
-				WHERE ID='" . $_REQUEST['id'] . "'" );
+		DBQuery( "DELETE FROM REPORT_CARD_GRADE_SCALES
+			WHERE ID='" . $_REQUEST['id'] . "'" );
 
-			$_REQUEST['modfunc'] = false;
-		}
+		// Unset modfunc & ID & redirect URL.
+		RedirectURL( array( 'modfunc', 'id' ) );
 	}
 }
 
@@ -131,54 +142,103 @@ if ( ! $_REQUEST['modfunc'] )
 		$grade_scale_select[ $id ] = $grade_scale[1]['TITLE'];
 	}
 
-	if ( $_REQUEST['tab_id']!='new')
+	if ( $_REQUEST['tab_id'] !== 'new' )
 	{
 		$sql = 'SELECT * FROM REPORT_CARD_GRADES WHERE GRADE_SCALE_ID=\''.$_REQUEST['tab_id'].'\' AND SYEAR=\''.UserSyear().'\' AND SCHOOL_ID=\''.UserSchool().'\' ORDER BY BREAK_OFF IS NOT NULL DESC,BREAK_OFF DESC, SORT_ORDER';
-		$functions = array('TITLE' => 'makeGradesInput',
-                            'BREAK_OFF' => 'makeGradesInput',
-                            'SORT_ORDER' => 'makeGradesInput',
-                            'GPA_VALUE' => 'makeGradesInput',
-                            'UNWEIGHTED_GP' => 'makeGradesInput',
-                            'COMMENT' => 'makeGradesInput');
-		$LO_columns = array('TITLE' => _('Title'),
-                            'BREAK_OFF' => _('Breakoff'),
-                            'GPA_VALUE' => _('GPA Value'),
-                            'UNWEIGHTED_GP' => _('Unweighted GP Value'),
-                            'SORT_ORDER' => _('Order'),
-                            'COMMENT' => _('Comment'));
+
+		$functions = array(
+			'TITLE' => '_makeTextInput',
+			'BREAK_OFF' => '_makeGradesInput',
+			'SORT_ORDER' => '_makeTextInput',
+			'GPA_VALUE' => '_makeGradesInput',
+			'UNWEIGHTED_GP' => '_makeGradesInput',
+			'COMMENT' => '_makeTextInput',
+		);
+
+		$LO_columns = array(
+			'TITLE' => _( 'Title' ),
+			'BREAK_OFF' => _( 'Breakoff' ),
+			'GPA_VALUE' => _( 'GPA Value' ),
+			'UNWEIGHTED_GP' => _( 'Unweighted GP Value' ),
+			'SORT_ORDER' => _( 'Order' ),
+			'COMMENT' => _( 'Comment' ),
+		);
 
 		if (User('PROFILE')=='admin' && AllowEdit())
 		{
-			$functions += array('GRADE_SCALE_ID' => 'makeGradesInput');
+			$functions += array('GRADE_SCALE_ID' => '_makeGradesInput');
 			$LO_columns += array('GRADE_SCALE_ID' => _('Grade Scale'));
 		}
 
-		$link['add']['html'] = array('TITLE'=>makeGradesInput('','TITLE'),'BREAK_OFF'=>makeGradesInput('','BREAK_OFF'),'GPA_VALUE'=>makeGradesInput('','GPA_VALUE'),'UNWEIGHTED_GP'=>makeGradesInput('','UNWEIGHTED_GP'),'SORT_ORDER'=>makeGradesInput('','SORT_ORDER'),'COMMENT'=>makeGradesInput('','COMMENT'));
+		$link['add']['html'] = array(
+			'TITLE' => _makeTextInput( '', 'TITLE' ),
+			'BREAK_OFF' => _makeGradesInput( '', 'BREAK_OFF' ),
+			'GPA_VALUE' => _makeGradesInput( '', 'GPA_VALUE' ),
+			'UNWEIGHTED_GP' => _makeGradesInput( '', 'UNWEIGHTED_GP' ),
+			'SORT_ORDER' => _makeTextInput( '', 'SORT_ORDER' ),
+			'COMMENT' => _makeTextInput( '', 'COMMENT' ),
+		);
+
 		$link['remove']['link'] = 'Modules.php?modname='.$_REQUEST['modname'].'&modfunc=remove&tab_id='.$_REQUEST['tab_id'];
 		$link['remove']['variables'] = array('id' => 'ID');
 		$link['add']['html']['remove'] = button('add');
 
-		if (User('PROFILE')=='admin')
-			$tabs[] = array('title'=>button('add', '', '', 'smaller'),'link' => 'Modules.php?modname='.$_REQUEST['modname'].'&tab_id=new');
-
-		$singular = 'Grade';
-		$plural = 'Grades';
+		if ( User( 'PROFILE' ) === 'admin' )
+		{
+			$tabs[] = array(
+				'title' => button( 'add', '', '', 'smaller' ),
+				'link' => 'Modules.php?modname=' . $_REQUEST['modname'] . '&tab_id=new',
+			);
+		}
 	}
 	else
 	{
-		$sql = "SELECT * FROM REPORT_CARD_GRADE_SCALES WHERE SCHOOL_ID='".UserSchool()."' AND SYEAR='".UserSyear()."' ORDER BY SORT_ORDER,ID";
-		$functions = array('TITLE' => 'makeTextInput','GP_SCALE' => 'makeTextInput','COMMENT' => 'makeTextInput','HHR_GPA_VALUE' => 'makeGradesInput','HR_GPA_VALUE' => 'makeGradesInput','HRS_GPA_VALUE' => 'makeGradesInput','SORT_ORDER' => 'makeTextInput');
-		$LO_columns = array('TITLE' => _('Grade Scale'),'GP_SCALE' => _('Scale Value'),'COMMENT' => _('Comment'),'HHR_GPA_VALUE' => _('High Honor Roll GPA Min'),'HR_GPA_VALUE' => _('Honor Roll GPA Min'),'HRS_GPA_VALUE' => _('Honor Roll by Subject GPA Min'),'SORT_ORDER' => _('Sort Order'));
+		$sql = "SELECT * FROM REPORT_CARD_GRADE_SCALES
+			WHERE SCHOOL_ID='" . UserSchool() . "'
+			AND SYEAR='" . UserSyear() . "'
+			ORDER BY SORT_ORDER,ID";
 
-		$link['add']['html'] = array('TITLE'=>makeTextInput('','TITLE'),'GP_SCALE'=>makeTextInput('', 'GP_SCALE'),'COMMENT'=>makeTextInput('','COMMENT'),'HHR_GPA_VALUE'=>makeGradesInput('','HHR_GPA_VALUE'),'HR_GPA_VALUE'=>makeGradesInput('','HR_GPA_VALUE'),'HRS_GPA_VALUE'=>makeGradesInput('','HRS_GPA_VALUE'),'SORT_ORDER'=>makeTextInput('','SORT_ORDER'));
+		$functions = array(
+			'TITLE' => '_makeTextInput',
+			'GP_SCALE' => '_makeGradesInput',
+			'GP_PASSING_VALUE' => '_makeGradesInput',
+			'COMMENT' => '_makeTextInput',
+			'HHR_GPA_VALUE' => '_makeGradesInput',
+			'HR_GPA_VALUE' => '_makeGradesInput',
+			'HRS_GPA_VALUE' => '_makeGradesInput',
+			'SORT_ORDER' => '_makeTextInput',
+		);
+
+		$LO_columns = array(
+			'TITLE' => _( 'Grade Scale' ),
+			'GP_SCALE' => _( 'Scale Value' ),
+			'GP_PASSING_VALUE' => _( 'Minimum Passing Grade' ),
+			'COMMENT' => _( 'Comment' ),
+			'HHR_GPA_VALUE' => _( 'High Honor Roll GPA Min' ),
+			'HR_GPA_VALUE' => _( 'Honor Roll GPA Min' ),
+			'HRS_GPA_VALUE' => _( 'Honor Roll by Subject GPA Min' ),
+			'SORT_ORDER' => _( 'Sort Order' ),
+		);
+
+		$link['add']['html'] = array(
+			'TITLE' => _makeTextInput( '', 'TITLE' ),
+			'GP_SCALE' => _makeGradesInput( '', 'GP_SCALE' ),
+			'GP_PASSING_VALUE' => _makeGradesInput( '', 'GP_PASSING_VALUE' ),
+			'COMMENT' => _makeTextInput( '', 'COMMENT' ),
+			'HHR_GPA_VALUE' => _makeGradesInput( '', 'HHR_GPA_VALUE' ),
+			'HR_GPA_VALUE' => _makeGradesInput( '', 'HR_GPA_VALUE' ),
+			'HRS_GPA_VALUE' => _makeGradesInput( '', 'HRS_GPA_VALUE' ),
+			'SORT_ORDER' => _makeTextInput( '', 'SORT_ORDER' ),
+		);
+
 		$link['remove']['link'] = 'Modules.php?modname='.$_REQUEST['modname'].'&modfunc=remove&tab_id=new';
 		$link['remove']['variables'] = array('id' => 'ID');
 		$link['add']['html']['remove'] = button('add');
 
-		$tabs[] = array('title'=>button('add', '', '', 'smaller'),'link' => 'Modules.php?modname='.$_REQUEST['modname'].'&tab_id=new');
-
-		$singular = 'Grade Scale';
-		$plural = 'Grade Scales';
+		$tabs[] = array(
+			'title' => button( 'add', '', '', 'smaller' ),
+			'link' => 'Modules.php?modname=' . $_REQUEST['modname'] . '&tab_id=new',
+		);
 	}
 	$LO_ret = DBGet(DBQuery($sql),$functions);
 
@@ -189,21 +249,36 @@ if ( ! $_REQUEST['modfunc'] )
 	$LO_options = array('search'=>false,
 		'header'=>WrapTabs($tabs,'Modules.php?modname='.$_REQUEST['modname'].'&tab_id='.$_REQUEST['tab_id']));
 
-	ListOutput($LO_ret,$LO_columns,$singular,$plural,$link,array(),$LO_options);
+	if ( $_REQUEST['tab_id'] !== 'new' )
+	{
+		ListOutput( $LO_ret, $LO_columns, 'Grade', 'Grades', $link, array(), $LO_options );
+	}
+	else
+	{
+		ListOutput( $LO_ret, $LO_columns, 'Grade Scale', 'Grade Scales', $link, array(), $LO_options );
+	}
 
 	echo '<br /><div class="center">' . SubmitButton( _( 'Save' ) ) . '</div>';
 	echo '</form>';
 }
 
-function makeGradesInput($value,$name)
-{	global $THIS_RET,$grade_scale_select,$teacher_id,$gradebook_config;
+function _makeGradesInput( $value, $name )
+{
+	global $THIS_RET,
+		$grade_scale_select,
+		$teacher_id,
+		$gradebook_config;
 
-	if ( $THIS_RET['ID'])
+	if ( $THIS_RET['ID'] )
+	{
 		$id = $THIS_RET['ID'];
+	}
 	else
+	{
 		$id = 'new';
+	}
 
-	if ( $name=='GRADE_SCALE_ID')
+	if ( $name === 'GRADE_SCALE_ID' )
 	{
 		return SelectInput(
 			$value,
@@ -213,17 +288,36 @@ function makeGradesInput($value,$name)
 			false
 		);
 	}
-	elseif ( $name=='COMMENT')
+
+	if ( $name === 'COMMENT' )
+	{
 		$extra = 'size=15 maxlength=100';
-//FJ Honor Roll by Subject
-	elseif ( $name=='GPA_VALUE' || $name=='HHR_GPA_VALUE' || $name=='HR_GPA_VALUE' || $name=='HRS_GPA_VALUE')
-		$extra = 'size=5 maxlength=5';
-	elseif ( $name=='SORT_ORDER')
-		$extra = 'size=5 maxlength=5';
-	elseif ( $name=='BREAK_OFF' && $teacher_id && $gradebook_config[UserCoursePeriod().'-'.$THIS_RET['ID']][1]['VALUE']!='')
-		return '<span style="color:blue">'.$gradebook_config[UserCoursePeriod().'-'.$THIS_RET['ID']][1]['VALUE'].'</span>';
+	}
+	elseif ( $name === 'BREAK_OFF'
+		&& $teacher_id
+		&& isset( $gradebook_config[ UserCoursePeriod() . '-' . $THIS_RET['ID'] ] )
+		&& $gradebook_config[ UserCoursePeriod() . '-' . $THIS_RET['ID'] ] != '' )
+	{
+		// Breakoff configured by Teacher.
+		return '<span style="color:blue">' .
+			$gradebook_config[ UserCoursePeriod() . '-' . $THIS_RET['ID'] ] . '%</span>';
+	}
 	else
-		$extra = 'size=5 maxlength=5';
+	{
+		$extra = 'size=4 maxlength=5';
+
+		if ( $value )
+		{
+			$value = number_format ( (float) $value, 2, '.', '' );
+		}
+	}
+
+	if ( $name === 'BREAK_OFF'
+		&& $value !== '' )
+	{
+		// Append "%" to displayed Breakoff value.
+		$value = array( $value, $value . '%' );
+	}
 
 	return TextInput(
 		$value,
@@ -233,22 +327,36 @@ function makeGradesInput($value,$name)
 	);
 }
 
-function makeTextInput($value,$name)
-{	global $THIS_RET;
+function _makeTextInput( $value, $name )
+{
+	global $THIS_RET;
 
-	if ( $THIS_RET['ID'])
+	if ( $THIS_RET['ID'] )
+	{
 		$id = $THIS_RET['ID'];
+	}
 	else
+	{
 		$id = 'new';
-    //bjj adding 'GP_SCALE'
-	if ( $name=='TITLE')
-		$extra = 'size=15 maxlength=25';
-    elseif ( $name=='GP_SCALE')
-        $extra = 'size=5 maxlength=5';
-	elseif ( $name=='COMMENT')
-		$extra = 'size=15 maxlength=100';
+	}
+
+	if ( $name === 'TITLE' )
+	{
+		$extra = 'size=5 maxlength=100';
+
+		if ( $id !== 'new' )
+		{
+			$extra .= ' required';
+		}
+	}
+	elseif ( $name === 'COMMENT' )
+	{
+		$extra = 'size=15 maxlength=1000';
+	}
 	else
-		$extra = 'size=5 maxlength=5';
+	{
+		$extra = 'size=4 maxlength=5';
+	}
 
 	return TextInput(
 		$value,

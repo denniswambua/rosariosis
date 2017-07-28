@@ -29,7 +29,7 @@ function Config( $item )
 	}
 
 	// Get General & School Config.
-	if ( !isset( $_ROSARIO['Config'][ (string) $item ] ) )
+	if ( ! isset( $_ROSARIO['Config'][ (string) $item ] ) )
 	{
 		// General (for every school) Config is stored with SCHOOL_ID=0.
 		$school_where = "SCHOOL_ID='0'";
@@ -58,7 +58,7 @@ function Config( $item )
  *
  * Values set in School Configuration or directly in Module (ex.: Eligibility Entry times)
  *
- * @example if ( ProgramConfig( 'STUDENTS_SEMESTER_COMMENTS', 'students' ) )
+ * @example if ( ProgramConfig( 'students', 'STUDENTS_SEMESTER_COMMENTS' ) )
  *
  * @since 2.9
  *
@@ -79,7 +79,7 @@ function ProgramConfig( $program, $item = 'all'  )
 		return '';
 	}
 
-	if ( ! isset( $_ROSARIO['ProgramConfig'] ) )
+	if ( ! isset( $_ROSARIO['ProgramConfig'][ (string) $program ] ) )
 	{
 		$_ROSARIO['ProgramConfig'] = DBGet( DBQuery( "SELECT PROGRAM,TITLE,VALUE
 			FROM PROGRAM_CONFIG

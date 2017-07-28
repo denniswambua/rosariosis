@@ -95,27 +95,55 @@ $extra['SELECT'] .= ",ssm.NEXT_SCHOOL,ssm.CALENDAR_ID,ssm.SYEAR,
 	(SELECT sch.SCHOOL_NUMBER
 		FROM SCHOOLS sch
 		WHERE ssm.SCHOOL_ID=sch.ID
-		AND sch.SYEAR='".UserSyear()."') AS SCHOOL_NUMBER,s.*";
+		AND sch.SYEAR='" . UserSyear() . "') AS SCHOOL_NUMBER"; // Fix PHP error removed s.*.
 
 if ( $_REQUEST['fields']['FIRST_INIT'] )
+{
 	$extra['SELECT'] .= ',SUBSTR(s.FIRST_NAME,1,1) AS FIRST_INIT';
+}
 
 if ( $_REQUEST['fields']['GIVEN_NAME'] )
+{
 	$extra['SELECT'] .= ",s.LAST_NAME||', '||s.FIRST_NAME||' '||coalesce(s.MIDDLE_NAME,' ') AS GIVEN_NAME";
+}
 
 if ( $_REQUEST['fields']['COMMON_NAME'] )
+{
 	$extra['SELECT'] .= ",s.LAST_NAME||', '||s.FIRST_NAME AS COMMON_NAME";
+}
+
+if ( $_REQUEST['fields']['USERNAME'] )
+{
+	$extra['SELECT'] .= ",s.USERNAME";
+}
+
+if ( $_REQUEST['fields']['LAST_LOGIN'] )
+{
+	$extra['SELECT'] .= ",s.LAST_LOGIN";
+}
+
+// School Title.
+if ( $_REQUEST['fields']['SCHOOL_TITLE'] )
+{
+	$extra['SELECT'] .= ",(SELECT sch.TITLE FROM SCHOOLS sch
+		WHERE ssm.SCHOOL_ID=sch.ID
+		AND sch.SYEAR='" . UserSyear() . "') AS SCHOOL_TITLE";
+}
+
+
 
 if ( ! $extra['functions'] )
+{
 	$extra['functions'] = array(
 		'NEXT_SCHOOL' => '_makeNextSchool',
 		'CALENDAR_ID' => '_makeCalendar',
 		'PARENTS' => 'makeParents',
-		'LAST_LOGIN' => 'makeLogin'
+		'LAST_LOGIN' => 'makeLogin',
 	);
+}
 
-// Generate Report
-if ( $_REQUEST['search_modfunc'] == 'list' )
+// Generate Report.
+if ( $_REQUEST['search_modfunc'] === 'list' )
 {
 	if ( empty( $_REQUEST['fields'] ) )
 		if ( isset( $_REQUEST['_ROSARIO_PDF'] ) )
@@ -180,14 +208,19 @@ if ( $_REQUEST['search_modfunc'] == 'list' )
 
 	$custom_RET = DBGet( DBQuery( "SELECT TITLE,ID,TYPE
 		FROM CUSTOM_FIELDS
-		WHERE ID!='200000002'
 		ORDER BY SORT_ORDER,TITLE" ), array(), array( 'ID' ) );
 
 	foreach ( (array) $custom_RET as $id => $field )
 	{
-		if ( ! $fields_list[ 'CUSTOM_' . $id ] )
+		if ( $_REQUEST['fields'][ 'CUSTOM_' . $id ] )
 		{
-			$fields_list[ 'CUSTOM_' . $id ] = $field[1]['TITLE'];
+			if ( ! $fields_list[ 'CUSTOM_' . $id ] )
+			{
+				$fields_list[ 'CUSTOM_' . $id ] = $field[1]['TITLE'];
+			}
+
+			// Fix PHP error removed s.*, select each student field.
+			$extra['SELECT'] .= ',s.CUSTOM_'  . $id;
 		}
 	}
 
@@ -266,8 +299,10 @@ if ( $_REQUEST['search_modfunc'] == 'list' )
 			AND ss.STUDENT_ID=ssm.STUDENT_ID
 			AND cp.COURSE_PERIOD_ID=ss.COURSE_PERIOD_ID
 			AND cp.TEACHER_ID=st.STAFF_ID
-			AND cpsp.PERIOD_ID=\''.$period['PERIOD_ID'].'\' AND (\''.$date.'\' BETWEEN ss.START_DATE AND ss.END_DATE OR \''.$date.'\'>=ss.START_DATE AND ss.END_DATE IS NULL)
-			AND ss.MARKING_PERIOD_ID IN ('.GetAllMP('QTR',GetCurrentMP('QTR',$date)).'))
+			AND cpsp.PERIOD_ID=\''.$period['PERIOD_ID'].'\'
+			AND (\''.$date.'\' BETWEEN ss.START_DATE AND ss.END_DATE
+				OR \''.$date.'\'>=ss.START_DATE AND ss.END_DATE IS NULL)
+			AND ss.MARKING_PERIOD_ID IN (' . GetAllMP( 'QTR', UserMP() ) . '))
 			AS PERIOD_'.$period['PERIOD_ID'];
 
 			$extra['functions']['PERIOD_' . $period['PERIOD_ID']] = '_makeTeachers';
@@ -338,64 +373,32 @@ if ( $_REQUEST['search_modfunc'] == 'list' )
 		{
 			$columns[ $field ] = ParseMLField( $fields_list[ $field ] );
 
-			if ( mb_substr( $field, 0, 7 ) == 'CUSTOM_' )
+			if ( Config( 'STUDENTS_EMAIL_FIELD' ) === str_replace( 'CUSTOM_', '', $field ) )
+			{
+				$extra['functions'][ $field ] = 'makeEmail';
+			}
+			elseif ( $field === 'PHONE' )
+			{
+				$extra['functions'][ $field ] = 'makePhone';
+			}
+			elseif ( mb_substr( $field, 0, 7 ) === 'CUSTOM_' )
 			{
 				$field_type = $custom_RET[ mb_substr( $field, 7 ) ][1]['TYPE'];
 
-				if ( $field_type === 'date'
-					&& ! $extra['functions'][ $field ] )
+				if ( ! isset( $extra['functions'][ $field ] )
+					|| ! $extra['functions'][ $field ] )
 				{
-					$extra['functions'][ $field ] = 'ProperDate';
-				}
-				elseif ( $field_type === 'codeds'
-					&& ! $extra['functions'][ $field ] )
-				{
-					$extra['functions'][ $field ] = 'DeCodeds';
-				}
-				elseif ( $field_type === 'exports'
-					&& ! $extra['functions'][ $field ] )
-				{
-					$extra['functions'][ $field ] = 'DeCodeds';
-				}
-				elseif ( $field_type === 'radio'
-					&& ! $extra['functions'][ $field ] )
-				{
-					$extra['functions'][ $field ] = 'makeCheckbox';
-				}
-				elseif ( $field_type === 'textarea'
-					&& ! $extra['functions'][ $field ] )
-				{
-					$extra['functions'][ $field ] = 'makeTextarea';
+					$extra['functions'][ $field ] = makeFieldTypeFunction( $field_type );
 				}
 			}
-			elseif ( mb_substr( $field, 0, 8 ) == 'ADDRESS_' )
+			elseif ( mb_substr( $field, 0, 8 ) === 'ADDRESS_' )
 			{
 				$field_type = $address_RET[ mb_substr( $field, 8 ) ][1]['TYPE'];
 
-				if ( $field_type === 'date'
-					&& ! $extra['functions'][ $field ] )
+				if ( ! isset( $extra['functions'][ $field ] )
+					|| ! $extra['functions'][ $field ] )
 				{
-					$extra['functions'][ $field ] = 'ProperDate';
-				}
-				elseif ( $field_type === 'codeds'
-					&& ! $extra['functions'][ $field ] )
-				{
-					$extra['functions'][ $field ] = 'DeCodeds';
-				}
-				elseif ( $field_type === 'exports'
-					&& ! $extra['functions'][ $field ] )
-				{
-					$extra['functions'][ $field ] = 'DeCodeds';
-				}
-				elseif ( $field_type === 'radio'
-					&& ! $extra['functions'][ $field ] )
-				{
-					$extra['functions'][ $field ] = 'makeCheckbox';
-				}
-				elseif ( $field_type === 'textarea'
-					&& ! $extra['functions'][ $field ] )
-				{
-					$extra['functions'][ $field ] = 'makeTextarea';
+					$extra['functions'][ $field ] = makeFieldTypeFunction( $field_type );
 				}
 			}
 		}
@@ -610,7 +613,7 @@ else
 		else
 			$category_title = ParseMLField( $category );
 
-		echo '<table class="widefat cellspacing-0"><tr>
+		echo '<table class="widefat"><tr>
 				<th colspan="2">' . $category_title . '</th>
 			</tr><tr>';
 

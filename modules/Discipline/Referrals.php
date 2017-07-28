@@ -1,6 +1,9 @@
 <?php
 
 require_once 'ProgramFunctions/MarkDownHTML.fnc.php';
+require_once 'ProgramFunctions/TipMessage.fnc.php';
+
+DrawHeader( ProgramTitle() );
 
 if ( isset( $_POST['day_values'], $_POST['month_values'], $_POST['year_values'] ) )
 {
@@ -64,30 +67,40 @@ if ( isset( $_POST['values'] )
 
 	if ( $go)
 		DBQuery($sql);
-	unset($_REQUEST['values']);
-	unset($_SESSION['_REQUEST_vars']['values']);
-}
 
-DrawHeader(ProgramTitle());
+	// Unset values & redirect URL.
+	RedirectURL( 'values' );
+}
 
 echo ErrorMessage( $error );
 
-if ( $_REQUEST['modfunc']=='remove' && AllowEdit())
+if ( $_REQUEST['modfunc'] === 'remove'
+	&& AllowEdit() )
 {
-	if (DeletePrompt(_('Referral')))
+	if ( DeletePrompt( _( 'Referral' ) ) )
 	{
-		DBQuery("DELETE FROM DISCIPLINE_REFERRALS WHERE ID='".$_REQUEST['id']."'");
-		unset($_REQUEST['modfunc']);
+		DBQuery( "DELETE FROM DISCIPLINE_REFERRALS
+			WHERE ID='" . $_REQUEST['id'] . "'" );
+
+		// Unset modfunc & ID & redirect URL.
+		RedirectURL( array( 'modfunc', 'id' ) );
 	}
 }
 
-$categories_RET = DBGet(DBQuery("SELECT df.ID,du.TITLE FROM DISCIPLINE_FIELDS df,DISCIPLINE_FIELD_USAGE du WHERE df.DATA_TYPE!='textarea' AND du.SYEAR='".UserSyear()."' AND du.SCHOOL_ID='".UserSchool()."' AND du.DISCIPLINE_FIELD_ID=df.ID ORDER BY du.SORT_ORDER"));
+$categories_RET = DBGet( DBQuery( "SELECT df.ID,du.TITLE
+	FROM DISCIPLINE_FIELDS df,DISCIPLINE_FIELD_USAGE du
+	WHERE df.DATA_TYPE!='textarea'
+	AND du.SYEAR='" . UserSyear() . "'
+	AND du.SCHOOL_ID='" . UserSchool() . "'
+	AND du.DISCIPLINE_FIELD_ID=df.ID
+	ORDER BY du.SORT_ORDER" ) );
 
 Widgets( 'reporter' );
 Widgets( 'incident_date' );
 Widgets( 'discipline_fields' );
 
 $extra['SELECT'] = ',dr.*';
+
 if (mb_strpos($extra['FROM'],'DISCIPLINE_REFERRALS')===false)
 {
 	$extra['FROM'] .= ',DISCIPLINE_REFERRALS dr ';
@@ -99,7 +112,7 @@ $extra['ORDER_BY'] = 'dr.ENTRY_DATE DESC,s.LAST_NAME,s.FIRST_NAME,s.MIDDLE_NAME'
 $extra['columns_after'] = array('STAFF_ID' => _('Reporter'),'ENTRY_DATE' => _('Incident Date'));
 $extra['functions'] = array('STAFF_ID' => 'GetTeacher','ENTRY_DATE' => 'ProperDate');
 
-foreach ( (array) $categories_RET as $category)
+foreach ( (array) $categories_RET as $category )
 {
 	$extra['columns_after']['CATEGORY_'.$category['ID']] = $category['TITLE'];
 	$extra['functions']['CATEGORY_'.$category['ID']] = '_make';
@@ -171,7 +184,10 @@ if ( ! $_REQUEST['modfunc']
 			FROM STUDENTS
 			WHERE STUDENT_ID='" . $RET['STUDENT_ID'] . "'" ) );
 
-		echo '<tr><td>' . NoInput( $student_name_RET[1]['FULL_NAME'], _( 'Student' ) ) . '</td></tr>';
+		echo '<tr><td>' . NoInput(
+			MakeStudentPhotoTipMessage( $RET['STUDENT_ID'], $student_name_RET[1]['FULL_NAME'] ),
+			_( 'Student' )
+		) . '</td></tr>';
 
 		$users_RET = DBGet( DBQuery( "SELECT STAFF_ID,FIRST_NAME||', '||LAST_NAME||coalesce(' '||MIDDLE_NAME,' ') AS FULL_NAME,
 			EMAIL,PROFILE
@@ -202,11 +218,11 @@ if ( ! $_REQUEST['modfunc']
 			DateInput( $RET['ENTRY_DATE'], 'values[ENTRY_DATE]', _( 'Incident Date' ) ) .
 		'</td></tr>';
 
-		foreach ( (array) $categories_RET as $category)
+		foreach ( (array) $categories_RET as $category )
 		{
 			echo '<tr><td>';
 
-			switch ( $category['DATA_TYPE'])
+			switch ( $category['DATA_TYPE'] )
 			{
 				case 'text':
 
@@ -280,14 +296,21 @@ if ( ! $_REQUEST['modfunc']
 
 					$i = 0;
 
-					foreach ( (array) $options as $option)
+					foreach ( (array) $options as $option )
 					{
 						$i++;
 
-						if ( $i%3==0)
+						if ( $i % 3 == 0 )
+						{
 							$multiple_html .= '</tr><tr class="st">';
+						}
 
-						$multiple_html .= '<td><label><input type="checkbox" name="values[CATEGORY_'.$category['ID'].'][]" value="'.htmlspecialchars($option,ENT_QUOTES).'"'.(mb_strpos($RET['CATEGORY_'.$category['ID']],$option)!==false?' checked':'').' />&nbsp;'.$option.'</label></td>';
+						$multiple_html .= '<td><label>
+							<input type="checkbox" name="values[CATEGORY_' . $category['ID'] . '][]"
+								value="' . htmlspecialchars( $option, ENT_QUOTES ) . '"' .
+								( $option != '' && mb_strpos( $RET[ 'CATEGORY_' . $category['ID'] ], $option ) !== false ? ' checked' : '' ) . ' />&nbsp;' .
+							( $option != '' ? $option : '-' ) .
+						'</label></td>';
 					}
 
 					$multiple_html .= '</tr></table>';
@@ -325,14 +348,21 @@ if ( ! $_REQUEST['modfunc']
 
 					$i = 0;
 
-					foreach ( (array) $options as $option)
+					foreach ( (array) $options as $option )
 					{
 						$i++;
 
-						if ( $i%3==0)
+						if ( $i % 3 == 0 )
+						{
 							$multiple_html .= '</tr><tr class="st">';
+						}
 
-						$multiple_html .= '<td><label><input type="radio" name="values[CATEGORY_'.$category['ID'].']" value="'.htmlspecialchars($option,ENT_QUOTES).'"'.(($RET['CATEGORY_'.$category['ID']]==$option)?' checked':'').'>&nbsp;'.$option.'</label></td>';
+						$multiple_html .= '<td><label>
+							<input type="radio" name="values[CATEGORY_' . $category['ID'] . ']"
+								value="' . htmlspecialchars( $option, ENT_QUOTES ) . '"' .
+								( $RET['CATEGORY_' . $category['ID'] ] == $option ? ' checked' : '' ) . '>&nbsp;' .
+							( $option != '' ? $option : '-' ) .
+						'</label></td>';
 					}
 
 					$multiple_html .= '</tr></table>';
@@ -396,17 +426,27 @@ if ( ! $_REQUEST['modfunc']
 
 echo ErrorMessage( $error );
 
-if ( ! $_REQUEST['referral_id'] && ! $_REQUEST['modfunc'])
-	Search('student_id',$extra);
-
-function _make($value,$column)
+if ( ! $_REQUEST['referral_id']
+	&& ! $_REQUEST['modfunc'] )
 {
-	if (mb_substr_count($value,'-')==2 && VerifyDate($value))
-		$value = ProperDate($value);
-	elseif (is_numeric($value))
-		$value = ((mb_strpos($value,'.')===false)?$value:rtrim(rtrim($value,'0'),'.'));
-	elseif ( $value == 'Y')
-		$value = button('check');
+	Search( 'student_id', $extra );
+}
 
-	return str_replace('||',',<br />',trim($value,'|'));
+function _make( $value, $column )
+{
+	if ( mb_substr_count( $value, '-' ) === 2
+		&& VerifyDate( $value ) )
+	{
+		$value = ProperDate( $value );
+	}
+	elseif ( is_numeric( $value ) )
+	{
+		$value = mb_strpos( $value, '.' ) === false ? $value : rtrim( rtrim( $value, '0' ), '.' );
+	}
+	elseif ( $value === 'Y' )
+	{
+		$value = button( 'check' );
+	}
+
+	return str_replace( '||', ', ', trim( $value, '|' ) );
 }

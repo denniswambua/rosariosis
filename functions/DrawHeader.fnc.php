@@ -28,12 +28,13 @@ function DrawHeader( $left, $right = '', $center = '' )
 	global $_ROSARIO;
 
 	// Primary Header.
-	if ( ! $_ROSARIO['DrawHeader'] )
+	if ( ! isset( $_ROSARIO['DrawHeader'] )
+		|| ! $_ROSARIO['DrawHeader'] )
 	{
 		$_ROSARIO['DrawHeader'] = 'header1';
 	}
 
-	echo '<table class="width-100p cellspacing-0"><tr class="st">';
+	echo '<table class="header"><tr class="st">';
 
 	if ( $left )
 	{

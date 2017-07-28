@@ -1,7 +1,12 @@
 <?php
-if ( $_REQUEST['modfunc']=='update')
+
+DrawHeader( ProgramTitle() );
+
+if ( $_REQUEST['modfunc'] === 'update' )
 {
-	if ( $_REQUEST['values'] && $_POST['values'] && AllowEdit())
+	if ( $_REQUEST['values']
+		&& $_POST['values']
+		&& AllowEdit() )
 	{
 		foreach ( (array) $_REQUEST['values'] as $id => $columns)
 		{
@@ -11,12 +16,13 @@ if ( $_REQUEST['modfunc']=='update')
 
 				foreach ( (array) $columns as $column => $value)
 				{
-					$sql .= $column."='".$value."',";
+					$sql .= DBEscapeIdentifier( $column ) . "='" . $value . "',";
 				}
 				$sql = mb_substr($sql,0,-1) . " WHERE ID='".$id."'";
 				DBQuery($sql);
 			}
-			else
+			// New: check for Title.
+			elseif ( $columns['TITLE'] )
 			{
 				$sql = "INSERT INTO RESOURCES ";
 
@@ -28,12 +34,12 @@ if ( $_REQUEST['modfunc']=='update')
 				{
 					if ( !empty($value) || $value=='0')
 					{
-						$fields .= $column.',';
-						$values .= "'".$value."',";
+						$fields .= DBEscapeIdentifier( $column ) . ',';
+						$values .= "'" . $value . "',";
 						$go = true;
 					}
 				}
-				$sql .= '(' . mb_substr($fields,0,-1) . ') values(' . mb_substr($values,0,-1) . ')';
+				$sql .= '(' . mb_substr( $fields, 0, -1 ) . ') values(' . mb_substr( $values, 0, -1 ) . ')';
 
 				if ( $go)
 					DBQuery($sql);
@@ -41,17 +47,20 @@ if ( $_REQUEST['modfunc']=='update')
 		}
 	}
 
-	unset($_REQUEST['modfunc']);
+	// Unset modfunc & redirect URL.
+	RedirectURL( 'modfunc' );
 }
 
-DrawHeader(ProgramTitle());
-
-if ( $_REQUEST['modfunc']=='remove' && AllowEdit())
+if ( $_REQUEST['modfunc'] === 'remove'
+	&& AllowEdit() )
 {
-	if (DeletePrompt(_('Resource')))
+	if ( DeletePrompt( _( 'Resource' ) ) )
 	{
-		DBQuery("DELETE FROM RESOURCES WHERE ID='".$_REQUEST['id']."'");
-		unset($_REQUEST['modfunc']);
+		DBQuery( "DELETE FROM RESOURCES
+			WHERE ID='" . $_REQUEST['id'] . "'" );
+
+		// Unset modfunc & ID & redirect URL.
+		RedirectURL( array( 'modfunc', 'id' ) );
 	}
 }
 
@@ -74,44 +83,77 @@ if ( ! $_REQUEST['modfunc'] )
 	echo '</form>';
 }
 
-function _makeTextInput($value,$name)
-{	global $THIS_RET;
+function _makeTextInput( $value, $name )
+{
+	global $THIS_RET;
 
-	if ( $THIS_RET['ID'])
+	if ( $THIS_RET['ID'] )
+	{
 		$id = $THIS_RET['ID'];
+	}
 	else
+	{
 		$id = 'new';
+	}
 
-	if ( $name=='LINK')
-		$extra = 'maxlength=1000';
+	if ( $name === 'LINK' )
+	{
+		$extra = 'size="32" maxlength="1000"';
+	}
 
-	if ( $name=='TITLE')
-		$extra = 'maxlength=256';
+	if ( $name === 'TITLE' )
+	{
+		$extra = 'maxlength="256"';
+	}
 
-	return TextInput($value,'values['.$id.']['.$name.']','',$extra);
+	if ( $id !== 'new' )
+	{
+		$extra .= ' required';
+	}
+
+	return TextInput( $value, 'values[' . $id . '][' . $name . ']', '', $extra );
 }
 
-function _makeLink($value,$name)
+function _makeLink( $value, $name )
 {
-	if (AllowEdit())
+	if ( isset( $_REQUEST['LO_save'] )
+		&& $_REQUEST['LO_save'] )
 	{
-		if ( $value)
-			return '<div style="display:table-cell;"><a href="'.$value.'" target="_blank">'._('Link').'</a>&nbsp;</div><div style="display:table-cell;">'._makeTextInput($value,$name).'</div>';
-		else
-			return _makeTextInput($value,$name);
+		// Export list.
+		return $value;
 	}
 
-	//truncate links > 100 chars
+	if ( AllowEdit() )
+	{
+		if ( $value )
+		{
+			return '<div style="display:table-cell;"><a href="' . $value . '" target="_blank">' .
+				_( 'Link' ) . '</a>&nbsp;</div>
+				<div style="display:table-cell;">' . _makeTextInput( $value, $name ) . '</div>';
+		}
+		else
+		{
+			return _makeTextInput( $value, $name );
+		}
+	}
+
+	if ( ! $value )
+	{
+		return $value;
+	}
+
+	// Truncate links > 100 chars.
 	$truncated_link = $value;
-	if (mb_strlen($truncated_link) > 100)
+
+	if ( mb_strlen( $truncated_link ) > 100 )
 	{
 		$separator = '/.../';
-		$separatorlength = mb_strlen($separator) ;
-		$maxlength = 100 - $separatorlength;
-		$start = $maxlength / 2 ;
-		$trunc =  mb_strlen($truncated_link) - $maxlength;
-		$truncated_link = substr_replace($truncated_link, $separator, $start, $trunc);
+		$separator_length = mb_strlen( $separator );
+		$max_length = 100 - $separator_length;
+		$start = $max_length / 2 ;
+		$trunc =  mb_strlen( $truncated_link ) - $max_length;
+		$truncated_link = substr_replace( $truncated_link, $separator, $start, $trunc );
 	}
 
-	return '<a href="'.$value.'" target="_blank">'.$truncated_link.'</a>';
+	return '<a href="' . $value . '" target="_blank">' . $truncated_link . '</a>';
 }

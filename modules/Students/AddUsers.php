@@ -1,7 +1,13 @@
 <?php
-if ( $_REQUEST['modfunc'] === 'save' )
+
+DrawHeader( ProgramTitle() );
+
+if ( $_REQUEST['modfunc'] === 'save'
+	&& AllowEdit()
+	&& UserStudentID() )
 {
-	if (isset($_REQUEST['staff']) && is_array($_REQUEST['staff']) && AllowEdit())
+	if ( isset( $_REQUEST['staff'] )
+		&& is_array( $_REQUEST['staff'] ) )
 	{
 		$current_RET = DBGet(DBQuery("SELECT STAFF_ID FROM STUDENTS_JOIN_USERS WHERE STUDENT_ID='".UserStudentID()."'"),array(),array('STAFF_ID'));
 		foreach ( (array) $_REQUEST['staff'] as $staff_id => $yes)
@@ -20,22 +26,26 @@ if ( $_REQUEST['modfunc'] === 'save' )
 	else
 		$error[] = _('You must choose at least one user');
 
-	unset($_REQUEST['modfunc']);
-	unset($_SESSION['_REQUEST_vars']['modfunc']);
+	// Unset modfunc & redirect URL.
+	RedirectURL( 'modfunc' );
 }
 
-DrawHeader(ProgramTitle());
-
-if ( $_REQUEST['modfunc']=='delete' && AllowEdit())
+if ( $_REQUEST['modfunc'] === 'delete'
+	&& AllowEdit()
+	&& UserStudentID() )
 {
-	if (DeletePrompt(_('student from that user'),_('remove access to')) && !empty($_REQUEST['staff_id_remove']))
+	if ( DeletePrompt( _( 'student from that user' ), _( 'remove access to' ) )
+		&& ! empty( $_REQUEST['staff_id_remove'] ) )
 	{
-		DBQuery("DELETE FROM STUDENTS_JOIN_USERS WHERE STAFF_ID='".$_REQUEST['staff_id_remove']."' AND STUDENT_ID='".UserStudentID()."'");
+		DBQuery( "DELETE FROM STUDENTS_JOIN_USERS
+			WHERE STAFF_ID='" . $_REQUEST['staff_id_remove'] . "'
+			AND STUDENT_ID='" . UserStudentID() . "'" );
 
-		//hook
-		do_action('Students/AddUsers.php|user_unassign_role');
+		// Hook.
+		do_action( 'Students/AddUsers.php|user_unassign_role' );
 
-		unset($_REQUEST['modfunc']);
+		// Unset modfunc & staff ID remove & redirect URL.
+		RedirectURL( array( 'modfunc', 'staff_id_remove' ) );
 	}
 }
 
@@ -43,7 +53,7 @@ echo ErrorMessage( $note,'note' );
 
 echo ErrorMessage( $error );
 
-if ( $_REQUEST['modfunc']!='delete')
+if ( ! $_REQUEST['modfunc'] )
 {
 	$extra['SELECT'] = ",(SELECT count(u.STAFF_ID) FROM STUDENTS_JOIN_USERS u,STAFF st WHERE u.STUDENT_ID=s.STUDENT_ID AND st.STAFF_ID=u.STAFF_ID AND st.SYEAR=ssm.SYEAR) AS ASSOCIATED";
 	$extra['columns_after'] = array('ASSOCIATED' => '# '._('Associated'));

@@ -1,35 +1,51 @@
 <?php
 
-DrawHeader(ProgramTitle());
+DrawHeader( ProgramTitle() );
 
 Widgets('activity');
 Widgets('course');
 Widgets('eligibility');
 
-Search('student_id',$extra);
+Search( 'student_id', $extra );
 
-if ( $_REQUEST['modfunc']=='add' && AllowEdit())
+if ( $_REQUEST['modfunc'] === 'add'
+	&& $_REQUEST['new_activity']
+	&& AllowEdit() )
 {
-//FJ fix bug add the same activity more than once
-	$activity_RET = DBGet(DBQuery("SELECT ACTIVITY_ID FROM STUDENT_ELIGIBILITY_ACTIVITIES WHERE STUDENT_ID='".UserStudentID()."' AND ACTIVITY_ID='".$_REQUEST['new_activity']."' AND SYEAR='".UserSyear()."'"));
+	// FJ fix bug add the same activity more than once.
+	$activity_RET = DBGet( DBQuery( "SELECT ACTIVITY_ID
+		FROM STUDENT_ELIGIBILITY_ACTIVITIES
+		WHERE STUDENT_ID='" . UserStudentID() . "'
+		AND ACTIVITY_ID='" . $_REQUEST['new_activity'] . "'
+		AND SYEAR='" . UserSyear() . "'" ) );
 
 	if (count($activity_RET))
 		echo ErrorMessage(array(_('The activity you selected is already assigned to this student!')));
 	else
 		DBQuery("INSERT INTO STUDENT_ELIGIBILITY_ACTIVITIES (STUDENT_ID,ACTIVITY_ID,SYEAR) values('".UserStudentID()."','".$_REQUEST['new_activity']."','".UserSyear()."')");
-	unset($_REQUEST['modfunc']);
+
+	// Unset modfunc & new activity & redirect URL.
+	RedirectURL( array( 'modfunc', 'new_activity' ) );
 }
 
-if ( $_REQUEST['modfunc']=='remove' && AllowEdit())
+if ( $_REQUEST['modfunc'] === 'remove'
+	&& AllowEdit()
+	&& UserStudentID() )
 {
-	if (DeletePrompt(_('Activity')))
+	if ( DeletePrompt( _( 'Activity' ) ) )
 	{
-		DBQuery("DELETE FROM STUDENT_ELIGIBILITY_ACTIVITIES WHERE STUDENT_ID='".UserStudentID()."' AND ACTIVITY_ID='".$_REQUEST['activity_id']."' AND SYEAR='".UserSyear()."'");
-		unset($_REQUEST['modfunc']);
+		DBQuery( "DELETE FROM STUDENT_ELIGIBILITY_ACTIVITIES
+			WHERE STUDENT_ID='" . UserStudentID() . "'
+			AND ACTIVITY_ID='" . $_REQUEST['activity_id'] . "'
+			AND SYEAR='" . UserSyear() . "'" );
+
+		// Unset modfunc & activity ID & redirect URL.
+		RedirectURL( array( 'modfunc', 'activity_id' ) );
 	}
 }
 
-if (UserStudentID() && ! $_REQUEST['modfunc'])
+if ( UserStudentID()
+	&& ! $_REQUEST['modfunc'] )
 {
 	// GET ALL THE CONFIG ITEMS FOR ELIGIBILITY
 	$eligibility_config = ProgramConfig( 'eligibility' );
@@ -38,7 +54,7 @@ if (UserStudentID() && ! $_REQUEST['modfunc'])
 	{
 		${$value[1]['TITLE']} = $value[1]['VALUE'];
 	}
-	
+
 	switch (date('D'))
 	{
 		case 'Mon':
@@ -63,9 +79,9 @@ if (UserStudentID() && ! $_REQUEST['modfunc'])
 		$today = 7;
 		break;
 	}
-	
+
 	$start = time() - ($today-$START_DAY)*60*60*24;
-	
+
 	if ( ! $_REQUEST['start_date'] )
 	{
 		$start_time = $start;
@@ -87,7 +103,7 @@ if (UserStudentID() && ! $_REQUEST['modfunc'])
 	$begin_year = $begin_year[1]['SCHOOL_DATE'];
 	if (is_null($begin_year))
 		ErrorMessage(array(_('There are no calendars yet setup.')), 'fatal');
-	
+
 //FJ display locale with strftime()
 //	$date_select = "<option value=$start>".date('M d, Y',$start).' - '.date('M d, Y',$end).'</option>';
 	$date_select = '<option value="'.$start.'">'.ProperDate( date( 'Y-m-d', $start)).' - '.ProperDate( DBDate() ).'</option>';
@@ -95,17 +111,21 @@ if (UserStudentID() && ! $_REQUEST['modfunc'])
 	for ( $i=$start-(60*60*24*7);$i>=$begin_year;$i-=(60*60*24*7))
 //		$date_select .= "<option value=$i".(($i+86400>=$start_time && $i-86400<=$start_time)?' selected':'').">".date('M d, Y',$i).' - '.date('M d, Y',($i+1+(($END_DAY-$START_DAY))*60*60*24)).'</option>';
 		$date_select .= '<option value="'.$i.'"'.(($i+86400>=$start_time && $i-86400<=$start_time)?' selected':'').">".ProperDate( date( 'Y-m-d', $i)).' - '.ProperDate( date( 'Y-m-d', ($i+1+(($END_DAY-$START_DAY))*60*60*24))).'</option>';
-	
-	echo '<form action="Modules.php?modname='.$_REQUEST['modname'].'" method="POST">';
-	DrawHeader('<select name="start_date">'.$date_select.'</select> '.SubmitButton(_('Go')));
+
+	$date_select = '<select name="start_date" autocomplete="off">' . $date_select . '</select>';
+
+	echo '<form action="' . PreparePHP_SELF( $_REQUEST, array( 'start_date' ) ) . '" method="GET">';
+
+	DrawHeader( $date_select . ' ' . SubmitButton( _( 'Go' ) ) );
+
 	echo '</form>';
 
-	$RET = DBGet(DBQuery("SELECT em.STUDENT_ID,em.ACTIVITY_ID,ea.TITLE,ea.START_DATE,ea.END_DATE 
-	FROM ELIGIBILITY_ACTIVITIES ea,STUDENT_ELIGIBILITY_ACTIVITIES em 
-	WHERE em.SYEAR='".UserSyear()."' 
-	AND em.STUDENT_ID='".UserStudentID()."' 
-	AND em.SYEAR=ea.SYEAR 
-	AND em.ACTIVITY_ID=ea.ID 
+	$RET = DBGet(DBQuery("SELECT em.STUDENT_ID,em.ACTIVITY_ID,ea.TITLE,ea.START_DATE,ea.END_DATE
+	FROM ELIGIBILITY_ACTIVITIES ea,STUDENT_ELIGIBILITY_ACTIVITIES em
+	WHERE em.SYEAR='".UserSyear()."'
+	AND em.STUDENT_ID='".UserStudentID()."'
+	AND em.SYEAR=ea.SYEAR
+	AND em.ACTIVITY_ID=ea.ID
 	ORDER BY ea.START_DATE"),array('START_DATE' => 'ProperDate','END_DATE' => 'ProperDate'));
 
 	$activities_RET = DBGet(DBQuery("SELECT ID,TITLE FROM ELIGIBILITY_ACTIVITIES WHERE SYEAR='".UserSyear()."' AND SCHOOL_ID='".UserSchool()."'"));
@@ -127,13 +147,13 @@ if (UserStudentID() && ! $_REQUEST['modfunc'])
 	ListOutput($RET,$columns,'Activity','Activities',$link);
 	echo '</form>';
 
-	$RET = DBGet(DBQuery("SELECT e.ELIGIBILITY_CODE,c.TITLE as COURSE_TITLE 
-	FROM ELIGIBILITY e,COURSES c,COURSE_PERIODS cp 
-	WHERE e.STUDENT_ID='".UserStudentID()."' 
-	AND e.SYEAR='".UserSyear()."' 
-	AND e.COURSE_PERIOD_ID=cp.COURSE_PERIOD_ID 
-	AND cp.COURSE_ID=c.COURSE_ID 
-	AND e.SCHOOL_DATE BETWEEN '".$start_date."' 
+	$RET = DBGet(DBQuery("SELECT e.ELIGIBILITY_CODE,c.TITLE as COURSE_TITLE
+	FROM ELIGIBILITY e,COURSES c,COURSE_PERIODS cp
+	WHERE e.STUDENT_ID='".UserStudentID()."'
+	AND e.SYEAR='".UserSyear()."'
+	AND e.COURSE_PERIOD_ID=cp.COURSE_PERIOD_ID
+	AND cp.COURSE_ID=c.COURSE_ID
+	AND e.SCHOOL_DATE BETWEEN '".$start_date."'
 	AND '".$end_date."'"),array('ELIGIBILITY_CODE' => '_makeLower'));
 	$columns = array('COURSE_TITLE' => _('Course'),'ELIGIBILITY_CODE' => _('Grade'));
 	ListOutput($RET,$columns,'Course','Courses');

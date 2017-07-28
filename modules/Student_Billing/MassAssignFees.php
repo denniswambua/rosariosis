@@ -2,7 +2,8 @@
 
 if ( $_REQUEST['modfunc'] === 'save' )
 {
-	if (count($_REQUEST['student']) && AllowEdit())
+	if ( count( $_REQUEST['student'] )
+		&& AllowEdit() )
 	{
 		//FJ fix SQL bug invalid amount
 		if (is_numeric($_REQUEST['amount']))
@@ -32,15 +33,15 @@ if ( $_REQUEST['modfunc'] === 'save' )
 	else
 		$error[] = _('You must choose at least one student.');
 
-	unset($_SESSION['_REQUEST_vars']['modfunc']);
-	unset($_REQUEST['modfunc']);
+	// Unset modfunc & redirect URL.
+	RedirectURL( 'modfunc' );
 }
 
 
 if ( ! $_REQUEST['modfunc'] )
 
 {
-	DrawHeader(ProgramTitle());
+	DrawHeader( ProgramTitle() );
 
 	echo ErrorMessage( $error );
 
@@ -76,21 +77,20 @@ if ( ! $_REQUEST['modfunc'] )
 
 if ( ! $_REQUEST['modfunc'] )
 {
-	$extra['link'] = array('FULL_NAME'=>false);
+	$extra['link'] = array( 'FULL_NAME' => false );
 	$extra['SELECT'] = ",NULL AS CHECKBOX";
-	$extra['functions'] = array('CHECKBOX' => '_makeChooseCheckbox');
-	$extra['columns_before'] = array('CHECKBOX' => '</a><input type="checkbox" value="Y" name="controller" onclick="checkAll(this.form,this.checked,\'student\');"><A>');
+	$extra['functions'] = array( 'CHECKBOX' => '_makeChooseCheckbox' );
+	$extra['columns_before'] = array( 'CHECKBOX' => '</a><input type="checkbox" value="Y" name="controller" onclick="checkAll(this.form,this.checked,\'student\');"><A>' );
 	$extra['new'] = true;
 
 
-	Search('student_id',$extra);
+	Search( 'student_id', $extra );
 
-	if ( $_REQUEST['search_modfunc']=='list')
+	if ( $_REQUEST['search_modfunc'] === 'list' )
 	{
-		echo '<br /><div class="center">' . SubmitButton(_('Add Fee to Selected Students')) . '</div>';
+		echo '<br /><div class="center">' . SubmitButton( _( 'Add Fee to Selected Students' ) ) . '</div>';
 		echo '</form>';
 	}
-
 }
 
 function _makeChooseCheckbox($value,$title)

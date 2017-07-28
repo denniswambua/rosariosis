@@ -28,7 +28,7 @@ if ( $_REQUEST['modfunc'] === 'save'
 		explodeCustom($address_categories_RET, $address_custom, 'a');
 		explodeCustom($people_categories_RET, $people_custom, 'p');
 
-		unset($_REQUEST['modfunc']);
+		$_REQUEST['modfunc'] = false;
 
 		$handle = PDFStart();
 
@@ -176,7 +176,7 @@ if ( $_REQUEST['modfunc'] === 'save'
 
 if ( ! $_REQUEST['modfunc'] )
 {
-	DrawHeader(ProgramTitle());
+	DrawHeader( ProgramTitle() );
 
 	if ( $_REQUEST['search_modfunc']=='list')
 	{

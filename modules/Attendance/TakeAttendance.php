@@ -2,6 +2,8 @@
 //FJ move Attendance.php from functions/ to modules/Attendance/includes
 require_once 'modules/Attendance/includes/UpdateAttendanceDaily.fnc.php';
 
+DrawHeader( ProgramTitle() );
+
 // set date
 if ( isset( $_REQUEST['month_date'] )
 	&& isset( $_REQUEST['day_date'] )
@@ -21,8 +23,6 @@ else
 
 	$date = $_REQUEST['year_date'] . '-' . $_REQUEST['month_date'] . '-' . $_REQUEST['day_date'];
 }
-
-DrawHeader(ProgramTitle());
 
 //FJ bugfix SQL bug more than one row returned by a subquery
 $categories_RET = DBGet( DBQuery( "SELECT '0' AS ID,'" . DBEscapeString( _( 'Attendance' ) ) . "' AS TITLE,0,NULL AS SORT_ORDER
@@ -139,17 +139,24 @@ if (!isset($_ROSARIO['allow_edit']))
 	}
 }
 
-$current_Q = "SELECT ATTENDANCE_TEACHER_CODE,STUDENT_ID,ADMIN,COMMENT,COURSE_PERIOD_ID,ATTENDANCE_REASON FROM ".$table." t WHERE SCHOOL_DATE='".$date."' AND PERIOD_ID='".UserPeriod()."'".($table=='LUNCH_PERIOD'?" AND TABLE_NAME='".$_REQUEST['table']."'":'');
+$current_Q = "SELECT ATTENDANCE_TEACHER_CODE,STUDENT_ID,ADMIN,COMMENT,COURSE_PERIOD_ID,ATTENDANCE_REASON
+	FROM " . DBEscapeIdentifier( $table ) . " t
+	WHERE SCHOOL_DATE='" . $date . "'
+	AND PERIOD_ID='" . UserPeriod() . "'" .
+	( $table == 'LUNCH_PERIOD' ? " AND TABLE_NAME='" . $_REQUEST['table'] . "'" : '' );
 
 $current_RET = DBGet(DBQuery($current_Q),array(),array('STUDENT_ID'));
 
-if ($_REQUEST['attendance'] && $_POST['attendance'])
+if ( $_REQUEST['attendance']
+	&& $_POST['attendance'] )
 {
-	foreach ( (array) $_REQUEST['attendance'] as $student_id => $value)
+	foreach ( (array) $_REQUEST['attendance'] as $student_id => $value )
 	{
 		if ($current_RET[ $student_id ])
 		{
-			$sql = "UPDATE $table SET ATTENDANCE_TEACHER_CODE='".mb_substr($value,5)."',COURSE_PERIOD_ID='".UserCoursePeriod()."'";
+			$sql = "UPDATE " . DBEscapeIdentifier( $table ) .
+				" SET ATTENDANCE_TEACHER_CODE='" . mb_substr( $value, 5 ) . "',
+				COURSE_PERIOD_ID='" . UserCoursePeriod() . "'";
 
 			if ($current_RET[ $student_id ][1]['ADMIN']!='Y')
 				$sql .= ",ATTENDANCE_CODE='".mb_substr($value,5)."'";
@@ -160,9 +167,18 @@ if ($_REQUEST['attendance'] && $_POST['attendance'])
 			$sql .= " WHERE SCHOOL_DATE='".$date."' AND PERIOD_ID='".UserPeriod()."' AND STUDENT_ID='".$student_id."'";
 		}
 		else
-			$sql = "INSERT INTO ".$table." (STUDENT_ID,SCHOOL_DATE,MARKING_PERIOD_ID,PERIOD_ID,COURSE_PERIOD_ID,ATTENDANCE_CODE,ATTENDANCE_TEACHER_CODE,COMMENT".($table=='LUNCH_PERIOD'?',TABLE_NAME':'').") values('".$student_id."','".$date."','".$qtr_id."','".UserPeriod()."','".UserCoursePeriod()."','".mb_substr($value,5)."','".mb_substr($value,5)."','".$_REQUEST['comment'][ $student_id ]."'".($table=='LUNCH_PERIOD'?",'".$_REQUEST['table']."'":'').")";
+		{
+			$sql = "INSERT INTO " . DBEscapeIdentifier( $table ) .
+				" (STUDENT_ID,SCHOOL_DATE,MARKING_PERIOD_ID,PERIOD_ID,COURSE_PERIOD_ID,
+					ATTENDANCE_CODE,ATTENDANCE_TEACHER_CODE,COMMENT" .
+					( $table == 'LUNCH_PERIOD' ? ',TABLE_NAME' : '' ) . ")
+				values('" . $student_id . "','" . $date . "','" . $qtr_id . "','" . UserPeriod() .
+					"','" . UserCoursePeriod() . "','" . mb_substr( $value, 5 ) . "','" .
+					mb_substr( $value, 5 ) . "','" . $_REQUEST['comment'][ $student_id ] . "'" .
+					( $table == 'LUNCH_PERIOD' ? ",'" . $_REQUEST['table'] . "'" : '' ) . ")";
+		}
 
-		DBQuery($sql);
+		DBQuery( $sql );
 
 		if ($_REQUEST['table']=='0')
 			UpdateAttendanceDaily($student_id,$date);
@@ -173,7 +189,9 @@ if ($_REQUEST['attendance'] && $_POST['attendance'])
 		DBQuery("INSERT INTO ATTENDANCE_COMPLETED (STAFF_ID,SCHOOL_DATE,PERIOD_ID,TABLE_NAME) values('".User('STAFF_ID')."','".$date."','".UserPeriod()."','".$_REQUEST['table']."')");
 
 	$current_RET = DBGet(DBQuery($current_Q),array(),array('STUDENT_ID'));
-	unset($_SESSION['_REQUEST_vars']['attendance']);
+
+	// Unset attendance & redirect URL.
+	RedirectURL( 'attendance' );
 }
 
 $codes_RET = DBGet(DBQuery("SELECT ID,TITLE,DEFAULT_CODE,STATE_CODE
@@ -232,7 +250,11 @@ DrawHeader(PrepareDate($date,'_date',false,array('submit'=>true)).$date_note);
 
 echo ErrorMessage( $note, 'note' );
 
-$LO_columns = array('FULL_NAME' => _('Student'),'STUDENT_ID'=>sprintf(_('%s ID'),Config('NAME')),'GRADE_ID' => _('Grade Level')) + $columns;
+$LO_columns = array(
+	'FULL_NAME' => _( 'Student' ),
+	'STUDENT_ID' => sprintf( _( '%s ID' ), Config( 'NAME' ) ),
+	'GRADE_ID' => _( 'Grade Level' ),
+) + $columns;
 
 foreach ( (array) $categories_RET as $category)
 	$tabs[] = array('title'=>ParseMLField($category['TITLE']),'link' => 'Modules.php?modname='.$_REQUEST['modname'].'&table='.$category['ID'].'&month_date='.$_REQUEST['month_date'].'&day_date='.$_REQUEST['day_date'].'&year_date='.$_REQUEST['year_date']);

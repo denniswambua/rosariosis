@@ -135,9 +135,13 @@ function SanitizeMarkDown( $md )
 /**
  * Sanitize HTML user input
  * Use for example to sanitize TinyMCE input
+ * TinyMCE now accepts image upload.
+ * Uploaded images are encoded in base64.
+ * This function also saves the images to $image_path.
  *
  * @see     assets/js/tinymce/
  * @uses    Security class
+ * @uses    UploadImage()
  *
  * @example require_once 'ProgramFunctions/MarkDownHTML.fnc.php';
  *          $_REQUEST['values']['textarea'] = SanitizeHTML( $_POST['values']['textarea'] );
@@ -146,19 +150,20 @@ function SanitizeMarkDown( $md )
  *
  * @global object $security
  *
- * @param  string $html HTML text.
+ * @param  string $html       HTML text.
+ * @param  string $image_path Path where to upload base64 images. Defaults to "assets/FileUploads/[Syear]/[staff_or_student_ID]/" (optional).
  *
  * @return string Sanitized input with HTML encoded single quotes
  */
-function SanitizeHTML( $html )
+function SanitizeHTML( $html, $image_path = '' )
 {
+	global $security;
+
 	if ( ! is_string( $html )
 		|| empty( $html ) )
 	{
 		return $html;
 	}
-
-	global $security;
 
 	// Create $security object once.
 	if ( ! ( $security instanceof Security ) )
@@ -168,7 +173,39 @@ function SanitizeHTML( $html )
 		$security = new Security();
 	}
 
-	$sanitized_html = $security->xss_clean( $html );
+	$has_base64_images = preg_match_all(
+		'/<img src=\"(data:image\/[a-z.\+]{3,};base64[^\"\']*)\"[ |>]/i',
+		$html,
+		$base64_images
+	);
+
+	if ( $has_base64_images )
+	{
+		$base64_replace = array();
+
+		foreach ( (array) $base64_images[1] as $key => $data )
+		{
+			$base64_replace[] = 'base64_image' . $key;
+		}
+
+		/**
+		 * Temporarily remove TinyMCE base64 images.
+		 * FJ fix bug preg_replace_callback returns NULL (in Security.php)
+		 *
+		 * @link http://php.net/manual/en/function.preg-replace-callback.php#98721
+		 */
+		$html_no_base64 = str_replace(
+			$base64_images[1],
+			$base64_replace,
+			$html
+		);
+	}
+	else
+	{
+		$html_no_base64 = $html;
+	}
+
+	$sanitized_html = $security->xss_clean( $html_no_base64 );
 
 	/**
 	 * Convert single quotes to HTML entities
@@ -180,5 +217,53 @@ function SanitizeHTML( $html )
 	 */
 	$sanitized_html_quotes = str_replace( "'", '&#039;', $sanitized_html );
 
+	if ( ! $has_base64_images )
+	{
+		return $sanitized_html_quotes;
+	}
+
+	require_once 'ProgramFunctions/FileUpload.fnc.php';
+
+	// Upload base64 images.
+	foreach ( (array) $base64_images[1] as $key => $data )
+	{
+		// Get width & height attr if any.
+		$img_tag = mb_substr( $html_no_base64, strpos( $html_no_base64, $base64_replace[ $key ] ) );
+
+		$img_tag = mb_substr( $img_tag, 0, strpos( $img_tag, ' />' ) );
+
+		$target_dim = array();
+
+		$target_width_pos = strpos( $img_tag, 'width="' );
+
+		if ( $target_width_pos )
+		{
+			$target_dim['width'] = mb_substr(
+				$img_tag,
+				$target_width_pos + 7,
+				strpos( mb_substr( $img_tag, $target_width_pos + 7 ), '"' )
+			);
+		}
+
+		$target_height_pos = strpos( $img_tag, 'height="' );
+
+		if ( $target_height_pos )
+		{
+			$target_dim['height'] = mb_substr(
+				$img_tag,
+				$target_height_pos + 8,
+				strpos( mb_substr( $img_tag, $target_height_pos + 8 ), '"' )
+			);
+		}
+
+		$image_path = ImageUpload( $data, $target_dim, $image_path );
+
+		$base64_images[1][ $key ] = $image_path;
+	}
+
+	// Replace TinyMCE base64 images.
+	$sanitized_html_quotes = str_replace( $base64_replace, $base64_images[1], $sanitized_html_quotes );
+
 	return $sanitized_html_quotes;
 }
+

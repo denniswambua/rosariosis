@@ -14,10 +14,12 @@
  *
  * Each tag contains an array of the functions to be hooked
  *
+ * @since 2.9.7 Actions API simplified: register your custom action tag on the fly
+ *
  * @var array RosarioSIS actions
  */
-$RosarioActions = array(
-	'Students/Student.php|header' => array(),
+$RosarioActions = array();
+/*	'Students/Student.php|header' => array(),
 	'Students/Student.php|create_student_checks' => array(),
 	'Students/Student.php|create_student' => array(),
 	'Students/Student.php|update_student_checks' => array(),
@@ -89,15 +91,43 @@ $RosarioActions = array(
 	 *
 	 * @since 2.9
 	 */
-	'misc/Portal.php|portal_alerts' => array(),
+	/*'misc/Portal.php|portal_alerts' => array(),
 
 	/**
 	 * Bottom Buttons.
 	 *
 	 * @since 2.9
 	 */
-	'Bottom.php|bottom_buttons' => array(),
-);
+	/*'Bottom.php|bottom_buttons' => array(),
+
+	/**
+	 * Create Student Account.
+	 *
+	 * @since 2.9.8
+	 */
+	/*'Students/Student.php|account_created' => array(),
+
+	/**
+	 * Login.
+	 *
+	 * @since 2.9.8
+	 */
+	/*'index.php|login_check' => array(),
+
+	/**
+	 * PDF start.
+	 *
+	 * @since 3.4
+	 */
+	/*'functions/PDF.php|pdf_start' => array(),
+
+	/**
+	 * Student Payments Header.
+	 *
+	 * @since 3.4.1
+	 */
+	/*'Student_Billing/StudentPayments.php|student_payments_header' => array(),
+);*/
 
 
 /**
@@ -124,11 +154,7 @@ function add_action( $tag, $function_to_add, $accepted_args = 1, $priority = 10 
 	// Check if function exists.
 	if ( function_exists( (string) $function_to_add ) )
 	{
-		// Check if tag exists.
-		if ( array_key_exists( (string) $tag, $RosarioActions ) )
-		{
-			$RosarioActions[ $tag ][ $priority ][ $function_to_add ] = (int) $accepted_args;
-		}
+		$RosarioActions[ $tag ][ $priority ][ $function_to_add ] = (int) $accepted_args;
 	}
 
 	return true;

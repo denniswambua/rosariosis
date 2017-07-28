@@ -41,20 +41,32 @@ else
 // Check for pgsql extension.
 if ( ! extension_loaded( 'pgsql' ) )
 {
-	$error[] = 'PHP extensions: RosarioSIS relies on the pgsql (PostgreSQL) extension. See the php.ini file to activate it.' . $inipath;
+	$error[] = 'PHP extensions: RosarioSIS relies on the pgsql (PostgreSQL) extension. Please install and activate it.';
 }
 
 // Check for gettext extension.
 if ( ! extension_loaded( 'gettext' )
 	|| ! function_exists( 'bindtextdomain' ) )
 {
-	$error[] = 'PHP extensions: RosarioSIS relies on the gettext extension. See the php.ini file to activate it.' . $inipath;
+	$error[] = 'PHP extensions: RosarioSIS relies on the gettext extension. Please install and activate it.';
 }
 
 // Check for mbstring extension.
 if ( ! extension_loaded( 'mbstring' ) )
 {
-	$error[] = 'PHP extensions: RosarioSIS relies on the mbstring extension. See the php.ini file to activate it.' . $inipath;
+	$error[] = 'PHP extensions: RosarioSIS relies on the mbstring extension. Please install and activate it.';
+}
+
+// Check for gd extension.
+if ( ! extension_loaded( 'gd' ) )
+{
+	$error[] = 'PHP extensions: RosarioSIS relies on the gd extension. Please install and activate it.';
+}
+
+// Check for xml extension.
+if ( ! extension_loaded( 'xml' ) )
+{
+	$error[] = 'PHP extensions: RosarioSIS relies on the xml extension. Please install and activate it.';
 }
 
 if ( count( $error ) )
@@ -82,9 +94,10 @@ else
 	}
 	else
 	{
+		$connectstring = '';
 		if ( $DatabaseServer !== 'localhost' )
 		{
-			$connectstring = 'host=' . $DatabaseServer . ' ';
+			$connectstring .= 'host=' . $DatabaseServer . ' ';
 		}
 
 		if ( $DatabasePort !== '5432' )
@@ -163,13 +176,13 @@ else
 // Check for xmlrpc extension.
 if ( ! extension_loaded( 'xmlrpc' ) )
 {
-	$error[] = 'PHP extensions: RosarioSIS relies on the xmlrpc extension (only used to connect to Moodle). See the php.ini file to activate it.' . $inipath;
+	$error[] = 'PHP extensions: RosarioSIS relies on the xmlrpc extension (only used to connect to Moodle). Please install and activate it.';
 }
 
 // Check for curl extension.
 if ( ! extension_loaded( 'curl' ) )
 {
-	$error[] = 'PHP extensions: RosarioSIS relies on the curl extension (only used to connect to Moodle). See the php.ini file to activate it.' . $inipath;
+	$error[] = 'PHP extensions: RosarioSIS relies on the curl extension (only used to connect to Moodle). Please install and activate it.';
 }
 
 // Check session.auto_start.

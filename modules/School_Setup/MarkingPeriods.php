@@ -2,24 +2,11 @@
 
 DrawHeader( ProgramTitle() );
 
-// default MP ID to Full Year
-if ( !isset( $_REQUEST['marking_period_id'] )
+// Default MP ID to Full Year.
+if ( ! isset( $_REQUEST['marking_period_id'] )
 	|| empty( $_REQUEST['marking_period_id'] ) )
 {
-	$fy_RET = DBGet( DBQuery( "SELECT MARKING_PERIOD_ID
-		FROM SCHOOL_MARKING_PERIODS
-		WHERE MP='FY'
-		AND SCHOOL_ID='" . UserSchool() . "'
-		AND SYEAR='" . UserSyear() . "' ORDER BY SORT_ORDER" ) );
-
-	if ( count( $fy_RET ) )
-	{
-		$_REQUEST['marking_period_id'] = $fy_RET[1]['MARKING_PERIOD_ID'];
-	}
-	else
-	{
-		$_REQUEST['marking_period_id'] = 'new';
-	}
+	$_REQUEST['marking_period_id'] = _getMPFullYear();
 
 	$_REQUEST['mp_term'] = 'FY';
 }
@@ -58,9 +45,9 @@ if ( isset( $_POST['day_tables'], $_POST['month_tables'], $_POST['year_tables'] 
 		$_REQUEST['day_tables']
 	);
 
-	$_POST['tables'] = array_replace_recursive( (array) $_POST['tables'], $requested_dates);
+	$_POST['tables'] = array_replace_recursive( (array) $_POST['tables'], $requested_dates );
 
-	$_REQUEST['tables'] = array_replace_recursive( (array) $_REQUEST['tables'], $requested_dates);
+	$_REQUEST['tables'] = array_replace_recursive( (array) $_REQUEST['tables'], $requested_dates );
 }
 
 if ( isset( $_POST['tables'] )
@@ -142,15 +129,15 @@ if ( isset( $_POST['tables'] )
 					}
 				}
 
-				$sql .= $column . "='" . $value . "',";
+				$sql .= DBEscapeIdentifier( $column ) . "='" . $value . "',";
 			}
 
 			$sql = mb_substr( $sql, 0, -1 ) . " WHERE MARKING_PERIOD_ID='" . $id . "'";
 
 			$go = true;
 		}
-		// INSERT
-		else
+		// New: check for Title.
+		elseif ( $columns['TITLE'] )
 		{
 			$id_RET = DBGet( DBQuery( 'SELECT ' . db_seq_nextval( 'MARKING_PERIOD_SEQ' ).' AS ID' ) );
 
@@ -289,8 +276,8 @@ if ( isset( $_POST['tables'] )
 			$_REQUEST['marking_period_id'] = $id_RET[1]['ID'];
 	}
 
-	unset( $_REQUEST['tables'] );
-	unset( $_SESSION['_REQUEST_vars']['tables'] );
+	// Unset tables & redirect URL.
+	RedirectURL( array( 'tables' ) );
 }
 
 // DELETING
@@ -368,12 +355,12 @@ if ( $_REQUEST['modfunc'] === 'delete'
 		DBQuery( "DELETE FROM SCHOOL_MARKING_PERIODS
 			WHERE MARKING_PERIOD_ID='" . $_REQUEST['marking_period_id'] . "'");
 
-		unset( $_REQUEST['modfunc'] );
-		unset( $_SESSION['_REQUEST_vars']['modfunc'] );
-
 		$_REQUEST['mp_term'] = $parent_term;
 
 		$_REQUEST['marking_period_id'] = $parent_id;
+
+		// Unset modfunc & redirect URL.
+		RedirectURL( 'modfunc' );
 	}
 }
 
@@ -381,7 +368,28 @@ if ( ! $_REQUEST['modfunc'] )
 {
 	echo ErrorMessage( $error );
 
-	// ADDING & EDITING FORM
+	// Check marking period ID is valid for current school & syear!
+	if ( $_REQUEST['marking_period_id']
+		&& $_REQUEST['marking_period_id'] !== 'new' )
+	{
+		$marking_period_RET = DBGet( DBQuery( "SELECT MARKING_PERIOD_ID
+			FROM SCHOOL_MARKING_PERIODS
+			WHERE SCHOOL_ID='" . UserSchool() . "'
+			AND SYEAR='" . UserSyear() . "'
+			AND MARKING_PERIOD_ID='" . $_REQUEST['marking_period_id'] . "'" ) );
+
+		if ( ! $marking_period_RET )
+		{
+			$_REQUEST['marking_period_id'] = _getMPFullYear();
+
+			$_REQUEST['mp_term'] = 'FY';
+
+			// Unset year & semester & quarter IDs & redirect URL.
+			RedirectURL( array( 'year_id', 'semester_id', 'quarter_id' ) );
+		}
+	}
+
+	// ADDING & EDITING FORM.
 	if ( $_REQUEST['marking_period_id'] !== 'new' )
 	{
 		$RET = DBGet( DBQuery( "SELECT TITLE,SHORT_NAME,SORT_ORDER,DOES_GRADES,DOES_COMMENTS,
@@ -435,14 +443,14 @@ if ( ! $_REQUEST['modfunc'] )
 	$header .= '<td>' . TextInput(
 		$RET['TITLE'],
 		'tables[' . $_REQUEST['marking_period_id'] . '][TITLE]',
-		( ! $RET['TITLE'] ? '<span class="legend-red">' : '' ) . _( 'Title' ) . ( ! $RET['TITLE'] ? '</span>' : '' ),
-		'required'
+		_( 'Title' ),
+		'required maxlength="50"'
 	) . '</td>';
 
 	$header .= '<td>' . TextInput(
 		$RET['SHORT_NAME'],
 		'tables[' . $_REQUEST['marking_period_id'] . '][SHORT_NAME]',
-		( ! $RET['SHORT_NAME'] ? '<span class="legend-red">' : '' ) . _( 'Short Name' ) . ( ! $RET['SHORT_NAME'] ? '</span>' : '' ),
+		_( 'Short Name' ),
 		'required maxlength="10"'
 	) . '</td>';
 
@@ -450,7 +458,7 @@ if ( ! $_REQUEST['modfunc'] )
 		$RET['SORT_ORDER'],
 		'tables[' . $_REQUEST['marking_period_id'] . '][SORT_ORDER]',
 		_( 'Sort Order' ),
-		'size="3"'
+		'size="3" maxlength="4"'
 	) . '</td>';
 
 	$header .= '<td><table class="width-100p"><tr>';
@@ -482,7 +490,7 @@ if ( ! $_REQUEST['modfunc'] )
 	$header .= '<td>' . DateInput(
 		$RET['START_DATE'],
 		'tables[' . $_REQUEST['marking_period_id'] . '][START_DATE]',
-		( ! $RET['START_DATE'] ? '<span class="legend-red">' : '' ) . _( 'Begins' ) . ( ! $RET['START_DATE'] ? '</span>' : '' ),
+		_( 'Begins' ),
 		$div,
 		$allow_na,
 		$required
@@ -491,7 +499,7 @@ if ( ! $_REQUEST['modfunc'] )
 	$header .= '<td>' . DateInput(
 		$RET['END_DATE'],
 		'tables[' . $_REQUEST['marking_period_id'] . '][END_DATE]',
-		( ! $RET['END_DATE'] ? '<span class="legend-red">' : '' ) . _( 'Ends' ) . ( ! $RET['END_DATE'] ? '</span>' : '' ),
+		_( 'Ends' ),
 		$div,
 		$allow_na,
 		$required
@@ -708,5 +716,24 @@ if ( ! $_REQUEST['modfunc'] )
 				echo '</div>';
 			}
 		}
+	}
+}
+
+
+function _getMPFullYear()
+{
+	$fy_RET = DBGet( DBQuery( "SELECT MARKING_PERIOD_ID
+		FROM SCHOOL_MARKING_PERIODS
+		WHERE MP='FY'
+		AND SCHOOL_ID='" . UserSchool() . "'
+		AND SYEAR='" . UserSyear() . "' ORDER BY SORT_ORDER" ) );
+
+	if ( count( $fy_RET ) )
+	{
+		return $fy_RET[1]['MARKING_PERIOD_ID'];
+	}
+	else
+	{
+		return 'new';
 	}
 }

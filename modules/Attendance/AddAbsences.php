@@ -2,6 +2,8 @@
 //FJ move Attendance.php from functions/ to modules/Attendance/includes
 require_once 'modules/Attendance/includes/UpdateAttendanceDaily.fnc.php';
 
+DrawHeader( ProgramTitle() );
+
 if ( ! $_REQUEST['month'] )
 {
 	$_REQUEST['month'] = date( 'm' );
@@ -16,15 +18,29 @@ else
 
 if ( $_REQUEST['modfunc'] === 'save' )
 {
-	if (count($_REQUEST['period']) && count($_REQUEST['student']) && count($_REQUEST['dates']))
+	if ( count( $_REQUEST['period'] )
+		&& count( $_REQUEST['student'] )
+		&& count( $_REQUEST['dates'] ) )
 	{
-		foreach ( (array) $_REQUEST['period'] as $period_id => $yes)
-			$periods_list .= ",'".$period_id."'";
-		$periods_list = '('.mb_substr($periods_list,1).')';
+		foreach ( (array) $_REQUEST['period'] as $period_id => $yes )
+		{
+			if ( $yes )
+			{
+				$periods_list .= ",'" . $period_id . "'";
+			}
+		}
 
-		foreach ( (array) $_REQUEST['student'] as $student_id => $yes)
-			$students_list .= ",'".$student_id."'";
-		$students_list = '('.mb_substr($students_list,1).')';
+		$periods_list = '(' . mb_substr( $periods_list, 1 ) . ')';
+
+		foreach ( (array) $_REQUEST['student'] as $student_id => $yes )
+		{
+			if ( $yes )
+			{
+				$students_list .= ",'" . $student_id . "'";
+			}
+		}
+
+		$students_list = '(' . mb_substr( $students_list, 1 ) . ')';
 
 		$current_RET = DBGet(DBQuery("SELECT STUDENT_ID,PERIOD_ID,SCHOOL_DATE
 		FROM ATTENDANCE_PERIOD
@@ -68,9 +84,15 @@ if ( $_REQUEST['modfunc'] === 'save' )
 				} else {
 					$course_periods_RET = DBGet(DBQuery("SELECT s.COURSE_PERIOD_ID,cpsp.PERIOD_ID,cp.HALF_DAY FROM SCHEDULE s,COURSE_PERIODS cp,ATTENDANCE_CALENDAR ac,SCHOOL_PERIODS sp,COURSE_PERIOD_SCHOOL_PERIODS cpsp WHERE sp.PERIOD_ID=cpsp.PERIOD_ID AND ac.SCHOOL_DATE='".$date."' AND ac.CALENDAR_ID=cp.CALENDAR_ID AND (ac.BLOCK=sp.BLOCK OR sp.BLOCK IS NULL) AND s.COURSE_PERIOD_ID=cp.COURSE_PERIOD_ID AND s.STUDENT_ID='".$student_id."' AND cpsp.PERIOD_ID IN $periods_list AND position(',0,' IN cp.DOES_ATTENDANCE)>0 AND (ac.SCHOOL_DATE BETWEEN s.START_DATE AND s.END_DATE OR (s.END_DATE IS NULL AND ac.SCHOOL_DATE>=s.START_DATE)) AND position(substring('UMTWHFS' FROM cast(extract(DOW FROM ac.SCHOOL_DATE) AS INT)+1 FOR 1) IN cpsp.DAYS)>0 AND s.MARKING_PERIOD_ID IN ($all_mp)"),array(),array('PERIOD_ID'));
 				}
+
 				//echo '<pre>'; var_dump($course_periods_RET); echo '</pre>';
-				foreach ( (array) $_REQUEST['period'] as $period_id => $yes)
+				foreach ( (array) $_REQUEST['period'] as $period_id => $yes )
 				{
+					if ( ! $yes )
+					{
+						continue;
+					}
+
 					$course_period_id = $course_periods_RET[ $period_id ][1]['COURSE_PERIOD_ID'];
 					if ( $course_period_id && !($course_periods_RET[ $period_id ][1]['COURSE_PERIOD_ID']=='Y' && $state_code=='H'))
 					{
@@ -96,11 +118,9 @@ if ( $_REQUEST['modfunc'] === 'save' )
 	else
 		$error[] = _('You must choose at least one period and one student.');
 
-	unset($_SESSION['_REQUEST_vars']['modfunc']);
-	unset($_REQUEST['modfunc']);
+	// Unset modfunc & redirect URL.
+	RedirectURL( 'modfunc' );
 }
-
-DrawHeader(ProgramTitle());
 
 echo ErrorMessage( $note, 'note' );
 
@@ -118,8 +138,9 @@ if ( ! $_REQUEST['modfunc'] )
 
 		echo '<br />';
 
-//FJ css WPadmin
-		echo '<table class="postbox cellpadding-5 col1-align-right center"><tr><td>'._('Add Absence to Periods').'</td>';
+		PopTable( 'header', _( 'Add Absences' ) );
+
+		echo '<table class="cellpadding-5 col1-align-right center"><tr><td>'._('Add Absence to Periods').'</td>';
 		echo '<td><table><tr>';
 
 		//FJ multiple school periods for a course period
@@ -130,9 +151,12 @@ if ( ! $_REQUEST['modfunc'] )
 		AND SCHOOL_ID='".UserSchool()."'
 		AND EXISTS (SELECT '' FROM COURSE_PERIOD_SCHOOL_PERIODS cpsp, COURSE_PERIODS cp WHERE cp.COURSE_PERIOD_ID=cpsp.COURSE_PERIOD_ID AND cpsp.PERIOD_ID=SCHOOL_PERIODS.PERIOD_ID AND position(',0,' IN cp.DOES_ATTENDANCE)>0)
 		ORDER BY SORT_ORDER"));
-		foreach ( (array) $periods_RET as $period)
-//FJ add <label> on checkbox
+
+		foreach ( (array) $periods_RET as $period )
+		{
 			echo '<td><label><input type="CHECKBOX" value="Y" name="period['.$period['PERIOD_ID'].']"> '.$period['SHORT_NAME'].'</label></td>';
+		}
+
 		echo '</tr></table></td>';
 
 		echo '<tr><td>'._('Absence Code').'</td><td><select name="absence_code">';
@@ -142,7 +166,7 @@ if ( ! $_REQUEST['modfunc'] )
 		echo '</select></td></tr>';
 
 		echo '<tr><td>'._('Absence Reason').'</td><td><input type="text" name="absence_reason"></td></tr>';
-		echo '<tr><td colspan="2" class="center">';
+		echo '<tr><td colspan="2"><div class="center">';
 		$time = mktime(0,0,0,$_REQUEST['month']*1,1,mb_substr($_REQUEST['year'],2));
 		echo PrepareDate(mb_strtoupper(date("d-M-y",$time)),'',false,array('M'=>1,'Y'=>1,'submit'=>true));
 
@@ -151,7 +175,7 @@ if ( ! $_REQUEST['modfunc'] )
 		while (!checkdate($_REQUEST['month']*1, $last, mb_substr($_REQUEST['year'],2)))
 			$last--;
 
-		echo '<table><tr class="align-right">';
+		echo '</div><table class="width-100p"><tr>';
 //		echo '<th>S</th><th>M</th><th>T</th><th>W</th><th>Th</th><th>F</th><th>S</th></tr><tr>';
 		echo '<th>'.mb_substr(_('Sunday'),0,3).'</th><th>'.mb_substr(_('Monday'),0,3).'</th><th>'.mb_substr(_('Tuesday'),0,3).'</th><th>'.mb_substr(_('Wednesday'),0,3).'</th><th>'.mb_substr(_('Thursday'),0,3).'</th><th>'.mb_substr(_('Friday'),0,3).'</th><th>'.mb_substr(_('Saturday'),0,3).'</th></tr><tr>';
 		$calendar_RET = DBGet(DBQuery("SELECT SCHOOL_DATE FROM ATTENDANCE_CALENDAR WHERE SYEAR='".UserSyear()."' AND SCHOOL_ID='".UserSchool()."' AND MINUTES!='0' AND EXTRACT(MONTH FROM SCHOOL_DATE)='".($_REQUEST['month']*1)."'"),array(),array('SCHOOL_DATE'));
@@ -174,7 +198,11 @@ if ( ! $_REQUEST['modfunc'] )
 				echo '</tr><tr>';
 		}
 		echo '</tr></table>';
-		echo '</td></tr></table><br />';
+		echo '</td></tr></table>';
+
+		PopTable( 'footer' );
+
+		echo '<br />';
 	}
 
 	Widgets('course');

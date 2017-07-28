@@ -1,26 +1,30 @@
 <?php
-function _makeIncomesRemove($value,$column)
-{	global $THIS_RET;
+function _makeIncomesRemove( $value, $column )
+{
+	global $THIS_RET;
 
-	return button('remove',_('Delete'),'"Modules.php?modname='.$_REQUEST['modname'].'&modfunc=remove&id='.$THIS_RET['ID'].'"');
+	return button(
+		'remove',
+		_( 'Delete' ),
+		'"Modules.php?modname=' . $_REQUEST['modname'] . '&modfunc=remove&id=' . $THIS_RET['ID'] . '"'
+	);
 }
 
-function _makeSalariesRemove($value,$column)
-{	global $THIS_RET;
-
-	return button('remove',_('Delete'),'"Modules.php?modname='.$_REQUEST['modname'].'&modfunc=remove&id='.$THIS_RET['ID'].'"');
+function _makeSalariesRemove( $value, $column )
+{
+	return _makeIncomesRemove( $value, $name );
 }
 
-function _makePaymentsRemove($value,$column)
-{	global $THIS_RET;
-
-	return button('remove',_('Delete'),'"Modules.php?modname='.$_REQUEST['modname'].'&modfunc=remove&id='.$THIS_RET['ID'].'"');
+function _makePaymentsRemove( $value, $column )
+{
+	return _makeIncomesRemove( $value, $name );
 }
 
-function _makeIncomesTextInput($value,$name)
-{	global $THIS_RET;
+function _makeIncomesTextInput( $value, $name )
+{
+	global $THIS_RET;
 
-	if ( $THIS_RET['ID'])
+	if ( $THIS_RET['ID'] )
 	{
 		$id = $THIS_RET['ID'];
 		$div = 'force';
@@ -31,30 +35,43 @@ function _makeIncomesTextInput($value,$name)
 		$div = false;
 	}
 
-	if ( $name=='AMOUNT')
-		$extra = 'size=5 maxlength=10';
+	$extra = 'maxlength=255';
 
-	return TextInput($value,'values['.$id.']['.$name.']','',$extra,$div);
+	if ( $name === 'AMOUNT' )
+	{
+		$extra = 'size=5 maxlength=10';
+	}
+	elseif ( ! $value )
+	{
+		$extra .= ' size=15';
+	}
+
+	return TextInput( $value, 'values[' . $id . '][' . $name . ']', '', $extra, $div );
 }
 
-function _makeSalariesTextInput($value,$name)
-{	global $THIS_RET;
 
-	if ( $THIS_RET['ID'])
+function _makeIncomesDateInput( $value, $name )
+{
+	global $THIS_RET;
+
+	if ( $THIS_RET['ID'] )
 	{
 		$id = $THIS_RET['ID'];
-		$div = 'force';
 	}
 	else
-	{
 		$id = 'new';
-		$div = false;
-	}
 
-	if ( $name=='AMOUNT')
-		$extra = 'size=5 maxlength=10';
+	return DateInput( $value, 'values[' . $id . '][' . $name . ']', '', ( $id !== 'new' ), false );
+}
 
-	return TextInput($value,'values['.$id.']['.$name.']','',$extra,$div);
+function _makePaymentsDateInput( $value, $name )
+{
+	return _makeIncomesDateInput( $value, $name );
+}
+
+function _makeSalariesTextInput( $value, $name )
+{
+	return _makeIncomesTextInput( $value, $name );
 }
 
 function _makeSalariesDateInput($value='',$name)
@@ -70,18 +87,29 @@ function _makeSalariesDateInput($value='',$name)
 	return DateInput($value,$name);
 }
 
-function _makePaymentsTextInput($value,$name)
-{	global $THIS_RET;
+function _makePaymentsTextInput( $value, $name )
+{
+	global $THIS_RET;
 
-	if ( $THIS_RET['ID'])
+	if ( $THIS_RET['ID'] )
+	{
 		$id = $THIS_RET['ID'];
+	}
 	else
 		$id = 'new';
 
-	if ( $name=='AMOUNT')
-		$extra = 'size=5 maxlength=10';
+	$extra = 'maxlength=255';
 
-	return TextInput($value,'values['.$id.']['.$name.']','',$extra);
+	if ( $name === 'AMOUNT' )
+	{
+		$extra = 'size=5 maxlength=10';
+	}
+	elseif ( ! $value )
+	{
+		$extra .= ' size=15';
+	}
+
+	return TextInput( $value, 'values[' . $id . '][' . $name . ']', '', $extra );
 }
 
 function _makeSalariesAmount($value,$column)

@@ -30,6 +30,24 @@ if ( isset( $_POST['tables'] )
 			if ( ! isset( $columns['TITLE'] )
 				|| ! empty( $columns['TITLE'] ) )
 			{
+				// FJ Fix PHP fatal error: check Include file exists.
+				if ( isset( $columns['INCLUDE'] )
+					&& $columns['INCLUDE'] )
+				{
+					$include_file_path = 'modules/' . $columns['INCLUDE'] . '.inc.php';
+
+					if ( ! file_exists( $include_file_path ) )
+					{
+						// File does not exist: reset + error.
+						unset( $columns['INCLUDE'] );
+
+						$error[] = sprintf(
+							_( 'The include file was not found: "%s"' ),
+							$include_file_path
+						);
+					}
+				}
+
 				// Update Field / Category.
 				if ( $id !== 'new' )
 				{
@@ -43,7 +61,7 @@ if ( isset( $_POST['tables'] )
 
 					foreach ( (array) $columns as $column => $value )
 					{
-						$sql .= $column . "='" . $value . "',";
+						$sql .= DBEscapeIdentifier( $column ) . "='" . $value . "',";
 					}
 
 					$sql = mb_substr( $sql, 0, -1 ) . " WHERE ID='" . $id . "'";
@@ -126,11 +144,12 @@ if ( isset( $_POST['tables'] )
 			$error[] = _( 'Please enter valid Numeric data.' );
 	}
 
-	unset( $_REQUEST['tables'] );
+	// Unset tables & redirect URL.
+	RedirectURL( array( 'tables' ) );
 }
 
 // Delete Field / Category.
-if ( $_REQUEST['modfunc'] == 'delete'
+if ( $_REQUEST['modfunc'] === 'delete'
 	&& AllowEdit() )
 {
 	if ( isset( $_REQUEST['id'] )
@@ -140,9 +159,8 @@ if ( $_REQUEST['modfunc'] == 'delete'
 		{
 			DeleteDBField( 'STUDENTS', $_REQUEST['id'] );
 
-			$_REQUEST['modfunc'] = false;
-
-			unset( $_REQUEST['id'] );
+			// Unset modfunc & ID & redirect URL.
+			RedirectURL( array( 'modfunc', 'id' ) );
 		}
 	}
 	elseif ( isset( $_REQUEST['category_id'] )
@@ -160,9 +178,8 @@ if ( $_REQUEST['modfunc'] == 'delete'
 			DBQuery( "DELETE FROM STAFF_EXCEPTIONS
 				WHERE MODNAME='Students/Student.php&category_id=" . $_REQUEST['category_id'] . "'" );
 
-			$_REQUEST['modfunc'] = false;
-
-			unset( $_REQUEST['category_id'] );
+			// Unset modfunc & category ID redirect URL.
+			RedirectURL( array( 'modfunc', 'category_id' ) );
 		}
 	}
 }

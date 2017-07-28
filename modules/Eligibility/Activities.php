@@ -1,5 +1,7 @@
 <?php
 
+DrawHeader( ProgramTitle() );
+
 if ( isset( $_POST['day_values'], $_POST['month_values'], $_POST['year_values'] ) )
 {
 	$requested_dates = RequestedDates(
@@ -13,7 +15,8 @@ if ( isset( $_POST['day_values'], $_POST['month_values'], $_POST['year_values'] 
 	$_POST['values'] = array_replace_recursive( (array) $_POST['values'], $requested_dates );
 }
 
-if ( isset( $_POST['values'] )
+if ( $_REQUEST['modfunc'] === 'update'
+	&& isset( $_POST['values'] )
 	&& count( $_POST['values'] )
 	&& AllowEdit() )
 {
@@ -25,12 +28,13 @@ if ( isset( $_POST['values'] )
 
 			foreach ( (array) $columns as $column => $value)
 			{
-				$sql .= $column."='".$value."',";
+				$sql .= DBEscapeIdentifier( $column ) . "='" . $value . "',";
 			}
 			$sql = mb_substr($sql,0,-1) . " WHERE ID='".$id."'";
 			DBQuery($sql);
 		}
-		else
+		// New: check for Title
+		elseif ( $columns['TITLE'] )
 		{
 			$sql = "INSERT INTO ELIGIBILITY_ACTIVITIES ";
 
@@ -42,39 +46,62 @@ if ( isset( $_POST['values'] )
 			{
 				if ( !empty($value) || $value=='0')
 				{
-					$fields .= $column.',';
-					$values .= "'".$value."',";
+					$fields .= DBEscapeIdentifier( $column ) . ',';
+					$values .= "'" . $value . "',";
 					$go = true;
 				}
 			}
-			$sql .= '(' . mb_substr($fields,0,-1) . ') values(' . mb_substr($values,0,-1) . ')';
+			$sql .= '(' . mb_substr( $fields, 0, -1 ) . ') values(' . mb_substr( $values, 0, -1 ) . ')';
 
 			if ( $go)
 				DBQuery($sql);
 		}
 	}
+
+	// Unset modfunc & redirect URL.
+	RedirectURL( 'modfunc' );
 }
 
-DrawHeader(ProgramTitle());
-
-if ( $_REQUEST['modfunc']=='remove' && AllowEdit())
+if ( $_REQUEST['modfunc'] === 'remove'
+	&& AllowEdit() )
 {
-	if (DeletePrompt(_('Activity')))
+	if ( DeletePrompt( _( 'Activity' ) ) )
 	{
-		DBQuery("DELETE FROM ELIGIBILITY_ACTIVITIES WHERE ID='".$_REQUEST['id']."'");
-		unset($_REQUEST['modfunc']);
+		DBQuery( "DELETE FROM ELIGIBILITY_ACTIVITIES
+			WHERE ID='" . $_REQUEST['id'] . "'" );
+
+		// Unset modfunc & ID & redirect URL.
+		RedirectURL( array( 'modfunc', 'id' ) );
 	}
 }
 
-if ( $_REQUEST['modfunc']!='remove')
+if ( ! $_REQUEST['modfunc'] )
 {
 	$sql = "SELECT ID,TITLE,START_DATE,END_DATE FROM ELIGIBILITY_ACTIVITIES WHERE SYEAR='".UserSyear()."' AND SCHOOL_ID='".UserSchool()."' ORDER BY TITLE";
-	$QI = DBQuery($sql);
-	$activities_RET = DBGet($QI,array('TITLE' => 'makeTextInput','START_DATE' => 'makeDateInput','END_DATE' => 'makeDateInput'));
 
-	$columns = array('TITLE' => _('Title'),'START_DATE' => _('Begins'),'END_DATE' => _('Ends'));
-	$link['add']['html'] = array('TITLE'=>makeTextInput('','TITLE'),'START_DATE'=>makeDateInput('','START_DATE'),'END_DATE'=>makeDateInput('','END_DATE'));
+	$activities_RET = DBGet(
+		DBQuery( $sql ),
+		array(
+			'TITLE' => '_makeTextInput',
+			'START_DATE' => '_makeDateInput',
+			'END_DATE' => '_makeDateInput',
+		)
+	);
+
+	$columns = array(
+		'TITLE' => _( 'Title' ),
+		'START_DATE' => _( 'Begins' ),
+		'END_DATE' => _( 'Ends' ),
+	);
+
+	$link['add']['html'] = array(
+		'TITLE' => _makeTextInput( '', 'TITLE' ),
+		'START_DATE' => _makeDateInput( '', 'START_DATE' ),
+		'END_DATE' => _makeDateInput( '', 'END_DATE' ),
+	);
+
 	$link['remove']['link'] = 'Modules.php?modname='.$_REQUEST['modname'].'&modfunc=remove';
+
 	$link['remove']['variables'] = array('id' => 'ID');
 
 	echo '<form action="Modules.php?modname='.$_REQUEST['modname'].'&modfunc=update" method="POST">';
@@ -84,24 +111,41 @@ if ( $_REQUEST['modfunc']!='remove')
 	echo '</form>';
 }
 
-function makeTextInput($value,$name)
-{	global $THIS_RET;
+function _makeTextInput( $value, $name )
+{
+	global $THIS_RET;
 
-	if ( $THIS_RET['ID'])
+	$extra = '';
+
+	if ( $THIS_RET['ID'] )
+	{
 		$id = $THIS_RET['ID'];
-	else
-		$id = 'new';
 
-	return TextInput($value,'values['.$id.']['.$name.']');
+		if ( $name === 'TITLE' )
+		{
+			$extra .= ' required';
+		}
+	}
+	else
+	{
+		$id = 'new';
+	}
+
+	return TextInput( $value, 'values[' . $id . '][' . $name . ']', '', $extra );
 }
 
-function makeDateInput($value,$name)
-{	global $THIS_RET;
+function _makeDateInput( $value, $name )
+{
+	global $THIS_RET;
 
-	if ( $THIS_RET['ID'])
+	if ( $THIS_RET['ID'] )
+	{
 		$id = $THIS_RET['ID'];
+	}
 	else
+	{
 		$id = 'new';
+	}
 
-	return DateInput($value,'values['.$id.']['.$name.']');
+	return DateInput( $value, 'values[' . $id . '][' . $name . ']', '', true, ( $id === 'new' ) );
 }

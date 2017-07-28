@@ -2,7 +2,7 @@
 //FJ move Attendance.php from functions/ to modules/Attendance/includes
 require_once 'modules/Attendance/includes/UpdateAttendanceDaily.fnc.php';
 
-DrawHeader(ProgramTitle());
+DrawHeader( ProgramTitle() );
 
 // set date
 if ( isset( $_REQUEST['month_date'] )
@@ -15,10 +15,11 @@ if ( isset( $_REQUEST['month_date'] )
 		$_REQUEST['day_date']
 	);
 
-	if ( $_SESSION['Administration.php']['date'] && $_SESSION['Administration.php']['date']!=$date)
+	if ( $_SESSION['Administration.php']['date']
+		&& $_SESSION['Administration.php']['date'] !== $date )
 	{
-		unset($_REQUEST['attendance']);
-		unset($_REQUEST['attendance_day']);
+		// Unset attendance & attendance day & redirect URL.
+		RedirectURL( array( 'attendance', 'attendance_day' ) );
 	}
 }
 else
@@ -49,9 +50,13 @@ $current_mp = GetCurrentMP('QTR',$date,false);
 
 if ( ! $current_mp)
 {
-	echo '<form action="'.PreparePHP_SELF($_REQUEST,array('day_date','month_date','year_date','codes')).'" method="POST">';
+	echo '<form action="' .
+		PreparePHP_SELF( $_REQUEST ) .
+		'" method="POST">';
 
-	DrawHeader(PrepareDate($date,'_date',false,array('submit'=>true)));
+	DrawHeader(
+		PrepareDate( $date, '_date', false, array( 'submit' => true ) )
+	);
 
 	echo '</form>';
 
@@ -60,47 +65,55 @@ if ( ! $current_mp)
 
 $all_mp = GetAllMP('QTR',$current_mp);
 
-$current_Q = "SELECT ATTENDANCE_TEACHER_CODE,ATTENDANCE_CODE,ATTENDANCE_REASON,COMMENT,STUDENT_ID,ADMIN,PERIOD_ID FROM $table WHERE SCHOOL_DATE='".$date."'".$extra_sql;
+$current_Q = "SELECT ATTENDANCE_TEACHER_CODE,ATTENDANCE_CODE,ATTENDANCE_REASON,COMMENT,
+	STUDENT_ID,ADMIN,PERIOD_ID
+	FROM " . DBEscapeIdentifier( $table ) .
+	" WHERE SCHOOL_DATE='" . $date . "'" . $extra_sql;
+
 //FJ days numbered
 //FJ multiple school periods for a course period
 if (SchoolInfo('NUMBER_DAYS_ROTATION') !== null)
 {
-	$current_schedule_Q = "SELECT cpsp.PERIOD_ID,cp.COURSE_PERIOD_ID,cp.HALF_DAY 
-	FROM SCHEDULE s,COURSE_PERIODS cp, COURSE_PERIOD_SCHOOL_PERIODS cpsp 
-	WHERE cp.COURSE_PERIOD_ID=cpsp.COURSE_PERIOD_ID 
-	AND s.STUDENT_ID='__student_id__' 
-	AND s.SYEAR='".UserSyear()."' 
-	AND s.SCHOOL_ID='".UserSchool()."' 
-	AND cp.COURSE_PERIOD_ID = s.COURSE_PERIOD_ID 
-	AND position(',".$_REQUEST['table'].",' IN cp.DOES_ATTENDANCE)>0 
-	AND ('".$date."' BETWEEN s.START_DATE AND s.END_DATE OR (s.END_DATE IS NULL AND '".$date."'>=s.START_DATE)) 
+	$current_schedule_Q = "SELECT cpsp.PERIOD_ID,cp.COURSE_PERIOD_ID,cp.HALF_DAY
+	FROM SCHEDULE s,COURSE_PERIODS cp, COURSE_PERIOD_SCHOOL_PERIODS cpsp
+	WHERE cp.COURSE_PERIOD_ID=cpsp.COURSE_PERIOD_ID
+	AND s.STUDENT_ID='__student_id__'
+	AND s.SYEAR='".UserSyear()."'
+	AND s.SCHOOL_ID='".UserSchool()."'
+	AND cp.COURSE_PERIOD_ID = s.COURSE_PERIOD_ID
+	AND position(',".$_REQUEST['table'].",' IN cp.DOES_ATTENDANCE)>0
+	AND ('".$date."' BETWEEN s.START_DATE AND s.END_DATE OR (s.END_DATE IS NULL AND '".$date."'>=s.START_DATE))
 	AND position(substring('MTWHFSU' FROM cast(
-		(SELECT CASE COUNT(school_date)% ".SchoolInfo('NUMBER_DAYS_ROTATION')." WHEN 0 THEN ".SchoolInfo('NUMBER_DAYS_ROTATION')." ELSE COUNT(school_date)% ".SchoolInfo('NUMBER_DAYS_ROTATION')." END AS day_number 
-		FROM attendance_calendar 
-		WHERE school_date>=(SELECT start_date FROM school_marking_periods WHERE start_date<='".$date."' AND end_date>='".$date."' AND mp='QTR' AND SCHOOL_ID=s.SCHOOL_ID) 
-		AND school_date<='".$date."' 
-		AND SCHOOL_ID=s.SCHOOL_ID) 
-	AS INT) FOR 1) IN cpsp.DAYS)>0 
-	AND s.MARKING_PERIOD_ID IN (".$all_mp.") 
+		(SELECT CASE COUNT(school_date)% ".SchoolInfo('NUMBER_DAYS_ROTATION')." WHEN 0 THEN ".SchoolInfo('NUMBER_DAYS_ROTATION')." ELSE COUNT(school_date)% ".SchoolInfo('NUMBER_DAYS_ROTATION')." END AS day_number
+		FROM attendance_calendar
+		WHERE school_date>=(SELECT start_date FROM school_marking_periods WHERE start_date<='".$date."' AND end_date>='".$date."' AND mp='QTR' AND SCHOOL_ID=s.SCHOOL_ID)
+		AND school_date<='".$date."'
+		AND SCHOOL_ID=s.SCHOOL_ID)
+	AS INT) FOR 1) IN cpsp.DAYS)>0
+	AND s.MARKING_PERIOD_ID IN (".$all_mp.")
 	ORDER BY s.START_DATE ASC";
 } else {
-	$current_schedule_Q = "SELECT cpsp.PERIOD_ID,cp.COURSE_PERIOD_ID,cp.HALF_DAY 
-	FROM SCHEDULE s,COURSE_PERIODS cp, COURSE_PERIOD_SCHOOL_PERIODS cpsp 
-	WHERE cp.COURSE_PERIOD_ID=cpsp.COURSE_PERIOD_ID 
-	AND s.STUDENT_ID='__student_id__' 
-	AND s.SYEAR='".UserSyear()."' 
-	AND s.SCHOOL_ID='".UserSchool()."' 
-	AND cp.COURSE_PERIOD_ID = s.COURSE_PERIOD_ID 
-	AND position(',".$_REQUEST['table'].",' IN cp.DOES_ATTENDANCE)>0 
-	AND ('".$date."' BETWEEN s.START_DATE AND s.END_DATE OR (s.END_DATE IS NULL AND '".$date."'>=s.START_DATE)) 
-	AND position(substring('UMTWHFS' FROM cast(extract(DOW FROM cast('".$date."' AS DATE)) AS INT)+1 FOR 1) IN cpsp.DAYS)>0 
-	AND s.MARKING_PERIOD_ID IN (".$all_mp.") 
-	ORDER BY s.START_DATE ASC";	
+	$current_schedule_Q = "SELECT cpsp.PERIOD_ID,cp.COURSE_PERIOD_ID,cp.HALF_DAY
+	FROM SCHEDULE s,COURSE_PERIODS cp, COURSE_PERIOD_SCHOOL_PERIODS cpsp
+	WHERE cp.COURSE_PERIOD_ID=cpsp.COURSE_PERIOD_ID
+	AND s.STUDENT_ID='__student_id__'
+	AND s.SYEAR='".UserSyear()."'
+	AND s.SCHOOL_ID='".UserSchool()."'
+	AND cp.COURSE_PERIOD_ID = s.COURSE_PERIOD_ID
+	AND position(',".$_REQUEST['table'].",' IN cp.DOES_ATTENDANCE)>0
+	AND ('".$date."' BETWEEN s.START_DATE AND s.END_DATE OR (s.END_DATE IS NULL AND '".$date."'>=s.START_DATE))
+	AND position(substring('UMTWHFS' FROM cast(extract(DOW FROM cast('".$date."' AS DATE)) AS INT)+1 FOR 1) IN cpsp.DAYS)>0
+	AND s.MARKING_PERIOD_ID IN (".$all_mp.")
+	ORDER BY s.START_DATE ASC";
 }
+// TODO: can be optimized? Remove PERIOD_ID index.
 $current_RET = DBGet(DBQuery($current_Q),array(),array('STUDENT_ID','PERIOD_ID'));
-if ( $_REQUEST['attendance'] && $_POST['attendance'] && AllowEdit())
+
+if ( $_REQUEST['attendance']
+	&& $_POST['attendance']
+	&& AllowEdit() )
 {
-	foreach ( (array) $_REQUEST['attendance'] as $student_id => $values)
+	foreach ( (array) $_REQUEST['attendance'] as $student_id => $values )
 	{
 		if ( ! $current_schedule_RET[ $student_id ])
 		{
@@ -113,17 +126,25 @@ if ( $_REQUEST['attendance'] && $_POST['attendance'] && AllowEdit())
 		{
 			if ( $current_RET[ $student_id ][ $period_id ])
 			{
-				$sql = "UPDATE $table SET ADMIN='Y',COURSE_PERIOD_ID='".$current_schedule_RET[ $student_id ][ $period_id ][1]['COURSE_PERIOD_ID']."',";
+				$sql = "UPDATE " . DBEscapeIdentifier( $table ) .
+					" SET ADMIN='Y',
+					COURSE_PERIOD_ID='" . $current_schedule_RET[ $student_id ][ $period_id ][1]['COURSE_PERIOD_ID'] . "',";
 
-				foreach ( (array) $columns as $column => $value)
-					$sql .= $column."='".$value."',";
+				foreach ( (array) $columns as $column => $value )
+				{
+					$sql .= DBEscapeIdentifier( $column ) . "='" . $value . "',";
+				}
 
-				$sql = mb_substr($sql,0,-1) . " WHERE SCHOOL_DATE='".$date."' AND PERIOD_ID='".$period_id."' AND STUDENT_ID='".$student_id."'".$extra_sql;
-				DBQuery($sql);
+				$sql = mb_substr( $sql, 0, -1 ) . " WHERE SCHOOL_DATE='" . $date . "'
+					AND PERIOD_ID='" . $period_id . "'
+					AND STUDENT_ID='" . $student_id . "'" .
+					$extra_sql;
+
+				DBQuery( $sql );
 			}
 			else
 			{
-				$sql = "INSERT INTO $table ";
+				$sql = "INSERT INTO " . DBEscapeIdentifier( $table ) . " ";
 
 				$fields = 'STUDENT_ID,SCHOOL_DATE,PERIOD_ID,MARKING_PERIOD_ID,ADMIN,COURSE_PERIOD_ID,';
 				$values = "'".$student_id."','".$date."','".$period_id."','".$current_mp."','Y','".$current_schedule_RET[ $student_id ][ $period_id ][1]['COURSE_PERIOD_ID']."',";
@@ -138,12 +159,12 @@ if ( $_REQUEST['attendance'] && $_POST['attendance'] && AllowEdit())
 				{
 					if ( !empty($value) || $value=='0')
 					{
-						$fields .= $column.',';
-						$values .= "'".$value."',";
+						$fields .= DBEscapeIdentifier( $column ) . ',';
+						$values .= "'" . $value . "',";
 						$go = true;
 					}
 				}
-				$sql .= '(' . mb_substr($fields,0,-1) . ') values(' . mb_substr($values,0,-1) . ')';
+				$sql .= '(' . mb_substr( $fields, 0, -1 ) . ') values(' . mb_substr( $values, 0, -1 ) . ')';
 
 				if ( $go)
 					DBQuery($sql);
@@ -152,10 +173,11 @@ if ( $_REQUEST['attendance'] && $_POST['attendance'] && AllowEdit())
 		UpdateAttendanceDaily($student_id,$date,($_REQUEST['attendance_day'][ $student_id ]['COMMENT']?$_REQUEST['attendance_day'][ $student_id ]['COMMENT']:false));
 		unset($_REQUEST['attendance_day'][ $student_id ]);
 	}
+	// TODO: can be optimized? Remove PERIOD_ID index.
 	$current_RET = DBGet(DBQuery($current_Q),array(),array('STUDENT_ID','PERIOD_ID'));
-	unset($_REQUEST['attendance']);
-	unset($_SESSION['_REQUEST_vars']['attendance']);
-	unset($_SESSION['_REQUEST_vars']['attendance_day']);
+
+	// Unset attendance & attendance day & redirect URL.
+	RedirectURL( array( 'attendance', 'attendance_day' ) );
 }
 
 if (count($_REQUEST['attendance_day']))
@@ -163,23 +185,24 @@ if (count($_REQUEST['attendance_day']))
 	foreach ( (array) $_REQUEST['attendance_day'] as $student_id => $comment)
 		UpdateAttendanceDaily($student_id,$date,$comment['COMMENT']);
 
-	unset($_REQUEST['attendance_day']);
+	// Unset attendance day & redirect URL.
+	RedirectURL( 'attendance_day' );
 }
 
 $codes_RET = DBGet(DBQuery("SELECT ID,SHORT_NAME,TITLE,STATE_CODE FROM ATTENDANCE_CODES WHERE SCHOOL_ID='".UserSchool()."' AND SYEAR='".UserSyear()."' AND TABLE_NAME='".$_REQUEST['table']."'"));
 
-$periods_RET = DBGet(DBQuery("SELECT PERIOD_ID,SHORT_NAME,TITLE 
-FROM SCHOOL_PERIODS 
-WHERE SCHOOL_ID='".UserSchool()."' 
-AND SYEAR='".UserSyear()."' 
-AND EXISTS (SELECT '' FROM COURSE_PERIODS WHERE PERIOD_ID=SCHOOL_PERIODS.PERIOD_ID AND position(',".$_REQUEST['table'].",' IN DOES_ATTENDANCE)>0) 
+$periods_RET = DBGet(DBQuery("SELECT PERIOD_ID,SHORT_NAME,TITLE
+FROM SCHOOL_PERIODS
+WHERE SCHOOL_ID='".UserSchool()."'
+AND SYEAR='".UserSyear()."'
+AND EXISTS (SELECT '' FROM COURSE_PERIODS WHERE PERIOD_ID=SCHOOL_PERIODS.PERIOD_ID AND position(',".$_REQUEST['table'].",' IN DOES_ATTENDANCE)>0)
 ORDER BY SORT_ORDER"));
 
 $categories_RET = DBGet(DBQuery("SELECT ID,TITLE FROM ATTENDANCE_CODE_CATEGORIES WHERE SYEAR='".UserSyear()."' AND SCHOOL_ID='".UserSchool()."'"));
 
 if (count($categories_RET))
 {
-	$tmp_PHP_SELF = PreparePHP_SELF($_REQUEST,array('table','codes'));
+	$tmp_PHP_SELF = PreparePHP_SELF( $_REQUEST, array( 'table', 'codes' ) );
 
 	$headerl .= '<a href="' . $tmp_PHP_SELF . '&amp;table=0"><b>' . _( 'Attendance' ) . '</b></a>';
 
@@ -204,16 +227,16 @@ if (isset($_REQUEST['student_id']) && $_REQUEST['student_id']!='new')
 		$schedule_RET = DBGet(DBQuery("SELECT
 		s.STUDENT_ID,c.TITLE AS COURSE,cpsp.PERIOD_ID,cp.COURSE_PERIOD_ID,p.TITLE AS PERIOD_TITLE,
 		s.STUDENT_ID AS ATTENDANCE_CODE,s.STUDENT_ID AS ATTENDANCE_TEACHER_CODE,s.STUDENT_ID AS ATTENDANCE_REASON,s.STUDENT_ID AS COMMENT
-		FROM SCHEDULE s,COURSES c,COURSE_PERIODS cp,SCHOOL_PERIODS p,ATTENDANCE_CALENDAR ac, COURSE_PERIOD_SCHOOL_PERIODS cpsp 
+		FROM SCHEDULE s,COURSES c,COURSE_PERIODS cp,SCHOOL_PERIODS p,ATTENDANCE_CALENDAR ac, COURSE_PERIOD_SCHOOL_PERIODS cpsp
 		WHERE cp.COURSE_PERIOD_ID=cpsp.COURSE_PERIOD_ID AND
 		s.SYEAR='".UserSyear()."' AND s.SCHOOL_ID='".UserSchool()."' AND s.MARKING_PERIOD_ID IN (".$all_mp.")
 		AND s.COURSE_ID=c.COURSE_ID
 		AND s.COURSE_PERIOD_ID=cp.COURSE_PERIOD_ID AND cpsp.PERIOD_ID=p.PERIOD_ID AND position(',$_REQUEST[table],' IN cp.DOES_ATTENDANCE)>0
 		AND s.STUDENT_ID='".$_REQUEST['student_id']."' AND ('".$date."' BETWEEN s.START_DATE AND s.END_DATE OR (s.END_DATE IS NULL AND '".$date."'>=s.START_DATE))
 		AND position(substring('MTWHFSU' FROM cast(
-			(SELECT CASE COUNT(school_date)% ".SchoolInfo('NUMBER_DAYS_ROTATION')." WHEN 0 THEN ".SchoolInfo('NUMBER_DAYS_ROTATION')." ELSE COUNT(school_date)% ".SchoolInfo('NUMBER_DAYS_ROTATION')." END AS day_number 
-			FROM attendance_calendar 
-			WHERE school_date>=(SELECT start_date FROM school_marking_periods WHERE start_date<='".$date."' AND end_date>='".$date."' AND mp='QTR' AND SCHOOL_ID=s.SCHOOL_ID) 
+			(SELECT CASE COUNT(school_date)% ".SchoolInfo('NUMBER_DAYS_ROTATION')." WHEN 0 THEN ".SchoolInfo('NUMBER_DAYS_ROTATION')." ELSE COUNT(school_date)% ".SchoolInfo('NUMBER_DAYS_ROTATION')." END AS day_number
+			FROM attendance_calendar
+			WHERE school_date>=(SELECT start_date FROM school_marking_periods WHERE start_date<='".$date."' AND end_date>='".$date."' AND mp='QTR' AND SCHOOL_ID=s.SCHOOL_ID)
 			AND school_date<='".$date."' AND SCHOOL_ID=s.SCHOOL_ID) AS INT) FOR 1)
 		IN cpsp.DAYS)>0
 		AND ac.CALENDAR_ID=cp.CALENDAR_ID AND ac.SCHOOL_DATE='".$date."' AND ac.MINUTES!='0'
@@ -222,7 +245,7 @@ if (isset($_REQUEST['student_id']) && $_REQUEST['student_id']!='new')
 		$schedule_RET = DBGet(DBQuery("SELECT
 		s.STUDENT_ID,c.TITLE AS COURSE,cpsp.PERIOD_ID,cp.COURSE_PERIOD_ID,p.TITLE AS PERIOD_TITLE,
 		s.STUDENT_ID AS ATTENDANCE_CODE,s.STUDENT_ID AS ATTENDANCE_TEACHER_CODE,s.STUDENT_ID AS ATTENDANCE_REASON,s.STUDENT_ID AS COMMENT
-		FROM SCHEDULE s,COURSES c,COURSE_PERIODS cp,SCHOOL_PERIODS p,ATTENDANCE_CALENDAR ac, COURSE_PERIOD_SCHOOL_PERIODS cpsp 
+		FROM SCHEDULE s,COURSES c,COURSE_PERIODS cp,SCHOOL_PERIODS p,ATTENDANCE_CALENDAR ac, COURSE_PERIOD_SCHOOL_PERIODS cpsp
 		WHERE cp.COURSE_PERIOD_ID=cpsp.COURSE_PERIOD_ID AND
 		s.SYEAR='".UserSyear()."' AND s.SCHOOL_ID='".UserSchool()."'
 		AND s.MARKING_PERIOD_ID IN (".$all_mp.")
@@ -232,16 +255,22 @@ if (isset($_REQUEST['student_id']) && $_REQUEST['student_id']!='new')
 		AND ('".$date."' BETWEEN s.START_DATE AND s.END_DATE OR (s.END_DATE IS NULL AND '".$date."'>=s.START_DATE))
 		AND position(substring('UMTWHFS' FROM cast(extract(DOW FROM cast('".$date."' AS DATE)) AS INT)+1 FOR 1) IN cpsp.DAYS)>0
 		AND ac.CALENDAR_ID=cp.CALENDAR_ID AND ac.SCHOOL_DATE='".$date."' AND ac.MINUTES!='0'
-		ORDER BY p.SORT_ORDER"),$functions);	
+		ORDER BY p.SORT_ORDER"),$functions);
 	}
 
 	$columns = array('PERIOD_TITLE' => _('Period'), 'COURSE' => _('Course'), 'ATTENDANCE_CODE' => _('Attendance Code'), 'ATTENDANCE_TEACHER_CODE' => _('Teacher\'s Entry'), 'ATTENDANCE_REASON' => _('Office Comment'), 'COMMENT' => _('Teacher Comment'));
 
-	echo '<form action="Modules.php?modname='.$_REQUEST['modname'].'&modfunc=student&student_id='.$_REQUEST['student_id'].'&table='.$_REQUEST['table'].'" method="POST">';
+	echo '<form action="' .
+		PreparePHP_SELF( $_REQUEST ) .
+		'" method="POST">';
 
-	DrawHeader(PrepareDate($date,'_date',false,array('submit'=>true)),SubmitButton(_('Update')));
+	DrawHeader(
+		PrepareDate( $date, '_date', false, array( 'submit' => true ) ),
+		SubmitButton( _( 'Update' ) )
+	);
 
-	$headerr = '<a href="Modules.php?modname='.$_REQUEST['modname'].'&month_date='.$_REQUEST['month_date'].'&day_date='.$_REQUEST['day_date'].'&year_date='.$_REQUEST['year_date'].'&table='.$_REQUEST['table'].'">'._('Student List').'</a>';
+	$headerr = '<a href="' . PreparePHP_Self( $_REQUEST, array( 'student_id' ) ) . '">' .
+		_( 'Student List' ) . '</a>';
 
 	DrawHeader($headerl, $headerr);
 
@@ -319,12 +348,14 @@ else
 		$extra['SELECT'] .= ",(SELECT COMMENT FROM ATTENDANCE_DAY WHERE STUDENT_ID=ssm.STUDENT_ID AND SCHOOL_DATE='".$date."') AS DAILY_COMMENT";
 		$extra['functions']['STATE_VALUE'] = '_makeStateValue';
 		$extra['functions']['DAILY_COMMENT'] = '_makeStateValue';
-//FJ add translation 
+//FJ add translation
 		$extra['columns_after']['STATE_VALUE'] = _('Present');
 		$extra['columns_after']['DAILY_COMMENT'] = _('Day Comment');
 	}
 
-	$extra['link']['FULL_NAME']['link'] = 'Modules.php?modname='.$_REQUEST['modname'].'&month_date='.$_REQUEST['month_date'].'&day_date='.$_REQUEST['day_date'].'&year_date='.$_REQUEST['year_date'].'&table='.$_REQUEST['table'];
+
+	// $extra['link']['FULL_NAME']['link'] = 'Modules.php?modname='.$_REQUEST['modname'].'&month_date='.$_REQUEST['month_date'].'&day_date='.$_REQUEST['day_date'].'&year_date='.$_REQUEST['year_date'].'&table='.$_REQUEST['table'];
+	$extra['link']['FULL_NAME']['link'] = PreparePHP_SELF( $_REQUEST );
 	$extra['link']['FULL_NAME']['variables'] = array('student_id' => 'STUDENT_ID');
 	$extra['BackPrompt'] = false;
 	$extra['Redirect'] = false;
@@ -347,15 +378,32 @@ else
 	else
 		$code_pulldowns = _makeCodeSearch();
 
-	echo '<form action="'.PreparePHP_SELF($_REQUEST,array('day_date','month_date','year_date','codes')).'" method="POST">';
-	DrawHeader(PrepareDate($date,'_date',false,array('submit'=>true)),SubmitButton(_('Update')));
+	echo '<form action="' .
+		PreparePHP_SELF( $_REQUEST ) .
+		'" method="POST">';
 
-	if (UserStudentID())
-		$current_student_link = '<a href="Modules.php?modname='.$_REQUEST['modname'].'&modfunc=student&month_date='.$_REQUEST['month_date'].'&day_date='.$_REQUEST['day_date'].'&year_date='.$_REQUEST['year_date'].'&student_id='.UserStudentID().'&table='.$_REQUEST['table'].'">'._('Current Student').'</a></td><td>';
+	DrawHeader(
+		PrepareDate( $date, '_date', false, array( 'submit' => true ) ),
+		SubmitButton( _( 'Update' ) )
+	);
 
-	$headerr = '<table><tr><td>'.$current_student_link.button('add','','"#" onclick=\'javascript:addHTML("'.str_replace('"','\"',_makeCodeSearch()).'","code_pulldowns"); return false;\'').'</td><td><div id=code_pulldowns>'.$code_pulldowns.'</div></td></tr></table>';
+	if ( UserStudentID() )
+	{
+		$current_student_link = '<a href="' .
+			PreparePHP_Self( $_REQUEST, array(), array( 'student_id' => UserStudentID() ) ) . '">' .
+			_( 'Current Student' ) . '</a></td><td>';
+	}
 
-	DrawHeader($headerl, $headerr);
+	$headerr = '<table style="float: right;"><tr><td class="align-right">' .
+		button(
+			'add',
+			'',
+			'"#" onclick=\'javascript:addHTML("' . str_replace( '"', '\"', _makeCodeSearch() ) .
+			'","code_pulldowns"); return false;\''
+		) . '</td><td><div id="code_pulldowns">' . $code_pulldowns . '</div></td>' .
+		'<td class="align-right">' . $current_student_link . '</td></tr></table>';
+
+	DrawHeader( $headerl, $headerr );
 
 	$_REQUEST['search_modfunc'] = 'list';
 	Search('student_id',$extra);

@@ -35,7 +35,7 @@ if ( isset( $_POST['tables'] )
 
 					foreach ( (array) $columns as $column => $value )
 					{
-						$sql .= $column . "='" . $value . "',";
+						$sql .= DBEscapeIdentifier( $column ) . "='" . $value . "',";
 					}
 
 					$sql = mb_substr( $sql, 0, -1 ) . " WHERE ID='" . $id . "'";
@@ -86,7 +86,8 @@ if ( isset( $_POST['tables'] )
 			$error[] = _( 'Please enter valid Numeric data.' );
 	}
 
-	unset( $_REQUEST['tables'] );
+	// Unset tables & redirect URL.
+	RedirectURL( 'tables' );
 }
 
 if ( $_REQUEST['modfunc'] === 'delete'
@@ -101,7 +102,8 @@ if ( $_REQUEST['modfunc'] === 'delete'
 
 			$_REQUEST['modfunc'] = false;
 
-			unset( $_REQUEST['id'] );
+			// Unset modfunc & ID & redirect URL.
+			RedirectURL( array( 'modfunc', 'id' ) );
 		}
 	}
 }
@@ -115,7 +117,7 @@ if ( ! $_REQUEST['modfunc'] )
 		&& $_REQUEST['id'] !== 'new' )
 	{
 		$RET = DBGet( DBQuery( "SELECT ID,(SELECT NULL) AS CATEGORY_ID,TITLE,TYPE,
-			DEFAULT_SELECTION,SORT_ORDER,REQUIRED
+			SELECT_OPTIONS,DEFAULT_SELECTION,SORT_ORDER,REQUIRED
 			FROM SCHOOL_FIELDS
 			WHERE ID='" . $_REQUEST['id'] . "'" ) );
 
@@ -134,13 +136,7 @@ if ( ! $_REQUEST['modfunc'] )
 		'SCHOOL',
 		$title,
 		$RET,
-		array(),
-		array(
-			'text' => _( 'Text' ),
-			'numeric' => _( 'Number' ),
-			'date' => _( 'Date' ),
-			'textarea' => _( 'Long Text' ),
-		)
+		array()
 	);
 
 	// DISPLAY THE MENU.

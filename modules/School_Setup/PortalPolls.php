@@ -2,6 +2,8 @@
 //FJ Portal Polls inspired by Portal Notes
 require_once 'ProgramFunctions/PortalPollsNotes.fnc.php';
 
+DrawHeader( ProgramTitle() );
+
 // Add eventual Dates to $_REQUEST['values'].
 if ( isset( $_POST['day_values'], $_POST['month_values'], $_POST['year_values'] ) )
 {
@@ -17,7 +19,13 @@ if ( isset( $_POST['day_values'], $_POST['month_values'], $_POST['year_values'] 
 }
 
 $profiles_RET = DBGet(DBQuery("SELECT ID,TITLE FROM USER_PROFILES ORDER BY ID"));
-if ((($_REQUEST['profiles'] && $_POST['profiles']) || ($_REQUEST['values'] && $_POST['values'])) && AllowEdit())
+
+if ( $_REQUEST['modfunc'] === 'update'
+	&& ( ( $_REQUEST['profiles']
+			&& $_POST['profiles'] )
+		|| ( $_REQUEST['values']
+			&& $_POST['values'] ) )
+	&& AllowEdit() )
 {
 	$polls_RET = DBGet(DBQuery("SELECT ID FROM PORTAL_POLLS WHERE SCHOOL_ID='".UserSchool()."' AND SYEAR='".UserSyear()."'"));
 
@@ -43,12 +51,14 @@ if ((($_REQUEST['profiles'] && $_POST['profiles']) || ($_REQUEST['values'] && $_
 	}
 }
 
-if ( $_REQUEST['values'] && $_POST['values'] && AllowEdit())
+if ( $_REQUEST['modfunc'] === 'update'
+	&& $_REQUEST['values']
+	&& $_POST['values']
+	&& AllowEdit() )
 {
-
-	foreach ( (array) $_REQUEST['values'] as $id => $columns)
+	foreach ( (array) $_REQUEST['values'] as $id => $columns )
 	{
-//FJ fix SQL bug invalid sort order
+		// FJ fix SQL bug invalid sort order.
 		if (empty($columns['SORT_ORDER']) || is_numeric($columns['SORT_ORDER']))
 		{
 			if ( $id!='new')
@@ -71,7 +81,7 @@ if ( $_REQUEST['values'] && $_POST['values'] && AllowEdit())
 						$sql_questions[] = $sql_question.$sql_question_cols;
 					}
 					else
-						$sql .= $column."='".$value."',";
+						$sql .= DBEscapeIdentifier( $column ) . "='" . $value . "',";
 				}
 				$sql = mb_substr($sql,0,-1) . " WHERE ID='".$id."'";
 				DBQuery($sql);
@@ -84,27 +94,32 @@ if ( $_REQUEST['values'] && $_POST['values'] && AllowEdit())
 					$q++;
 				}
 			}
-			else
+			// New: check for Title.
+			elseif ( $columns['TITLE'] )
 			{
-				if (count($_REQUEST['profiles']['new']))
+				foreach ( array('admin','teacher','parent') as $profile_id )
 				{
-					foreach ( array('admin','teacher','parent') as $profile_id)
+					if ( isset( $_REQUEST['profiles']['new'][ $profile_id ] )
+						&& $_REQUEST['profiles']['new'][ $profile_id ] )
 					{
-						if ( $_REQUEST['profiles']['new'][ $profile_id ])
-							$_REQUEST['values']['new']['PUBLISHED_PROFILES'] .= $profile_id.',';
-						$columns['PUBLISHED_PROFILES'] = ','.$_REQUEST['values']['new']['PUBLISHED_PROFILES'];
-					}
-					foreach ( (array) $profiles_RET as $profile)
-					{
-						$profile_id = $profile['ID'];
-
-						if ( $_REQUEST['profiles']['new'][ $profile_id ])
-							$_REQUEST['values']['new']['PUBLISHED_PROFILES'] .= $profile_id.',';
-						$columns['PUBLISHED_PROFILES'] = ','.$_REQUEST['values']['new']['PUBLISHED_PROFILES'];
+						$_REQUEST['values']['new']['PUBLISHED_PROFILES'] .= $profile_id . ',';
 					}
 				}
-				else
-					$_REQUEST['values']['new']['PUBLISHED_PROFILES'] = '';
+
+				foreach ( (array) $profiles_RET as $profile )
+				{
+					$profile_id = $profile['ID'];
+
+					if ( isset( $_REQUEST['profiles']['new'][ $profile_id ] )
+						&& $_REQUEST['profiles']['new'][ $profile_id ] )
+					{
+						$_REQUEST['values']['new']['PUBLISHED_PROFILES'] .= $profile_id . ',';
+					}
+				}
+
+				$columns['PUBLISHED_PROFILES'] = $_REQUEST['values']['new']['PUBLISHED_PROFILES'] ?
+					',' . $_REQUEST['values']['new']['PUBLISHED_PROFILES'] :
+					'';
 
 				$sql = "INSERT INTO PORTAL_POLLS ";
 				$sql_question = "INSERT INTO PORTAL_POLL_QUESTIONS ";
@@ -141,13 +156,13 @@ if ( $_REQUEST['values'] && $_POST['values'] && AllowEdit())
 						}
 						else
 						{
-							$fields .= $column.',';
-							$values .= "'".$value."',";
+							$fields .= DBEscapeIdentifier( $column ) . ',';
+							$values .= "'" . $value . "',";
 							$go = true;
 						}
 					}
 				}
-				$sql .= '(' . mb_substr($fields,0,-1) . ') values(' . mb_substr($values,0,-1) . ')';
+				$sql .= '(' . mb_substr( $fields, 0, -1 ) . ') values(' . mb_substr( $values, 0, -1 ) . ')';
 
 				if ( $go)
 				{
@@ -160,28 +175,27 @@ if ( $_REQUEST['values'] && $_POST['values'] && AllowEdit())
 		else
 			$error[] = _('Please enter a valid Sort Order.');
 	}
-	unset($_REQUEST['values']);
-	unset($_SESSION['_REQUEST_vars']['values']);
-	unset($_REQUEST['profiles']);
-	unset($_SESSION['_REQUEST_vars']['profiles']);
+
+	// Unset modfunc & values & profiles & redirect URL.
+	RedirectURL( array( 'modfunc', 'values', 'profiles' ) );
 }
 
-DrawHeader(ProgramTitle());
-
-if ( $_REQUEST['modfunc']=='remove' && AllowEdit())
+if ( $_REQUEST['modfunc'] === 'remove'
+	&& AllowEdit() )
 {
-	if (DeletePrompt(_('Poll')))
+	if ( DeletePrompt( _( 'Poll' ) ) )
 	{
-		DBQuery("DELETE FROM PORTAL_POLLS WHERE ID='".$_REQUEST['id']."'");
-		DBQuery("DELETE FROM PORTAL_POLL_QUESTIONS WHERE PORTAL_POLL_ID='".$_REQUEST['id']."'");
-		unset($_REQUEST['modfunc']);
+		DBQuery("DELETE FROM PORTAL_POLLS WHERE ID='" . $_REQUEST['id'] . "'");
+		DBQuery("DELETE FROM PORTAL_POLL_QUESTIONS WHERE PORTAL_POLL_ID='" . $_REQUEST['id'] . "'");
+
+		// Unset modfunc & ID & redirect URL.
+		RedirectURL( array( 'modfunc', 'id' ) );
 	}
 }
 
-// FJ fix SQL bug invalid sort order
 echo ErrorMessage( $error );
 
-if ( $_REQUEST['modfunc']!='remove')
+if ( ! $_REQUEST['modfunc'] )
 {
 	$sql_questions = "SELECT ppq.ID,ppq.PORTAL_POLL_ID,ppq.OPTIONS,ppq.VOTES,ppq.QUESTION,ppq.TYPE FROM PORTAL_POLL_QUESTIONS ppq, PORTAL_POLLS pp WHERE pp.SCHOOL_ID='".UserSchool()."' AND pp.SYEAR='".UserSyear()."' AND pp.ID=ppq.PORTAL_POLL_ID ORDER BY ppq.ID";
 	$QI_questions = DBQuery($sql_questions);
@@ -212,24 +226,32 @@ if ( $_REQUEST['modfunc']!='remove')
 	echo '</form>';
 }
 
-function _makeTextInput($value,$name)
-{	global $THIS_RET;
+function _makeTextInput( $value, $name )
+{
+	global $THIS_RET;
 
-	if ( $THIS_RET['ID'])
+	if ( $THIS_RET['ID'] )
+	{
 		$id = $THIS_RET['ID'];
+	}
 	else
+	{
 		$id = 'new';
+	}
 
-	if ( $name!='TITLE')
+	if ( $name !== 'TITLE' )
+	{
 		$extra = 'size=5 maxlength=10';
-//FJ title field required
-	if ( $name=='TITLE' && $id != 'new')
+	}
+	elseif ( $id !== 'new')
+	{
 		$extra = 'required';
+	}
 
 	return TextInput(
-		$name == 'TITLE' && $THIS_RET['EXPIRED'] ?
+		( $name == 'TITLE' && $THIS_RET['EXPIRED'] ?
 			array( $value, '<span style="color:red">' . $value . '</span>' ) :
-			$value,
+			$value ),
 		'values[' . $id . '][' . $name . ']',
 		'',
 		$extra
@@ -325,11 +347,11 @@ function _makeOptionsInputs($value,$name)
 				cell.innerHTML = cell.innerHTML.replace(reg, \'new\'+newId);
 			}
 		</script>';
-		$return .= '<table class="cellspacing-0 widefat" id="newOptionsTable"><tr><td><b>'._('Question').'</b></td><td><b>'._('Options').'</b></td><td><b>'._('Data Type').'</b></td></tr>'.$value.'<tr><td colspan="3" class="align-right"><a href="#" onclick="newOption();return false;">'. button('add') .' '._('New Question').'</a></tr></table>';
+		$return .= '<table class="widefat" id="newOptionsTable"><tr><td><b>'._('Question').'</b></td><td><b>'._('Options').'</b></td><td><b>'._('Data Type').'</b></td></tr>'.$value.'<tr><td colspan="3" class="align-right"><a href="#" onclick="newOption();return false;">'. button('add') .' '._('New Question').'</a></tr></table>';
 	}
 	else
 	{
-		$return .= '<table class="cellspacing-0 widefat"><tr><td><b>'._('Question').'</b></td><td><b>'._('Options').'</b></td><td><b>'._('Data Type').'</b></td></tr>'.$value.'</table>';
+		$return .= '<table class="widefat"><tr><td><b>'._('Question').'</b></td><td><b>'._('Options').'</b></td><td><b>'._('Data Type').'</b></td></tr>'.$value.'</table>';
 	}
 
 	$return .= '</div>';

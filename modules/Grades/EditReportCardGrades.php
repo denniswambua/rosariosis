@@ -10,28 +10,30 @@ if ( UserStudentID() )
 
 	$mp_id = $_REQUEST['mp_id'];
 
-	$tab_id = ($_REQUEST['tab_id']?$_REQUEST['tab_id']:'grades');
+	$tab_id = $_REQUEST['tab_id'] ? $_REQUEST['tab_id'] : 'grades';
 
 	// FJ fix bug no delete MP.
-	if ( $_REQUEST['modfunc'] == 'update'
+	if ( $_REQUEST['modfunc'] === 'update'
 		&& $_REQUEST['removemp']
 		&& $_REQUEST['new_sms']
 		&& DeletePrompt( _( 'Marking Period' ) ) )
 	{
 		//DBQuery("DELETE FROM STUDENT_MP_STATS WHERE student_id = $student_id and marking_period_id = $mp_id");
 		DBQuery( "DELETE FROM STUDENT_MP_STATS
-			WHERE student_id='" . $student_id . "
-			AND marking_period_id=" . $_REQUEST['new_sms'] );
+			WHERE student_id='" . $student_id . "'
+			AND marking_period_id='" . $_REQUEST['new_sms'] . "'" );
 
 		unset( $mp_id );
 
-		$_REQUEST['modfunc'] = false;
+		// Unset modfunc & redirect URL.
+		RedirectURL( 'modfunc' );
 	}
 
-	if ( $_REQUEST['modfunc']=='update' && ! $_REQUEST['removemp'])
+	if ( $_REQUEST['modfunc'] === 'update'
+		&& ! $_REQUEST['removemp'] )
 	{
 
-		if ( $_REQUEST['new_sms'])
+		if ( $_REQUEST['new_sms'] )
 		{
 			//FJ fix SQL bug when marking period already exist
 			$smsRET = DBGet(DBQuery("SELECT * FROM STUDENT_MP_STATS WHERE student_id='".$student_id."' and marking_period_id='".$_REQUEST['new_sms']."'"));
@@ -49,89 +51,88 @@ if ( UserStudentID() )
 			DBQuery($updatestats);
 		}
 
-		if (is_array($_REQUEST['values']))
+		foreach ( (array) $_REQUEST['values'] as $id => $columns)
 		{
-			foreach ( (array) $_REQUEST['values'] as $id => $columns)
+			//FJ fix SQL bug when text data entered, data verification
+			if ((empty($columns['GRADE_PERCENT']) || is_numeric($columns['GRADE_PERCENT'])) && (empty($columns['GP_SCALE']) || is_numeric($columns['GP_SCALE'])) && (empty($columns['UNWEIGHTED_GP']) || is_numeric($columns['UNWEIGHTED_GP'])) && (empty($columns['WEIGHTED_GP']) || is_numeric($columns['WEIGHTED_GP'])) && (empty($columns['CREDIT_EARNED']) || is_numeric($columns['CREDIT_EARNED'])) && (empty($columns['CREDIT_ATTEMPTED']) || is_numeric($columns['CREDIT_ATTEMPTED'])))
 			{
-				//FJ fix SQL bug when text data entered, data verification
-				if ((empty($columns['GRADE_PERCENT']) || is_numeric($columns['GRADE_PERCENT'])) && (empty($columns['GP_SCALE']) || is_numeric($columns['GP_SCALE'])) && (empty($columns['UNWEIGHTED_GP']) || is_numeric($columns['UNWEIGHTED_GP'])) && (empty($columns['WEIGHTED_GP']) || is_numeric($columns['WEIGHTED_GP'])) && (empty($columns['CREDIT_EARNED']) || is_numeric($columns['CREDIT_EARNED'])) && (empty($columns['CREDIT_ATTEMPTED']) || is_numeric($columns['CREDIT_ATTEMPTED'])))
+				if ( $id!='new')
 				{
-					if ( $id!='new')
-					{
-						$sql = "UPDATE student_report_card_grades SET ";
-						foreach ( (array) $columns as $column => $value)
-							$sql .= $column."='".$value."',";
+					$sql = "UPDATE student_report_card_grades SET ";
+					foreach ( (array) $columns as $column => $value)
+						$sql .= DBEscapeIdentifier( $column ) . "='" . $value . "',";
 
-						if ( $_REQUEST['tab_id']!='new')
-							$sql = mb_substr($sql,0,-1) . " WHERE ID='".$id."'";
+					if ( $_REQUEST['tab_id']!='new')
+						$sql = mb_substr($sql,0,-1) . " WHERE ID='".$id."'";
+					else
+						$sql = mb_substr($sql,0,-1) . " WHERE ID='".$id."'";
+
+					DBQuery($sql);
+				}
+				// New: check for Title.
+				elseif ( $columns['COURSE_TITLE'] )
+				{
+					$sql = 'INSERT INTO student_report_card_grades ';
+
+					//FJ fix bug SQL SYEAR=NULL
+					$syear = DBGet(DBQuery("SELECT syear FROM marking_periods WHERE marking_period_id='".$mp_id."'"));
+					$syear = $syear[1]['SYEAR'];
+
+					//$fields = 'ID, SCHOOL_ID, STUDENT_ID, MARKING_PERIOD_ID, ';
+					$fields = 'ID, SCHOOL_ID, STUDENT_ID, MARKING_PERIOD_ID, SYEAR, ';
+
+					//$values = db_seq_nextval('student_report_card_grades_seq').','.UserSchool().", $student_id, $mp_id, ";
+					$values = db_seq_nextval('student_report_card_grades_seq').",'".UserSchool()."', '".$student_id."', '".$mp_id."', '".$syear."', ";
+
+					if ( ! $columns['GP_SCALE'])
+						$columns['GP_SCALE'] = SchoolInfo('REPORTING_GP_SCALE');
+
+					if ( ! $columns['CREDIT_ATTEMPTED'])
+						$columns['CREDIT_ATTEMPTED'] = 1;
+
+					if ( ! $columns['CREDIT_EARNED'])
+					{
+						if ( $columns['UNWEIGHTED_GP'] > 0 || $columns['WEIGHTED_GP'] > 0)
+							$columns['CREDIT_EARNED'] = 1;
 						else
-							$sql = mb_substr($sql,0,-1) . " WHERE ID='".$id."'";
-
-						DBQuery($sql);
+							$columns['CREDIT_EARNED'] = 0;
 					}
-					elseif ( $columns['COURSE_TITLE'])
-					{
-						$sql = 'INSERT INTO student_report_card_grades ';
 
-						//FJ fix bug SQL SYEAR=NULL
-						$syear = DBGet(DBQuery("SELECT syear FROM marking_periods WHERE marking_period_id='".$mp_id."'"));
-						$syear = $syear[1]['SYEAR'];
+					if ( ! $columns['CLASS_RANK'])
+						$columns['CLASS_RANK']='Y';
 
-						//$fields = 'ID, SCHOOL_ID, STUDENT_ID, MARKING_PERIOD_ID, ';
-						$fields = 'ID, SCHOOL_ID, STUDENT_ID, MARKING_PERIOD_ID, SYEAR, ';
-
-						//$values = db_seq_nextval('student_report_card_grades_seq').','.UserSchool().", $student_id, $mp_id, ";
-						$values = db_seq_nextval('student_report_card_grades_seq').",'".UserSchool()."', '".$student_id."', '".$mp_id."', '".$syear."', ";
-
-						if ( ! $columns['GP_SCALE'])
-							$columns['GP_SCALE'] = SchoolInfo('REPORTING_GP_SCALE');
-
-						if ( ! $columns['CREDIT_ATTEMPTED'])
-							$columns['CREDIT_ATTEMPTED'] = 1;
-
-						if ( ! $columns['CREDIT_EARNED'])
+					$go = false;
+					foreach ( (array) $columns as $column => $value)
+						if ( !empty($value) || $value=='0')
 						{
-							if ( $columns['UNWEIGHTED_GP'] > 0 || $columns['WEIGHTED_GP'] > 0)
-								$columns['CREDIT_EARNED'] = 1;
-							else
-								$columns['CREDIT_EARNED'] = 0;
+							$fields .= DBEscapeIdentifier( $column ) . ',';
+							$values .= "'" . $value . "',";
+							$go = true;
 						}
 
-						if ( ! $columns['CLASS_RANK'])
-							$columns['CLASS_RANK']='Y';
+					$sql .= '(' . mb_substr( $fields, 0, -1 ) . ') values(' . mb_substr( $values, 0, -1 ) . ')';
 
-						$go = false;
-						foreach ( (array) $columns as $column => $value)
-							if ( !empty($value) || $value=='0')
-							{
-								$fields .= $column.',';
-								$values .= '\''.$value.'\',';
-								$go = true;
-							}
-
-						$sql .= '(' . mb_substr($fields,0,-1) . ') values(' . mb_substr($values,0,-1) . ')';
-
-						if ( $go && $mp_id && $student_id)
-							DBQuery($sql);
-					}
+					if ( $go && $mp_id && $student_id)
+						DBQuery($sql);
 				}
-				else
-					$error[] = _('Please enter valid Numeric data.');
 			}
-
+			else
+				$error[] = _('Please enter valid Numeric data.');
 		}
 
-		unset($_REQUEST['modfunc']);
+		// Unset modfunc & redirect URL.
+		RedirectURL( 'modfunc' );
 	}
 
-	if ( $_REQUEST['modfunc']=='remove')
+	if ( $_REQUEST['modfunc'] === 'remove' )
 	{
 		if ( DeletePrompt( _( 'Student Grade' ) ) )
 		{
 			DBQuery( "DELETE FROM student_report_card_grades
 				WHERE ID='" . $_REQUEST['id'] . "'" );
 
-			$_REQUEST['modfunc'] = false;
+			// Unset modfunc & ID & redirect URL.
+			RedirectURL( array( 'modfunc', 'id' ) );
 		}
 	}
 
@@ -331,25 +332,46 @@ function _makeTextInput( $value, $name )
 {
 	global $THIS_RET;
 
-	if ( $THIS_RET['ID'])
+	if ( $THIS_RET['ID'] )
+	{
 		$id = $THIS_RET['ID'];
+	}
 	else
+	{
 		$id = 'new';
+	}
+
 	//    //bjj adding 'GP_SCALE'
-	if ( $name=='COURSE_TITLE')
+	if ( $name === 'COURSE_TITLE' )
+	{
 		$extra = 'size=20 maxlength=25';
-	elseif ( $name=='GRADE_PERCENT')
+
+		if ( $id !== 'new' )
+		{
+			$extra .= ' required';
+		}
+	}
+	elseif ( $name === 'GRADE_PERCENT' )
+	{
 		$extra = 'size=6 maxlength=6';
-	elseif ( $name=='GRADE_LETTER' || $name=='WEIGHTED_GP' || $name=='UNWEIGHTED_GP')
+	}
+	elseif ( $name === 'GRADE_LETTER'
+		|| $name === 'WEIGHTED_GP'
+		|| $name === 'UNWEIGHTED_GP' )
+	{
 		$extra = 'size=5 maxlength=5';
-	elseif ( $name=='CLASS_RANK')
+	}
+	elseif ( $name === 'CLASS_RANK' )
+	{
 		$extra = 'size=1 maxlength=1';
+	}
 	//elseif ( $name=='GP_VALUE')
 	//    $extra = 'size=5 maxlength=5';
 	//elseif ( $name=='UNWEIGHTED_GP_VALUE')
-
 	else
+	{
 		$extra = 'size=5 maxlength=10';
+	}
 
 	return TextInput( $value, "values[" . $id . "][" . $name . "]", '', $extra, ( $id !== 'new' ) );
 }

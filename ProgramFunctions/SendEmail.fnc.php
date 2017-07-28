@@ -9,8 +9,11 @@
 /**
  * Send Email
  * And eventual Attachment(s)
+ * From: RosarioSIS <rosariosis@yourdomain.com>
  *
  * @example SendEmail( $to, $subject, $msg, 'Foo <bar@from.address>', $cc, array( array( $pdf_file, $pdf_name ) ) );
+ *
+ * @link https://www.mail-tester.com/
  *
  * @uses PHPMailer class
  * @global $phpmailer
@@ -18,13 +21,13 @@
  * @param string|array $to          Recipients, array or comma separated list of emails.
  * @param string       $subject     Subject.
  * @param string       $message     Message.
- * @param string       $from        if empty, defaults to rosariosis@[yourserverdomain].
+ * @param string       $reply_to    Reply To email.
  * @param string|array $cc          Carbon Copy, array or comma separated list of emails.
  * @param array        $attachments Array of file paths, or Array of Attachments (file path, file name).
  *
  * @return boolean true if email sent, or false
  */
-function SendEmail( $to, $subject, $message, $from = null, $cc = null, $attachments = array() )
+function SendEmail( $to, $subject, $message, $reply_to = null, $cc = null, $attachments = array() )
 {
 	global $phpmailer;
 
@@ -50,64 +53,47 @@ function SendEmail( $to, $subject, $message, $from = null, $cc = null, $attachme
 	$phpmailer->ClearReplyTos();
 
 	// FJ add email headers.
-	if ( empty( $from ) )
+	// Get the site domain and get rid of www.
+	$sitename = strtolower( $_SERVER['SERVER_NAME'] );
+
+	if ( substr( $sitename, 0, 4 ) === 'www.' )
 	{
-		// Get the site domain and get rid of www.
-		$sitename = strtolower( $_SERVER['SERVER_NAME'] );
-
-		if ( substr( $sitename, 0, 4 ) === 'www.' )
-		{
-			$sitename = substr( $sitename, 4 );
-		}
-
-		$programname = mb_strtolower( filter_var(
-			Config( 'NAME' ),
-			FILTER_SANITIZE_EMAIL
-		));
-
-		if ( ! $programname )
-		{
-			$programname = 'rosariosis';
-		}
-
-		$from_email = $programname . '@' . $sitename;
+		$sitename = substr( $sitename, 4 );
 	}
-	else
-	{
-		// Break $from into name and address parts if in the format "Foo <bar@baz.com>".
-		$bracket_pos = strpos( $from, '<' );
 
-		if ( $bracket_pos !== false )
+	$programname = mb_strtolower( filter_var(
+		Config( 'NAME' ),
+		FILTER_SANITIZE_EMAIL
+	));
+
+	// Set Email address to send from: RosarioSIS <rosariosis@yourdomain.com>.
+	$phpmailer->From = $programname . '@' . $sitename;
+
+	$phpmailer->FromName = Config( 'NAME' );
+
+	// Set Reply To email if any (use instead of From to prevent spam!).
+	if ( $reply_to )
+	{
+		try
 		{
-			// Text before the bracketed email is the "From" name.
-			if ( $bracket_pos > 0 )
+			$reply_to_name = '';
+
+			// Break $reply_to into name and address parts if in the format "Foo <bar@baz.com>".
+			if ( preg_match( '/(.*)<(.+)>/', $reply_to, $matches ) )
 			{
-				$from_name = substr( $from, 0, $bracket_pos - 1 );
-				$from_name = str_replace( '"', '', $from_name );
-				$from_name = trim( $from_name );
+				if ( count( $matches ) == 3 )
+				{
+					$reply_to_name = $matches[1];
+					$reply_to = $matches[2];
+				}
 			}
 
-			$from_email = substr( $from, $bracket_pos + 1 );
-			$from_email = str_replace( '>', '', $from_email );
-			$from_email = trim( $from_email );
+			$phpmailer->addReplyTo( $reply_to, $reply_to_name );
 		}
-		// Avoid setting an empty $from_email.
-		elseif ( '' !== trim( $from ) )
+		catch ( phpmailerException $e )
 		{
-
-			$from_email = trim( $from );
 		}
 	}
-
-	if ( ! isset( $from_name ) )
-	{
-		$from_name = Config( 'NAME' );
-	}
-
-	// Set Email address to send from.
-	$phpmailer->From = $from_email;
-
-	$phpmailer->FromName = $from_name;
 
 	// Set destination addresses.
 	if ( ! is_array( $to ) )
@@ -142,10 +128,25 @@ function SendEmail( $to, $subject, $message, $from = null, $cc = null, $attachme
 	// Append Program Name to subject.
 	$subject = Config( 'NAME' ) . ' - ' . $subject;
 
-	// Set mail's subject and body.
+	// Set mail's subject.
 	$phpmailer->Subject = $subject;
 
-	$phpmailer->Body    = $message;
+	// Set Charset.
+	$phpmailer->CharSet = 'UTF-8';
+
+	// Set Content-Type and body.
+	// Detect if HTML message.
+	if ( mb_strlen( $message ) !== mb_strlen( strip_tags( $message ) ) )
+	{
+		// Send plain text message along with the HTML one!
+		$phpmailer->msgHTML( $message );
+	}
+	else
+	{
+		$phpmailer->ContentType = 'text/plain';
+
+		$phpmailer->Body = $message;
+	}
 
 	// Add any CC and BCC recipients.
 	if ( ! is_array( $cc ) )
@@ -182,19 +183,6 @@ function SendEmail( $to, $subject, $message, $from = null, $cc = null, $attachme
 
 	// Set to use PHP's mail().
 	$phpmailer->IsMail();
-
-	// Set Content-Type and charset.
-	// Detect if HTML message.
-	if ( mb_strlen( $message ) !== mb_strlen( strip_tags( $message ) ) )
-	{
-		$phpmailer->ContentType = 'text/html';
-	}
-	else
-	{
-		$phpmailer->ContentType = 'text/plain';
-	}
-
-	$phpmailer->CharSet = 'UTF-8';
 
 	if ( ! empty( $attachments ) )
 	{
@@ -240,7 +228,7 @@ function SendEmail( $to, $subject, $message, $from = null, $cc = null, $attachme
 	{
 		//FJ add SendEmail function
 		require_once 'ProgramFunctions/SendEmail.fnc.php';
-		
+
 		$message = "System: ".ParseMLField(Config('TITLE'))." \n";
 		$message .= "Date: ".date("m/d/Y h:i:s")."\n";
 		$message .= "Page: ".$_SERVER['PHP_SELF'].' '.ProgramTitle()." \n\n";
@@ -249,12 +237,12 @@ function SendEmail( $to, $subject, $message, $from = null, $cc = null, $attachme
 		$message .= "\n $sql \n";
 		$message .= "Request Array: \n".print_r($_REQUEST, true);
 		$message .= "\n\nSession Array: \n".print_r($_SESSION, true);
-		
+
 		SendEmail($RosarioNotifyAddress,'Database Error',$message);
 	}
 */
 /*function SendEmail($to, $subject, $message, $from = null, $cc = null)
-{	
+{
 	//FJ add email headers
 	if (empty($from))
 	{
@@ -278,7 +266,7 @@ function SendEmail( $to, $subject, $message, $from = null, $cc = null, $attachme
 	$headers = 'From:'. $from ."\r\n";
 	if ( !empty($cc))
 		$headers .= "Cc:". $cc ."\r\n";
-	$headers .= 'Return-Path:'. $from ."\r\n"; 
+	$headers .= 'Return-Path:'. $from ."\r\n";
 	$headers .= 'Reply-To:'. $from ."\r\n". 'X-Mailer: PHP/' . phpversion() ."\r\n";
 	$headers .= 'Content-Type: text/plain; charset=UTF-8';
 	//The f flag generates a Warning:
@@ -288,5 +276,5 @@ function SendEmail( $to, $subject, $message, $from = null, $cc = null, $attachme
 	//append Program Name to subject
 	$subject = Config('NAME').' - '.$subject;
 
-	return @mail($to,$subject,$message,$headers);	
+	return @mail($to,$subject,$message,$headers);
 }*/

@@ -22,9 +22,13 @@ if ( ( isset( $_POST['values'] )
 			)
 		)
 	);
+
+	// Unset values & redirect URL.
+	RedirectURL( 'values' );
 }
 
-if ( $_REQUEST['modfunc']=='delete' && AllowEdit())
+if ( $_REQUEST['modfunc'] === 'delete'
+	&& AllowEdit() )
 {
 	if ( ! isset( $_REQUEST['delete_ok'] )
 		&& ! isset( $_REQUEST['delete_cancel'] ) )
@@ -32,10 +36,13 @@ if ( $_REQUEST['modfunc']=='delete' && AllowEdit())
 		echo '</form>';
 	}
 
-	if (DeletePrompt($_REQUEST['title']))
+	if ( DeletePrompt( $_REQUEST['title'] ) )
 	{
-		DBQuery("DELETE FROM ".$_REQUEST['table']." WHERE ID='".$_REQUEST['id']."'");
-		unset($_REQUEST['modfunc']);
+		DBQuery( "DELETE FROM " . DBEscapeIdentifier( $_REQUEST['table'] ) . "
+			WHERE ID='" . $_REQUEST['id'] . "'" );
+
+		// Unset modfunc & ID & table & title & redirect URL.
+		RedirectURL( array( 'modfunc', 'id', 'table', 'title' ) );
 	}
 }
 

@@ -1,14 +1,19 @@
 <?php
+
+DrawHeader( ProgramTitle() );
+
 if ( $_REQUEST['table']=='')
 	$_REQUEST['table'] = '0';
 
-if ( $_REQUEST['modfunc']=='update' && AllowEdit())
+if ( $_REQUEST['modfunc'] === 'update'
+	&& AllowEdit() )
 {
-	if ( $_REQUEST['values'] && $_POST['values'])
+	if ( $_REQUEST['values']
+		&& $_POST['values'] )
 	{
-		foreach ( (array) $_REQUEST['values'] as $id => $columns)
+		foreach ( (array) $_REQUEST['values'] as $id => $columns )
 		{
-			//FJ fix SQL bug invalid sort order
+			// FJ fix SQL bug invalid sort order.
 			if (empty($columns['SORT_ORDER']) || is_numeric($columns['SORT_ORDER']))
 			{
 				if ( $columns['DEFAULT_CODE']=='Y')
@@ -22,12 +27,13 @@ if ( $_REQUEST['modfunc']=='update' && AllowEdit())
 						$sql = "UPDATE ATTENDANCE_CODE_CATEGORIES SET ";
 
 					foreach ( (array) $columns as $column => $value)
-						$sql .= $column."='".$value."',";
+						$sql .= DBEscapeIdentifier( $column ) . "='" . $value . "',";
 
 					$sql = mb_substr($sql,0,-1) . " WHERE ID='".$id."'";
 					DBQuery($sql);
 				}
-				else
+				// New: check for Title
+				elseif ( $columns['TITLE'] )
 				{
 					if ( $_REQUEST['table']!='new')
 					{
@@ -47,12 +53,12 @@ if ( $_REQUEST['modfunc']=='update' && AllowEdit())
 					{
 						if (isset($value) && $value!='')
 						{
-							$fields .= $column.',';
-							$values .= "'".$value."',";
+							$fields .= DBEscapeIdentifier( $column ) . ',';
+							$values .= "'" . $value . "',";
 							$go = true;
 						}
 					}
-					$sql .= '(' . mb_substr($fields,0,-1) . ') values(' . mb_substr($values,0,-1) . ')';
+					$sql .= '(' . mb_substr( $fields, 0, -1 ) . ') values(' . mb_substr( $values, 0, -1 ) . ')';
 
 					if ( $go)
 						DBQuery($sql);
@@ -62,31 +68,45 @@ if ( $_REQUEST['modfunc']=='update' && AllowEdit())
 				$error[] = _('Please enter a valid Sort Order.');
 		}
 	}
-	unset($_REQUEST['modfunc']);
+
+	// Unset modfunc & redirect URL.
+	RedirectURL( 'modfunc' );
 }
 
-DrawHeader(ProgramTitle());
-
-if ( $_REQUEST['modfunc']=='remove' && AllowEdit())
+if ( $_REQUEST['modfunc'] === 'remove'
+	&& AllowEdit() )
 {
 	if ( $_REQUEST['table']!='new')
 	{
-		if (DeletePrompt(_('Attendance Code')))
+		if ( DeletePrompt( _( 'Attendance Code' ) ) )
 		{
-			DBQuery("DELETE FROM ATTENDANCE_CODES WHERE ID='".$_REQUEST['id']."'");
-			unset($_REQUEST['modfunc']);
+			DBQuery("DELETE FROM ATTENDANCE_CODES WHERE ID='" . $_REQUEST['id'] . "'");
+
+			// Unset modfunc & ID & redirect URL.
+			RedirectURL( array( 'modfunc', 'id' ) );
 		}
 	}
-	else
+	elseif ( DeletePrompt( _( 'Category' ) ) )
 	{
-		if (DeletePrompt(_('Category')))
-		{
-			DBQuery("DELETE FROM ATTENDANCE_CODE_CATEGORIES WHERE ID='".$_REQUEST['id']."'");
-			DBQuery("DELETE FROM ATTENDANCE_CODES WHERE TABLE_NAME='".$_REQUEST['id']."'");
-			DBQuery("UPDATE COURSE_PERIODS SET DOES_ATTENDANCE=replace(DOES_ATTENDANCE,',$_REQUEST[id],',',') WHERE SYEAR='".UserSyear()."' AND SCHOOL_ID='".UserSchool()."'");
-			DBQuery("UPDATE COURSE_PERIODS SET DOES_ATTENDANCE=NULL WHERE DOES_ATTENDANCE=',' AND SYEAR='".UserSyear()."' AND SCHOOL_ID='".UserSchool()."'");
-			unset($_REQUEST['modfunc']);
-		}
+		DBQuery( "DELETE FROM ATTENDANCE_CODE_CATEGORIES
+			WHERE ID='" . $_REQUEST['id'] . "'" );
+
+		DBQuery( "DELETE FROM ATTENDANCE_CODES
+			WHERE TABLE_NAME='" . $_REQUEST['id'] . "'" );
+
+		DBQuery( "UPDATE COURSE_PERIODS
+			SET DOES_ATTENDANCE=replace(DOES_ATTENDANCE,'," . $_REQUEST['id'] . ",',',')
+			WHERE SYEAR='" . UserSyear() . "'
+			AND SCHOOL_ID='" . UserSchool() . "'" );
+
+		DBQuery( "UPDATE COURSE_PERIODS
+			SET DOES_ATTENDANCE=NULL
+			WHERE DOES_ATTENDANCE=','
+			AND SYEAR='" . UserSyear() . "'
+			AND SCHOOL_ID='" . UserSchool() . "'" );
+
+		// Unset modfunc & ID & redirect URL.
+		RedirectURL( array( 'modfunc', 'id' ) );
 	}
 }
 
@@ -155,40 +175,73 @@ if ( ! $_REQUEST['modfunc'] )
 	echo '</form>';
 }
 
-function _makeTextInput($value,$name)
-{	global $THIS_RET;
+function _makeTextInput( $value, $name )
+{
+	global $THIS_RET;
 
-	if ( $THIS_RET['ID'])
+	if ( $THIS_RET['ID'] )
+	{
 		$id = $THIS_RET['ID'];
+	}
 	else
+	{
 		$id = 'new';
+	}
 
-	if ( $name=='SHORT_NAME' || $name=='SORT_ORDER')
-		$extra = 'size=5 maxlength=10';
+	$extra = '';
 
-	return TextInput($value,'values['.$id.']['.$name.']','',$extra);
+	if ( $name === 'SHORT_NAME'
+		|| $name === 'SORT_ORDER' )
+	{
+		$extra .= 'size=5 maxlength=10';
+	}
+
+	if ( $id !== 'new'
+		&& ( $name === 'TITLE'
+			|| $name === 'SHORT_NAME' ) )
+	{
+		$extra .= ' required';
+	}
+
+	return TextInput( $value, 'values[' . $id . '][' . $name . ']', '', $extra );
 }
 
-function _makeSelectInput($value,$name)
-{	global $THIS_RET;
+function _makeSelectInput( $value, $name )
+{
+	global $THIS_RET;
 
-	if ( $THIS_RET['ID'])
+	if ( $THIS_RET['ID'] )
 	{
 		$id = $THIS_RET['ID'];
-		$extra = 'required';
 	}
 	else
 	{
 		$id = 'new';
-		$extra = '';
 	}
 
-	if ( $name=='TYPE')
-		$options = array('teacher' => _('Teacher & Office'),'official' => _('Office Only'));
-	elseif ( $name='STATE_CODE')
-		$options = array('P' => _('Present'),'A' => _('Absent'),'H' => _('Half Day'));
+	if ( $name === 'TYPE' )
+	{
+		$options = array(
+			'teacher' => _( 'Teacher & Office' ),
+			'official' => _( 'Office Only' ),
+		);
+	}
+	elseif ( $name === 'STATE_CODE' )
+	{
+		$options = array(
+			'P' => _( 'Present' ),
+			'A' => _( 'Absent' ),
+			'H' => _( 'Half Day' ),
+		);
+	}
 
-	return SelectInput($value,'values['.$id.']['.$name.']','',$options,'N/A',$extra);
+	return SelectInput(
+		$value,
+		'values[' . $id . '][' . $name . ']',
+		'',
+		$options,
+		( $id === 'new' ? 'N/A' : false )
+	);
 }
 
 function _makeCheckBoxInput($value,$name)

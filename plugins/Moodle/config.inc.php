@@ -1,16 +1,24 @@
 <?php
 //plugin configuration interface
 //verify the script is called by the right program & plugin is activated
-if ($_REQUEST['modname'] == 'School_Setup/Configuration.php' && $RosarioPlugins['Moodle'] && $_REQUEST['modfunc'] == 'config')
+if ( $_REQUEST['modname'] === 'School_Setup/Configuration.php'
+	&& $RosarioPlugins['Moodle']
+	&& $_REQUEST['modfunc'] === 'config' )
 {
 	//note: no need to call ProgramTitle()
 
-	if ( $_REQUEST['save']=='true')
+	if ( $_REQUEST['save'] === 'true' )
 	{
-		if ( $_REQUEST['values'] && $_POST['values'] && AllowEdit())
+		if ( $_REQUEST['values']
+			&& $_POST['values']
+			&& AllowEdit() )
 		{
 			//update the PROGRAM_CONFIG table
-			if ((empty($_REQUEST['values']['PROGRAM_CONFIG']['MOODLE_PARENT_ROLE_ID']) || is_numeric($_REQUEST['values']['PROGRAM_CONFIG']['MOODLE_PARENT_ROLE_ID'])) && (empty($_REQUEST['values']['PROGRAM_CONFIG']['ROSARIO_STUDENTS_EMAIL_FIELD_ID']) || is_numeric($_REQUEST['values']['PROGRAM_CONFIG']['ROSARIO_STUDENTS_EMAIL_FIELD_ID'])))
+			if ( ( empty( $_REQUEST['values']['PROGRAM_CONFIG']['MOODLE_PARENT_ROLE_ID'] )
+					|| is_numeric( $_REQUEST['values']['PROGRAM_CONFIG']['MOODLE_PARENT_ROLE_ID'] ) )
+				&& ( empty( $_REQUEST['values']['PROGRAM_CONFIG']['ROSARIO_STUDENTS_EMAIL_FIELD_ID'] )
+					|| ( is_numeric( $_REQUEST['values']['PROGRAM_CONFIG']['ROSARIO_STUDENTS_EMAIL_FIELD_ID'] )
+						|| $_REQUEST['values']['PROGRAM_CONFIG']['ROSARIO_STUDENTS_EMAIL_FIELD_ID'] === 'USERNAME' ) ) )
 			{
 				$sql = '';
 				if (isset($_REQUEST['values']['PROGRAM_CONFIG']) && is_array($_REQUEST['values']['PROGRAM_CONFIG']))
@@ -34,12 +42,11 @@ if ($_REQUEST['modname'] == 'School_Setup/Configuration.php' && $RosarioPlugins[
 			}
 		}
 
-		unset($_REQUEST['save']);
-		unset($_SESSION['_REQUEST_vars']['values']);
-		unset($_SESSION['_REQUEST_vars']['save']);
+		// Unset save & values & redirect URL.
+		RedirectURL( 'save', 'values' );
 	}
 
-	if ( empty($_REQUEST['save']))
+	if ( empty( $_REQUEST['save'] ) )
 	{
 		// TODO: use real values, not the CONSTANTS.
 		/*if ( !_validMoodleURLandToken() )
@@ -47,21 +54,17 @@ if ($_REQUEST['modname'] == 'School_Setup/Configuration.php' && $RosarioPlugins[
 
 		echo '<form action="Modules.php?modname='.$_REQUEST['modname'].'&tab=plugins&modfunc=config&plugin=Moodle&save=true" method="POST">';
 
-		DrawHeader('',SubmitButton(_('Save')));
+		DrawHeader( '', SubmitButton( _( 'Save' ) ) );
 
-		if (!empty($note))
-			echo ErrorMessage($note, 'note');
+		echo ErrorMessage( $note, 'note' );
 
-		if (!empty($error))
-			echo ErrorMessage($error, 'error');
+		echo ErrorMessage( $error, 'error' );
 
 		echo '<br />';
-		PopTable('header',_('Moodle'));
-
-		echo '<fieldset><legend>'._('Moodle').'</legend><table>';
+		PopTable( 'header', _( 'Moodle' ) );
 
 		// URL
-		echo '<tr><td>' . TextInput(
+		echo '<table><tr><td>' . TextInput(
 			ProgramConfig( 'moodle', 'MOODLE_URL' ),
 			'values[PROGRAM_CONFIG][MOODLE_URL]',
 			_( 'Moodle URL' ),
@@ -93,16 +96,27 @@ if ($_REQUEST['modname'] == 'School_Setup/Configuration.php' && $RosarioPlugins[
 		) . '</td></tr>';
 
 		// Students email Field ID
-		echo '<tr><td>' . TextInput(
+		$students_email_field_RET = DBGet( DBQuery( "SELECT ID, TITLE
+			FROM CUSTOM_FIELDS
+			WHERE TYPE='text'
+			AND CATEGORY_ID=1" ) );
+
+		$students_email_field_options = array( 'USERNAME' => _( 'Username' ) );
+
+		foreach ( (array) $students_email_field_RET as $field )
+		{
+			$students_email_field_options[ str_replace( 'custom_', '', $field['ID'] ) ] = ParseMLField( $field['TITLE'] );
+		}
+
+		echo '<tr><td>' . SelectInput(
 			ProgramConfig( 'moodle', 'ROSARIO_STUDENTS_EMAIL_FIELD_ID' ),
 			'values[PROGRAM_CONFIG][ROSARIO_STUDENTS_EMAIL_FIELD_ID]',
-			sprintf( _( '%s Student email field ID' ), Config( 'NAME' ) ),
-			'maxlength=2 size=2 min=0 placeholder=11'
-		) . '</td></tr>';
+			sprintf( _( 'Student email field' ), Config( 'NAME' ) ),
+			$students_email_field_options,
+			'N/A'
+		) . '</td></tr></table>';
 
-		echo '</table></fieldset>';
-
-		PopTable('footer');
+		PopTable( 'footer' );
 
 		echo '<br /><div class="center">' . SubmitButton( _( 'Save' ) ) . '</div>';
 		echo '</form>';
@@ -110,8 +124,9 @@ if ($_REQUEST['modname'] == 'School_Setup/Configuration.php' && $RosarioPlugins[
 }
 else
 {
-	$error[] = _('You\'re not allowed to use this program!');
-	echo ErrorMessage($error, 'fatal');
+	$error[] = _( 'You\'re not allowed to use this program!' );
+
+	echo ErrorMessage( $error, 'fatal' );
 }
 
 
@@ -129,8 +144,8 @@ function _validMoodleURLandToken()
 	$url_available = true;
 
 	// Check Moodle URL is available if set
-	if ( !empty( MOODLE_URL )
-		&& !empty( MOODLE_TOKEN ) )
+	if ( MOODLE_URL
+		&& MOODLE_TOKEN )
 	{
 		$serverurl = MOODLE_URL . '/webservice/xmlrpc/server.php?wstoken=' . MOODLE_TOKEN;
 

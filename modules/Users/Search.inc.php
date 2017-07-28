@@ -25,52 +25,12 @@ if ( ! $_REQUEST['search_modfunc'])
 
 			echo '<table class="width-100p col1-align-right" id="general_table">';
 
-			echo '<tr><td><label for="last">' . _( 'Last Name' ) . '</label></td>
-				<td><input type="text" name="last" id="last" size="30" autofocus /></td></tr>';
+			Search( 'staff_general_info', $extra );
 
-			echo '<tr><td><label for="first">' . _( 'First Name' ) . '</label></td>
-				<td><input type="text" name="first" id="first" size="30" /></td></tr>';
-
-			echo '<tr><td><label for="usrid">' . _( 'User ID' ) . '</label></td>
-				<td><input type="text" name="usrid" id="usrid" size="30" /></td></tr>';
-
-			echo '<tr><td><label for="username">' . _( 'Username' ) . '</label></td>
-				<td><input type="text" name="username" id="username" size="30" /></td></tr>';
-
-			if ( User( 'PROFILE' ) == 'admin' )
+			if ( ! isset( $extra ) )
 			{
-				$options = array(
-					'' => _( 'N/A' ),
-					'admin' => _( 'Administrator' ),
-					'teacher' => _( 'Teacher' ),
-					'parent' => _( 'Parent' ),
-					'none' => _( 'No Access' ),
-				);
-			}
-			else
-			{
-				$options = array(
-					'' => _( 'N/A' ),
-					'teacher' => _( 'Teacher' ),
-					'parent' => _( 'Parent' ),
-				);
-			}
-
-			if ( $extra['profile'] )
-				$options = array($extra['profile'] => $options[$extra['profile']]);
-
-			echo '<tr><td><label for="profile">' . _( 'Profile' ) . '</label></td>
-				<td><select name="profile" id="profile">';
-
-			foreach ( (array) $options as $key => $val )
-			{
-				echo '<option value="' . $key . '">' . $val . '</option>';
-			}
-
-			echo '</select></td></tr>';
-
-			if ( !isset( $extra ) )
 				$extra = array();
+			}
 
 			StaffWidgets( 'user', $extra );
 
@@ -86,8 +46,11 @@ if ( ! $_REQUEST['search_modfunc'])
 
 			if ( User('PROFILE') === 'admin' )
 			{
-				//FJ if only one school, no Search All Schools option
-				if ( SchoolInfo( 'SCHOOLS_NB' ) > 1 )
+				// FJ if only one school, no Search All Schools option.
+				// Restrict Search All Schools to user schools.
+				if ( SchoolInfo( 'SCHOOLS_NB' ) > 1
+					&& ( ! trim( User( 'SCHOOLS' ), ',' )
+						|| mb_substr_count( User( 'SCHOOLS' ), ',' ) > 2 ) )
 				{
 					echo '<label><input type="checkbox" name="_search_all_schools" value="Y"' .
 						( Preferences( 'DEFAULT_ALL_SCHOOLS' ) == 'Y' ? ' checked' : '' ) . '>&nbsp;' .
@@ -104,7 +67,7 @@ if ( ! $_REQUEST['search_modfunc'])
 				|| $extra['extra_search']
 				|| $extra['second_col'] )
 			{
-				echo '<table class="widefat width-100p cellspacing-0 col1-align-right">';
+				echo '<table class="widefat width-100p col1-align-right">';
 
 				if ( $extra['search'] )
 					echo $extra['search'];
@@ -160,8 +123,10 @@ if ( ! $_REQUEST['search_modfunc'])
 
 			echo '</form>';
 
-			// update Bottom.php
-			echo '<script>ajaxLink("Bottom.php"); old_modname="";</script>';
+			// Update Bottom.php.
+			$bottom_url = 'Bottom.php?modname=' . $_REQUEST['modname'];
+
+			echo '<script>ajaxLink(' .  json_encode( $bottom_url ) . '); old_modname="";</script>';
 
 			PopTable( 'footer' );
 
@@ -270,7 +235,10 @@ else
 				unset($_SESSION['Search_PHP_SELF']);
 			}
 
-			echo '<script>ajaxLink("Bottom.php"); old_modname="";</script>';
+			// Update Bottom.php.
+			$bottom_url = 'Bottom.php?modname=' . $_REQUEST['modname'] . '&search_modfunc=list';
+
+			echo '<script>ajaxLink(' .  json_encode( $bottom_url ) . '); old_modname="";</script>';
 		}
 
 		ListOutput( $staff_RET, $columns, $singular, $plural, $link, false, $extra['options'] );
@@ -283,11 +251,12 @@ else
 				$_REQUEST[ $var ] = $staff_RET['1'][ $val ];
 		}
 
-		if ( !is_array($staff_RET[1]['STAFF_ID']))
+		if ( ! is_array( $staff_RET[1]['STAFF_ID'] ) )
 		{
-			SetUserStaffID($staff_RET[1]['STAFF_ID']);
+			SetUserStaffID( $staff_RET[1]['STAFF_ID'] );
 
-			unset($_REQUEST['search_modfunc']);
+			// Unset search modfunc & redirect URL.
+			RedirectURL( 'search_modfunc' );
 		}
 
 		if ( $_REQUEST['modname']!=$_REQUEST['next_modname'])

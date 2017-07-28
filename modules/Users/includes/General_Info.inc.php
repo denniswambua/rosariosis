@@ -1,14 +1,17 @@
 <?php
-echo '<table class="width-100p valign-top fixed-col"><tr class="st"><td rowspan="4">';
+echo '<table class="general-info width-100p valign-top fixed-col"><tr class="st"><td rowspan="4">';
 
-// IMAGE
-if (AllowEdit() && !isset($_REQUEST['_ROSARIO_PDF'])):
+// IMAGE.
+if ( AllowEdit()
+	&& ! isset( $_REQUEST['_ROSARIO_PDF'] ) ) :
 ?>
-	<a href="#" onclick="switchUserPhoto(); return false;"><?php echo button('add', '', '', 'smaller'); ?>&nbsp;<?php echo _('User Photo'); ?></a><br />
+	<a href="#" onclick="$('.user-photo-form,.user-photo').toggle(); return false;"><?php
+		echo button( 'add', '', '', 'smaller' ) . '&nbsp;' . _( 'User Photo' );
+	?></a><br />
 	<div class="user-photo-form hide">
-		<br />
 		<input type="file" id="photo" name="photo" accept="image/*" /><span class="loading"></span>
-		<br /><span class="legend-gray"><?php echo _('User Photo'); ?> (.jpg)</span>
+		<br />
+		<span class="legend-gray"><?php echo _( 'User Photo' ); ?> (.jpg, .png, .gif)</span>
 	</div>
 <?php endif;
 
@@ -97,42 +100,51 @@ else
 	);
 }
 
-echo '</td></tr><tr class="st"><td>';
+echo '</td></tr>';
 
-echo NoInput($staff['STAFF_ID'],sprintf(_('%s ID'),Config('NAME')));
+if ( ! isset( $_REQUEST['staff_id'] )
+	|| $_REQUEST['staff_id'] !== 'new' )
+{
+	echo '<tr class="st"><td>';
 
-echo '</td><td>';
+	echo NoInput( $staff['STAFF_ID'], sprintf( _( '%s ID' ), Config( 'NAME' ) ) );
 
-echo NoInput($staff['ROLLOVER_ID'],sprintf(_('Last Year %s ID'),Config('NAME')));
+	echo '</td><td>';
 
-echo '</td></tr><tr class="st"><td>';
+	echo NoInput( $staff['ROLLOVER_ID'], sprintf( _( 'Last Year %s ID' ), Config( 'NAME' ) ) );
+
+	echo '</td></tr>';
+}
+
+echo '<tr class="st"><td>';
 
 //FJ Moodle integrator
 //username, password required
 
-$required = $_REQUEST['moodle_create_user'] || $old_user_in_moodle || basename($_SERVER['PHP_SELF'])=='index.php';
-$legend_red = $required && ! $staff['USERNAME'];
+$required = $_REQUEST['moodle_create_user'] || $old_user_in_moodle || basename( $_SERVER['PHP_SELF'] ) == 'index.php';
 
-echo TextInput($staff['USERNAME'],'staff[USERNAME]',($legend_red ? '<span class="legend-red">':'')._('Username').(($_REQUEST['moodle_create_user'] || $old_user_in_moodle) && ! $staff['USERNAME']?'</span>':''),'size=12 maxlength=100 '.($required ? 'required' : ''),($_REQUEST['moodle_create_user'] ?false:true));
+echo TextInput(
+	$staff['USERNAME'],
+	'staff[USERNAME]',
+	_( 'Username' ),
+	'size=12 maxlength=100 ' . ( $required ? 'required' : '' ),
+	( $_REQUEST['moodle_create_user'] ? false : true )
+);
 
 echo '</td><td>';
-
-$required = $required;
-$legend_red = $required && ! $staff['PASSWORD'];
 
 echo TextInput(
 	( ! $staff['PASSWORD']
 		|| $_REQUEST['moodle_create_user'] ? '' : str_repeat( '*', 8 ) ),
 	'staff[PASSWORD]',
-	( $legend_red ? '<span class="legend-red">' : '<span class="legend-gray">' ) .
-		_( 'Password' ) .
+	_( 'Password' ) .
 		( $_REQUEST['moodle_create_user']
 		|| $old_user_in_moodle ?
 		'<div class="tooltip"><i>' .
 			_( 'The password must have at least 8 characters, at least 1 digit, at least 1 lower case letter, at least 1 upper case letter, at least 1 non-alphanumeric character' ) .
 		'</i></div>' :
 		''
-		) . '</span>',
+		),
 	'size=12 maxlength=42 autocomplete=off' . ( $required ? ' required' : '' ),
 	( $_REQUEST['moodle_create_user'] ? false : true )
 );
@@ -157,6 +169,39 @@ if ( basename( $_SERVER['PHP_SELF'] ) != 'index.php' )
 		'none' => _( 'No Access' )
 	);
 
+	$admin_user_profile_restriction = false;
+
+	// Admin USer Profile restriction.
+	if ( User( 'PROFILE' ) === 'admin'
+		&& AllowEdit()
+		&& ! AllowEdit( 'Users/User.php&category_id=1&user_profile' ) )
+	{
+		if ( $_REQUEST['staff_id'] !== 'new' )
+		{
+			// Temporarily deactivate AllowEdit.
+			$_ROSARIO['allow_edit'] = false;
+		}
+		else
+		{
+			// Remove Administrator from profile options.
+			$profile_options = array(
+				'teacher' => _( 'Teacher' ),
+				'parent' => _( 'Parent' ),
+				'none' => _( 'No Access' )
+			);
+		}
+
+		$admin_user_profile_restriction = true;
+	}
+	elseif ( User( 'PROFILE' ) !== 'admin'
+		&& $_ROSARIO['allow_edit'] )
+	{
+		// Temporarily deactivate AllowEdit for Parents & Teachers.
+		$_ROSARIO['allow_edit'] = false;
+
+		$admin_user_profile_restriction = true;
+	}
+
 	echo SelectInput(
 		$staff['PROFILE'],
 		'staff[PROFILE]',
@@ -171,7 +216,7 @@ if ( basename( $_SERVER['PHP_SELF'] ) != 'index.php' )
 
 	$permissions_options = array();
 
-	if ( $_REQUEST['staff_id'] != 'new' )
+	if ( $_REQUEST['staff_id'] !== 'new' )
 	{
 		$permissions_RET = DBGet( DBQuery( "SELECT ID,TITLE
 			FROM USER_PROFILES
@@ -180,7 +225,7 @@ if ( basename( $_SERVER['PHP_SELF'] ) != 'index.php' )
 
 		foreach ( (array) $permissions_RET as $permission )
 		{
-			$permissions_options[$permission['ID']] = _( $permission['TITLE'] );
+			$permissions_options[ $permission['ID'] ] = _( $permission['TITLE'] );
 		}
 
 		$na = _( 'Custom' );
@@ -196,6 +241,24 @@ if ( basename( $_SERVER['PHP_SELF'] ) != 'index.php' )
 		$na
 	);
 
+	if ( User( 'PROFILE' ) === 'admin'
+		&& AllowEdit( 'Users/Exceptions.php' )
+		&& ! $staff['PROFILE_ID']
+		&& UserStaffID() )
+	{
+		// Add link to User Permissions.
+		echo '<div><a href="Modules.php?modname=Users/Exceptions.php">' .
+			_( 'User Permissions' ) . '</a></div>';
+	}
+
+	// Admin User Profile restriction.
+	if ( $admin_user_profile_restriction
+		&& $_REQUEST['staff_id'] !== 'new' )
+	{
+		// Reactivate AllowEdit.
+		$_ROSARIO['allow_edit'] = true;
+	}
+
 	echo '</td><td>';
 
 	//FJ remove Schools for Parents
@@ -203,12 +266,26 @@ if ( basename( $_SERVER['PHP_SELF'] ) != 'index.php' )
 	{
 		$schools_RET = DBGet( DBQuery( "SELECT ID,TITLE
 			FROM SCHOOLS
-			WHERE SYEAR='" . UserSyear() . "'" ) );
+			WHERE SYEAR='" . UserSyear() . "'
+			ORDER BY TITLE" ) );
 
 		unset( $options );
 
 		if ( $schools_RET )
 		{
+			$admin_schools_restriction = false;
+
+			// Admin Schools restriction.
+			if ( User( 'PROFILE' ) === 'admin'
+				&& AllowEdit()
+				&& ! AllowEdit( 'Users/User.php&category_id=1&schools' ) )
+			{
+				// Temporarily deactivate AllowEdit.
+				$_ROSARIO['allow_edit'] = false;
+
+				$admin_schools_restriction = true;
+			}
+
 			$i = 0;
 
 			$schools_html = '<table class="cellspacing-0 width-100p"><tr class="st">';
@@ -248,7 +325,8 @@ if ( basename( $_SERVER['PHP_SELF'] ) != 'index.php' )
 
 			$title = FormatInputTitle( _( 'Schools' ), $id );
 
-			if ( $_REQUEST['staff_id'] != 'new' )
+			if ( $_REQUEST['staff_id'] !== 'new'
+				&& AllowEdit() )
 			{
 				echo InputDivOnclick(
 					$id,
@@ -257,10 +335,29 @@ if ( basename( $_SERVER['PHP_SELF'] ) != 'index.php' )
 					$title
 				);
 			}
-            else
-            {
-                echo $schools_html . str_replace( '<br />', '', $title );
-            }
+			elseif ( AllowEdit() )
+			{
+				echo $schools_html . str_replace( '<br />', '', $title );
+			}
+			// Admin Schools restriction.
+			elseif ( $_REQUEST['staff_id'] === 'new'
+				&& $admin_schools_restriction )
+			{
+				// Assign new user to current school only.
+				echo SchoolInfo( 'TITLE' ) . $title;
+			}
+			else
+			{
+				echo ( $school_titles ? implode( ', ', $school_titles ) : _( 'All Schools' ) ) .
+					$title;
+			}
+
+			// Admin Schools restriction.
+			if ( $admin_schools_restriction )
+			{
+				// Reactivate AllowEdit.
+				$_ROSARIO['allow_edit'] = true;
+			}
 		}
 		//echo SelectInput($staff['SCHOOL_ID'],'staff[SCHOOL_ID]','School',$options,'All Schools');
 	}
@@ -268,17 +365,25 @@ if ( basename( $_SERVER['PHP_SELF'] ) != 'index.php' )
 }
 
 echo '<tr class="st"><td>';
-//FJ Moodle integrator
-//email required
+// FJ Moodle integrator: email required
 //echo TextInput($staff['EMAIL'],'staff[EMAIL]',_('Email Address'),'size=12 maxlength=100');
-if (AllowEdit())
-	echo TextInput($staff['EMAIL'],'staff[EMAIL]',(($_REQUEST['moodle_create_user'] || $old_user_in_moodle) && ! $staff['EMAIL']?'<span class="legend-red">':'')._('Email Address').(($_REQUEST['moodle_create_user'] || $old_user_in_moodle) && ! $staff['EMAIL']?'</span>':''),'size=12 maxlength=100'.($_REQUEST['moodle_create_user'] || $old_user_in_moodle ?' required':''),($_REQUEST['moodle_create_user'] ?false:true));
-else
-	echo TextInput($staff['EMAIL'],'staff[EMAIL]',_('Email Address'),'size=12 maxlength=100');
+echo TextInput(
+	$staff['EMAIL'],
+	'staff[EMAIL]',
+	_( 'Email Address' ),
+	'type="email" pattern="[^ @]*@[^ @]*" size=12 maxlength=100' .
+		( $_REQUEST['moodle_create_user'] || $old_user_in_moodle ? ' required' : '' ),
+	( $_REQUEST['moodle_create_user'] ? false : true )
+);
 
 echo '</td><td colspan="2">';
 
-echo TextInput($staff['PHONE'],'staff[PHONE]',_('Phone Number'),'size=12 maxlength=100');
+echo TextInput(
+	$staff['PHONE'],
+	'staff[PHONE]',
+	_( 'Phone Number' ),
+	'size=12 maxlength=100'
+);
 
 echo '</td></tr></table>';
 

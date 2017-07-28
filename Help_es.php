@@ -140,6 +140,9 @@ HTML;
 	Para agregar un período a calificar, haga clic sobre el icono «+» en la columna del tipo de período a calificar que usted quiere agregar. Luego, completa los datos del período a calificar en los campos de arriba y presione el botón «Guardar».
 </p>
 <p>
+	Las fechas "Publicación de Calificaciones" y "Finalización Publicación de Calificaciones" definen el primer y el último día del periodo durante el cual los docentes pueden entrar las calificaciones finales.
+</p>
+<p>
 	Para cambiar un período a calificar, haga clic sobre el período a calificar que usted quiere cambiar, y haga clic sobre cualquier valor que usted quiere cambiar en la zona de arriba. Luego, cambie el valor y presione el botón «Guardar».
 </p>
 <p>
@@ -152,10 +155,10 @@ HTML;
 
 	$help['School_Setup/Calendar.php'] = <<<HTML
 <p>
-	<i>Calendario</i> le permite configurar el calendario de su institución para el año. El calendario muestra el mes actual por defecto. El mes y el año mostrado se pueden cambiar en los menús desplegables del mes y del año en la parte superior de la pantalla.
+	<i>Calendarios</i> le permite configurar el calendario de su institución para el año. El calendario muestra el mes actual por defecto. El mes y el año mostrado se pueden cambiar en los menús desplegables del mes y del año en la parte superior de la pantalla.
 </p>
 <p>
-	En días completos de institución, la casilla en la esquina superior derecha del día debería estar marcada. Para los días parciales, la casilla no debería estar marcada y el número de minutos de asistencia a la institución, debería estar en el campo de texto al lado de la casilla. Para los días sin institución, la casilla no debería estar marcada y el campo de texto vacío. Para desactivar la casilla o cambiar el número de minutos en el día, usted debe primero hacer clic sobre el valor que desee cambiar. Después de hacer un cambio al calendario, presione el botón «Actualizar» en la parte superior de la pantalla.
+	En días completos de institución, la casilla en la esquina superior derecha del día debería estar marcada. Para los días parciales, la casilla no debería estar marcada y el número de minutos de asistencia a la institución, debería estar en el campo de texto al lado de la casilla. Para los días sin institución, la casilla no debería estar marcada y el campo de texto vacío. Para desactivar la casilla o cambiar el número de minutos en el día, usted debe primero hacer clic sobre el valor que desee cambiar. Después de hacer un cambio al calendario, presione el botón «Guardar» en la parte superior de la pantalla.
 </p>
 <p>
 	Si la institución usa una rotación de días enumerados, el numero del día aparece en el cuadro de los días de institución.
@@ -172,6 +175,9 @@ HTML;
 <p>
 	Para cambiar un evento, haga clic sobre el evento que quiere modificar, y cambie los datos del evento en la ventana emergente que aparece. Luego, presione el botón «Guardar». La ventana se cerrara y el calendario será actualizado para mostrar el cambio.
 </p>
+<p>
+	Si la institución usa una rotación de días enumerados, el número asociado al día aparece en la caja del día.
+</p>
 HTML;
 
 	$help['School_Setup/Periods.php'] = <<<HTML
@@ -180,6 +186,9 @@ HTML;
 </p>
 <p>
 	Para agregar una hora, llene el titulo de la hora, su nombre corto, orden, y duración en minutos en los campos vacíos al pié de la lista de horas y presione el botón «Guardar».
+</p>
+<p>
+	Los Bloques se usan para definir horas irregulares que son vigentes en días especificos. Ver el programa <i>Calendarios</i> para la configuración.
 </p>
 <p>
 	Para cambiar una hora, haga clic sobre cualquiera dato de la hora, cambie el dato, y presione el botón «Guardar».
@@ -223,7 +232,7 @@ HTML;
 			<li>
 				<i>Titulo del Programa</i> &amp; <i>Título del Programa</i>: renombrar RosarioSIS
 			</li>
-			<li>Definir el <i>Diseño por Defecto</i>
+			<li>Definir el <i>Diseño por Defecto</i>, y eventualmente <i>Forzarlo</i> para ignorar el diseño definido por los usuarios.
 			</li>
 			<li>
 				<i>Crear Cuenta de Usuario</i> &amp; <i>Crear Cuenta de Estudiante</i>: activar el registro en línea. Enlaces "Crear Cuenta de Usuario / Estudiante" estaran agregados a la pagína de entrada.
@@ -256,6 +265,9 @@ HTML;
 			</li>
 			<li>
 				<i>Usar Comentarios Semestrales en lugar de Comentarios Bimestrales</i>: tener un nuevo campo de comentarios cada semestre en lugar de cada bimestre
+			</li>
+			<li>
+				<i>Limitar los Contactos y las Direcciones Existentes a la institución corriente</i>: ajuste global (aplica a todas las instituciones) que limita las listas de Personas y Direcciones a las asociadas con la escuela corriente del usuario al momento de Agregar un Contacto o una Dirreción Existente
 			</li>
 		</ul>
 	</li>
@@ -307,6 +319,66 @@ HTML;
 </p>
 HTML;
 
+	$help['School_Setup/SchoolFields.php'] = <<<HTML
+<p>
+	<i>Campos de Institución</i> le permite agregar nuevos campos a la pantalla Información de la Institución.
+</p>
+<p>
+	Agregar un Nuevo Campo
+</p>
+<p>
+	Haga clic sobre el icono "+" debajo del texto "No se encontró ningún(a) Campo de Usuario.". Llene el/los campo(s) "Nombre del Campo", y luego escoge el tipo de campo que desee con el menú desplegable "Tipo de Dato".
+</p>
+<ul>
+<li>
+	Los campos "Menú Desplegable" crean un menú a partir del cual se puede escoger una opción. Para crear este tipo de campo, haga lic sobre "Menú Desplegable" y luego entre las opciones (una por línea) en el campo de texto "Menú Desplegable/Menú Desplegable Automático/Menú Desplegable Codificado/Selección de Opción Múltiple".
+</li>
+<li>
+	Los campos "Menú Desplegable Automático" crean un menú a partir del cual se puede escoger una opción y agregar opciones. Se agregan las opciones escogiendo el opción "-Editar-" en el menú y presionando "Guardar". Se puede editar el campo quitando el "-Editar-" rojo del campo, entrando la información correcta. RosarioSIS toma todas las opciones que han sido agregadas a este campo para crear el Menú Desplegable.
+</li>
+<li>
+	Los campos "Menú Desplegable Editable" son similares a los campos Menú Desplegable Automático.
+</li>
+<li>
+	Los campos "Menú Desplegable Codificado" son creados agregando opciones al grande campo de texto de la siguiente manera: "opción mostrada"|"opción guardada en la base de datos" (donde | es el carácter separador). Por ejemplo: "Dos|2", donde "Dos" está expuesto en la pantalla, o un documento descargado, y "2" está almacenado en la base de datos.
+</li>
+<li>
+	Los campos "Menú Desplegable Exportable" son creados agregando opciones respectando la misma convención usado para los campos "Menú Desplegable Codificado" ("opción mostrada"|"opción guardada en la base de datos"). Por ejemplo: "Dos|2", donde "Dos" está expuesto en la pantalla, y "2" es el valor del documento descargado, pero "Dos" está almacenado en la base de datos.
+</li>
+<li>
+	Los campos "Selección de Opción Múltiple" crean casillas múltiples para escoger una o varias opciones.
+</li>
+<li>
+	Los campos de "Texto" crean un campo de texto alfanumérico con una capacidad máxima de 255 caracteres.
+</li>
+<li>
+	Los campos "Texto Largo" crean grandes cajas de texto alfanumérico con una capacidad máxima de 5000 caracteres.
+</li>
+<li>
+	Los campos "Casilla" crean casillas. Cuando marcada, significa "Sí", y cuando no marcado "No".
+</li>
+<li>
+	Los campos "Número" crean campos de texto que almacenan valores numéricos solamente.
+</li>
+<li>
+	Los campos "Fecha" crean menús desplegables para escoger una fecha.
+</li>
+</ul>
+<p>
+	La casilla "Obligatorio", si marcada, volverá el campo requerido y un error sera generado si el campo está vació al momento de guardar.
+</p>
+<p>
+	La "Orden" determina la orden en la cual los campos están organizados en el programa Información de la Institución.
+</p>
+<p>
+	Eliminar un campo
+</p>
+<p>
+	Se puede eliminar cualquier Campo de Usuario simplemente presionando el botón "Eliminar" en la parte arriba de la pantalla. Por favor nota bien que se perderá toda la información si se elimina un campo ya usada.
+</p>
+HTML;
+
+
 	// Teacher & Parent & Student.
 else :
 
@@ -321,13 +393,13 @@ HTML;
 	<i>Calendario</i> muestra los eventos de la institución y las tareas de sus estudiantes. El calendario muestra también los días de institución. Por defecto, el calendario muestra el mes actual. El mes y el año mostrados pueden ser cambiados en los menús desplegables del mes y del año en la parte superior de la pantalla.
 </p>
 <p>
-	Los títulos de los eventos y de las tareas están en cada caja del día. Haciendo clic sobre estos títulos abrirá una ventana emergente que muestra mas información sobre el evento o la tarea.
+	Los títulos de los eventos y de las tareas están en cada caja del día. Haciendo clic sobre estos títulos abrirá una ventana emergente que muestra mas información sobre el evento o la tarea. Los eventos tienen por delante una barra negra y las tareas una barra roja.
 </p>
 <p>
 	En días completos de institución, el día aparece en verde. Para los días parciales, el número de minutos de asistencia en la institución aparece en la esquina superior derecha. Para los días sin institución, el día aparece en rosado.
 </p>
 <p>
-	Si la institución usa una rotación de días enumerados, el número del día aparece en la caja de los días de institución.
+	Si la institución usa una rotación de días enumerados, el número asociado al día aparece en la caja del día.
 </p>
 HTML;
 
@@ -372,7 +444,7 @@ HTML;
 	<i>Imprimir Cartas</i> le permite imprimir un modelo de carta para varios estudiantes.
 </p>
 <p>
-	Primero, busca estudiantes. Después de seleccionar estudiantes desde el resultado de la búsqueda, entre el texto de la carta en el campo de texto «Texto de la Carta». Arriba de este campo de texto se encuentran varias opciones de formato del texto.
+	Primero, busca estudiantes. Después de seleccionar estudiantes desde el resultado de la búsqueda, entre el texto de la carta en el campo de texto «Texto de la Carta». Debajo de este campo de texto se encuentran varias opciones de formato del texto.
 </p>
 <p>
 	Usted puede insertar algunos datos del estudiante en la carta con variables especiales:
@@ -462,7 +534,7 @@ HTML;
 </p>
 HTML;
 
-	$help['Matrícula'] = <<<HTML
+	$help['Students/Matrícula'] = <<<HTML
 <p>
 	<i>Matrícula</i> puede ser usado para matricular o retirar un estudiante de una institución. Un estudiante puede tener solamente una clave de matrícula activa a la vez.
 </p>
@@ -568,39 +640,41 @@ HTML;
 <p>
 	Haga clic sobre el icono "+" debajo del texto "No se encontró ningún(a) Campo de Datos.". Llene el/los campo(s) "Nombre del Campo", y luego escoge el tipo de campo que desee con el menú desplegable "Tipo de Dato".
 </p>
-<p>
+<ul>
+<li>
 	Los campos "Menú Desplegable" crean un menú a partir del cual se puede escoger una opción. Para crear este tipo de campo, haga lic sobre "Menú Desplegable" y luego entre las opciones (una por línea) en el campo de texto "Menú Desplegable/Menú Desplegable Automático/Menú Desplegable Codificado/Selección de Opción Múltiple".
-</p>
-<p>
+</li>
+<li>
 	Los campos "Menú Desplegable Automático" crean un menú a partir del cual se puede escoger una opción y agregar opciones. Se agregan las opciones escogiendo el opción "-Editar-" en el menú y presionando "Guardar". Se puede editar el campo quitando el "-Editar-" rojo del campo, entrando la información correcta. RosarioSIS toma todas las opciones que han sido agregadas a este campo para crear el Menú Desplegable.
-</p>
-<p>
+</li>
+<li>
 	Los campos "Menú Desplegable Editable" son similares a los campos Menú Desplegable Automático.
-</p>
-<p>
-	Los campos de "Texto" crean un campo de texto alfanumérico con una capacidad máxima de 255 caracteres.
-</p>
-<p>
-	Los campos "Casilla" crean casillas. Cuando marcada, significa "Sí", y cuando no marcado "No".
-</p>
-<p>
+</li>
+<li>
 	Los campos "Menú Desplegable Codificado" son creados agregando opciones al grande campo de texto de la siguiente manera: "opción mostrada"|"opción guardada en la base de datos" (donde | es el carácter separador). Por ejemplo: "Dos|2", donde "Dos" está expuesto en la pantalla, o un documento descargado, y "2" está almacenado en la base de datos.
-</p>
-<p>
+</li>
+<li>
 	Los campos "Menú Desplegable Exportable" son creados agregando opciones respectando la misma convención usado para los campos "Menú Desplegable Codificado" ("opción mostrada"|"opción guardada en la base de datos"). Por ejemplo: "Dos|2", donde "Dos" está expuesto en la pantalla, y "2" es el valor del documento descargado, pero "Dos" está almacenado en la base de datos.
-</p>
-<p>
-	Los campos "Número" crean campos de texto que almacenan valores numéricos solamente.
-</p>
-<p>
+</li>
+<li>
 	Los campos "Selección de Opción Múltiple" crean casillas múltiples para escoger una o varias opciones.
-</p>
-<p>
-	Los campos "Fecha" crean menús desplegables para escoger una fecha.
-</p>
-<p>
+</li>
+<li>
+	Los campos de "Texto" crean un campo de texto alfanumérico con una capacidad máxima de 255 caracteres.
+</li>
+<li>
 	Los campos "Texto Largo" crean grandes cajas de texto alfanumérico con una capacidad máxima de 5000 caracteres.
-</p>
+</li>
+<li>
+	Los campos "Casilla" crean casillas. Cuando marcada, significa "Sí", y cuando no marcado "No".
+</li>
+<li>
+	Los campos "Número" crean campos de texto que almacenan valores numéricos solamente.
+</li>
+<li>
+	Los campos "Fecha" crean menús desplegables para escoger una fecha.
+</li>
+</ul>
 <p>
 	La casilla "Obligatorio", si marcada, volverá el campo requerido y un error sera generado si el campo está vació al momento de guardar.
 </p>
@@ -618,6 +692,9 @@ HTML;
 	$help['Students/EnrollmentCodes.php'] = <<<HTML
 <p>
 	<i>Códigos de Matrícula</i> le permite configurar los códigos de matrícula de su institución. Los códigos de matrícula son usados en la pantalla de <i>Información del estudiante</i>, y especifican la razón de matrícula o retiro de un estudiante de una institución. Estos códigos aplican para todas las instituciones del sistema.
+</p>
+<p>
+	La columna "Por Defecto de Traslado" define el código usado al momento de matricular los estudiantes para el año escolar siguiente con el programa Transferir. Debería existir exactamente un código de matrícula por Defecto de Traslado (del tipo "Agregar").
 </p>
 <p>
 	Para agregar un código de matrícula, llene el titulo del código, su nombre corto, y tipo en los campos vacíos al fin de la lista de códigos de matrícula. Presione el botón «Guardar».
@@ -651,6 +728,18 @@ HTML;
 	$help['Students/Matrícula'] = <<<HTML
 <p>
 	<i>Matrícula</i> muestra el historial de matrícula del estudiante.
+</p>
+HTML;
+
+	$help['Custom/Registration.php'] = <<<HTML
+<p>
+	<i>Inscripción</i> le permite entrar las informaciones de contacto del estudiante.
+</p>
+<p>
+	Llene los campos del formulario con las informaciones de sus contactos y sus direcciones asociadas. Luego, entre o actualize los datos del estudiante.
+</p>
+<p>
+	Después de haber llenado el formulario, presione el botón «Guardar» en la parte inferior de la pantalla.
 </p>
 HTML;
 
@@ -698,7 +787,7 @@ HTML;
 	Pestaña Lista de Estudiantes
 </p>
 <p>
-	"Clasificación de Estudiantes" le permite escoger ver a los estudiantes listados en los varios listados de estudiante solamente por el "Nombre" o por el Grado y Nombre. "Tipo de Archivo a Exportar" le permite escoger entre archivos delimitados por tabulaciones, los cuales funcionan mejor con Excel, o archivos CSV (comma-separated values), los cuales funcionan mejor con Open Office. "Formato de Exportación de Fecha" le permite escoger diferentes formatos de fecha cuando se exportan campos, usando el icono Descargar. "Mostrar pantalla de búsqueda de estudiante" deberia quedarse marcado, a menos de ser invitado a lo contrario.
+	"Clasificación de Estudiantes" le permite escoger ver a los estudiantes listados en los varios listados de estudiante solamente por el "Nombre" o por el Grado y Nombre. "Tipo de Archivo a Exportar" le permite escoger entre archivos delimitados por tabulaciones, los cuales funcionan mejor con Excel, archivos CSV (comma-separated values), diseñados para LibreOffice, y también archivos XML. "Formato de Exportación de Fecha" le permite escoger diferentes formatos de fecha cuando se exportan campos, usando el icono Descargar. "Mostrar pantalla de búsqueda de estudiante" deberia quedarse marcado, a menos de ser invitado a lo contrario.
 </p>
 <p>
 	Pestaña Contraseña
@@ -722,19 +811,25 @@ HTML;
 	RosarioSIS viene con cuatro grupos principales como perfiles: Administrador, Docente, Padre &amp; Estudiante. El perfil de Administrador tiene lo más de permisos, y los otros perfiles son restringidos como les corresponde. Por favor nota bien que los docentes pueden solamente ver los datos de los estudiantes en sus clases, que los padres pueden ver solamente los datos de sus hijos, y que los estudiantes pueden ver solamente sus datos personales
 </p>
 <p>
-	Perfil Administrador
-</p>
-<p>
-	Si le de clic en uno de los Perfiles, usted vera la página de Permisiones. Está página muestra a cuales páginas el perfil tiene acceso para LEER (Puede Usar) o para ESCRIBIR (Se Puede Editar) datos en esta página en particular.
-</p>
-<p>
-	El perfil de Administrador tiene acceso a cuasi todas la páginas, para leer y escribir. Si quita la marca de "Se Puede Editar", el usuario con este perfil vera el programa en el menú, podrá hacer clic sobre el, y vera los datos en está página. Pero el usuario NO podrá cambiar ningún dato de esta página.
+	Si le de clic en uno de los Perfiles, usted vera la página de Permisiones. Esta página muestra a cuales páginas el perfil tiene acceso para LEER (Puede Usar) o para ESCRIBIR (Puede Editar) datos en esta página en particular.
 </p>
 <p>
 	Si quita la marca de "Puede Usar" de una página, entonces este perfil no vera el programa en el menú de izquierda, y por supuesto, no podrá ver o cambiar ningún dato de esta página.
 </p>
 <p>
+	Perfil Administrador
+</p>
+<p>
+	El perfil de Administrador tiene acceso a cuasi todas la páginas, para leer y escribir. Si quita la marca de "Puede Editar", el usuario con este perfil vera el programa en el menú, podrá hacer clic sobre el, y vera los datos en esta página. Pero el usuario NO podrá cambiar ningún dato de esta página.
+</p>
+<p>
 	Los Administradores no pueden ver la pestaña "Comentarios" del archivo del estudiante, pero pueden ver y modificar cualquier otra página.
+</p>
+<p>
+	Se puede restringuir la edición del perfil de los usuarios desmarcando la casilla <i>Usuarios > Información del Usuario > Datos Personales > Perfil del Usuario</i>. Los administradores perderan la posibilidad de asignar el perfil de los usuarios (y los permisos).
+</p>
+<p>
+	Se puede restringuir la edición de las escuelas de los usuarios desmarcando la casilla <i>Usuarios > Información del Usuario > Datos Personales > Escuelas</i>. Los administradores perderan la posibilidad de agregar o quitar escuelas a/de un usuario.
 </p>
 <p>
 	Perfil Docente
@@ -776,7 +871,7 @@ HTML;
 
 	$help['Users/UserFields.php'] = <<<HTML
 <p>
-	<i>User Fields</i> le permite agregar nuevos campos y pestañas a la pantalla Información del Usuario.
+	<i>Campos de Usuario</i> le permite agregar nuevos campos y pestañas a la pantalla Información del Usuario.
 </p>
 <p>
 	Categorías de Campo de Usuario
@@ -796,39 +891,41 @@ HTML;
 <p>
 	Haga clic sobre el icono "+" debajo del texto "No se encontró ningún(a) Campo de Usuario.". Llene el/los campo(s) "Nombre del Campo", y luego escoge el tipo de campo que desee con el menú desplegable "Tipo de Dato".
 </p>
-<p>
+<ul>
+<li>
 	Los campos "Menú Desplegable" crean un menú a partir del cual se puede escoger una opción. Para crear este tipo de campo, haga lic sobre "Menú Desplegable" y luego entre las opciones (una por línea) en el campo de texto "Menú Desplegable/Menú Desplegable Automático/Menú Desplegable Codificado/Selección de Opción Múltiple".
-</p>
-<p>
+</li>
+<li>
 	Los campos "Menú Desplegable Automático" crean un menú a partir del cual se puede escoger una opción y agregar opciones. Se agregan las opciones escogiendo el opción "-Editar-" en el menú y presionando "Guardar". Se puede editar el campo quitando el "-Editar-" rojo del campo, entrando la información correcta. RosarioSIS toma todas las opciones que han sido agregadas a este campo para crear el Menú Desplegable.
-</p>
-<p>
+</li>
+<li>
 	Los campos "Menú Desplegable Editable" son similares a los campos Menú Desplegable Automático.
-</p>
-<p>
-	Los campos de "Texto" crean un campo de texto alfanumérico con una capacidad máxima de 255 caracteres.
-</p>
-<p>
-	Los campos "Casilla" crean casillas. Cuando marcada, significa "Sí", y cuando no marcado "No".
-</p>
-<p>
+</li>
+<li>
 	Los campos "Menú Desplegable Codificado" son creados agregando opciones al grande campo de texto de la siguiente manera: "opción mostrada"|"opción guardada en la base de datos" (donde | es el carácter separador). Por ejemplo: "Dos|2", donde "Dos" está expuesto en la pantalla, o un documento descargado, y "2" está almacenado en la base de datos.
-</p>
-<p>
+</li>
+<li>
 	Los campos "Menú Desplegable Exportable" son creados agregando opciones respectando la misma convención usado para los campos "Menú Desplegable Codificado" ("opción mostrada"|"opción guardada en la base de datos"). Por ejemplo: "Dos|2", donde "Dos" está expuesto en la pantalla, y "2" es el valor del documento descargado, pero "Dos" está almacenado en la base de datos.
-</p>
-<p>
-	Los campos "Número" crean campos de texto que almacenan valores numéricos solamente.
-</p>
-<p>
+</li>
+<li>
 	Los campos "Selección de Opción Múltiple" crean casillas múltiples para escoger una o varias opciones.
-</p>
-<p>
-	Los campos "Fecha" crean menús desplegables para escoger una fecha.
-</p>
-<p>
+</li>
+<li>
+	Los campos de "Texto" crean un campo de texto alfanumérico con una capacidad máxima de 255 caracteres.
+</li>
+<li>
 	Los campos "Texto Largo" crean grandes cajas de texto alfanumérico con una capacidad máxima de 5000 caracteres.
-</p>
+</li>
+<li>
+	Los campos "Casilla" crean casillas. Cuando marcada, significa "Sí", y cuando no marcado "No".
+</li>
+<li>
+	Los campos "Número" crean campos de texto que almacenan valores numéricos solamente.
+</li>
+<li>
+	Los campos "Fecha" crean menús desplegables para escoger una fecha.
+</li>
+</ul>
 <p>
 	La casilla "Obligatorio", si marcada, volverá el campo requerido y un error sera generado si el campo está vació al momento de guardar.
 </p>
@@ -845,13 +942,16 @@ HTML;
 
 	$help['Users/TeacherPrograms.php&include=Grades/InputFinalGrades.php'] = <<<HTML
 <p>
-	<i>Programas Docente - Entrar Calificaciones Finales</i> le permite entrar la calificaciones de los bimestres, semestres, y exámenes de semestre para todos los estudiantes del docente seleccionado en la clase actual. Por defecto, el servicio listara los estudiantes de la primera clase del docente seleccionado para el bimestre actual. Usted puede cambiar la clase con el menú desplegable de las clases en la parte superior de la pantalla. Usted también puede cambiar el periodo a calificar con el menú desplegable de los periodos a calificar en el marco izquierdo. Además, usted puede seleccionar el semestre actual en el menú desplegable en la parte superior de la pantalla.
+	<i>Programas Docente - Entrar Calificaciones Finales</i> le permite entrar la calificaciones de los bimestres, semestres, o periodo intermedio para todos los estudiantes del docente seleccionado en la clase actual. Por defecto, el servicio listara los estudiantes de la primera clase del docente seleccionado para el bimestre actual. Usted puede cambiar la clase con el menú desplegable de las clases en la parte superior de la pantalla. Usted también puede cambiar el periodo a calificar con el menú desplegable de los periodos a calificar en el marco izquierdo. Además, usted puede seleccionar el semestre o periodo intermedio actual en el menú desplegable en la parte superior de la pantalla.
 </p>
 <p>
 	Una vez que usted esté en el periodo a calificar adecuado, usted puede entrar las calificaciones de los estudiantes seleccionando la calificación para cada estudiante y entrando comentarios como desee. Una vez que todas las calificaciones y los comentarios han sido entrados, presione el botón «Guardar» en la parte superior de la pantalla.
 </p>
 <p>
 	Si el docente seleccionado usa el Libro de Calificaciones, RosarioSIS puede calcular las calificaciones de cada estudiante para el bimestre haciendo clic sobre el enlace «Obtener las Calificaciones del Libro de Calificaciones.» de arriba.
+</p>
+<p>
+	Si el periodo a calificar en el cual está es un Período Intermedio, cuando hace clic sobre el enlace «Obtener las Calificaciones del Libro de Calificaciones», se tendrán en cuenta solamente las calificaciones de las Tareas que tienen Fecha de Plazo dentro del Periódo Intermedio ó las que no tienen Fecha de Plazo.
 </p>
 HTML;
 
@@ -911,13 +1011,14 @@ if ( User( 'PROFILE' ) === 'admin' ) :
 	Para agregar un curso al horario del estudiante, haga clic sobre el enlace «Agregar un Curso» al lado del icono «+» y seleccione el curso desde la ventana emergente que aparece. La pantalla se refrescara automáticamente para mostrar el curso.
 </p>
 <p>
-	Para retirar un curso existente, haga clic sobre el icono «-» al lado del curso que quiere retirar del horario del estudiante.
+	Para retirar un curso existente, selecionne la fecha «Retirado» al lado del curso que quiere retirar del horario del estudiante y guarde.
+	Si selecciona una fecha «Retirado» anterior a la fecha «Matriculado», el curso será eliminado y se le pedirá confirmar la eliminación de las ausencias y las calificaciones asociadas al curso.
 </p>
 <p>
 	Para cambiar una clase de un curso de un estudiante, haga clic sobre «Hora - Docente» del curso que quiere cambiar y seleccione la nueva clase. Usted también puede cambiar el periodo de la misma manera.
 </p>
 <p>
-	Todas las adiciones, eliminaciones, modificaciones al horario de un estudiante no permanecen a menos que usted presiona el botón «Guardar».
+	Todas las eliminaciones y modificaciones al horario de un estudiante no permanecen a menos que presione el botón «Guardar».
 </p>
 HTML;
 
@@ -941,13 +1042,16 @@ HTML;
 
 	$help['Scheduling/MassSchedule.php'] = <<<HTML
 <p>
-	<i>Programar en Grupo</i> le permite agregar un curso a un grupo de estudiantes de una vez.
+	<i>Programar en Grupo</i> le permite agregar uno o multiples cursos a un grupo de estudiantes de una vez.
 </p>
 <p>
 	Usted debe primero seleccionar un (grupo de) estudiante(s) usando la pantalla de búsqueda «Encontrar un Estudiante». Usted puede buscar estudiantes que han solicitado un curso especifico haciendo clic sobre el enlace «Escoger» al lado de las opciones de búsqueda «Curso» y «Solicitud» y escogiendo un curso desde la ventana emergente que aparece.
 </p>
 <p>
 	Para agregar un curso al horario de los estudiantes, haga clic sobre el enlace «Escoger un Curso» en la parte superior de la pantalla y seleccione el curso desde la ventana emergente que aparece. La pantalla se refrescara automáticamente para mostrar el curso.
+</p>
+<p>
+	Si necesario, repite el paso anterior para escoger y agregar un curso adicional.
 </p>
 <p>
 	Luego, seleccione la "Fecha de Inicio" adecuada (la fecha en la cual los estudiantes empezaran la clase), y el "Período a Calificar" apropiado.
@@ -1004,7 +1108,7 @@ HTML;
 	También puede escoger imprimir las solicitudes con etiquetas de correo. Las solicitudes tendrán etiquetas de correo posicionadas de una manera visible para un sobre con ventana cuando la hoja está doblada en tercios. Mas de una carta puede ser impreza por estudiante si el estudiante tiene padres residiendo en mas de una dirección.
 </p>
 <p>
-	Las solicitudes serán automáticamente creadas en el formato imprimible PDF cuando usted presione el botón «Enviar».
+	Las solicitudes serán automáticamente creadas en el formato imprimible PDF cuando usted presione el botón «Crear Horarios para los Estudiantes Seleccionados».
 </p>
 HTML;
 
@@ -1067,13 +1171,13 @@ HTML;
 
 	$help['Scheduling/UnfilledRequests.php'] = <<<HTML
 <p>
-	<i>Solicitudes Incompletas</i> es un reporte de las solicitudes no completadas de un grupo de estudiantes.
+	<i>Solicitudes Vacantes</i> es un reporte de las solicitudes no completadas de un grupo de estudiantes.
 </p>
 <p>
 	Usted debe primero seleccionar un (grupo de) estudiante(s) usando la pantalla de búsqueda «Encontrar un Estudiante».
 </p>
 <p>
-	El reporte muestra la información del estudiante junto con los detalles de la solicitud incompleta (el docente y la hora solicitados) y el numero de secciones o clases que han sido creadas para el curso (en el programa Horarios &gt; Cursos). Se puede también chequear el número de cupos disponibles marcando "Mostrar Cupos Disponibles" en la parte superior de la pantalla.
+	El reporte muestra la información del estudiante junto con los detalles de la solicitud vacante (el docente y la hora solicitados) y el numero de secciones o clases que han sido creadas para el curso (en el programa Horarios &gt; Cursos). Se puede también chequear el número de cupos disponibles marcando "Mostrar Cupos Disponibles" en la parte superior de la pantalla.
 </p>
 <p>
 	Haciendo clic sobre el nombre del estudiante le redireccionara hacia el programa Solicitudes de Estudiante.
@@ -1121,7 +1225,7 @@ HTML;
 	Usted debe primero confirmar correr el Programador. Aquí, también puede escoger correr el Programador en «Modo de Prueba» que no guardara los horarios de los estudiantes.
 </p>
 <p>
-	Una vez que el programador ha corrido, lo que puede tomar algunos minutos, le mostrara las Solicitudes Incompletas.
+	Una vez que el programador ha corrido, lo que puede tomar algunos minutos, le mostrara las Solicitudes Vacantes.
 </p>
 HTML;
 
@@ -1187,6 +1291,9 @@ HTML;
 	$help['Grades/CalcGPA.php'] = <<<HTML
 <p>
 	<i>Calcular el Promedio</i> calcula y guarda el promedio y el puesto en la clase de cada estudiante en su institución basado en las calificaciones del periodo a calificar escogido.
+</p>
+<p>
+	Se debe confirmar el calculo del Promedio. Acá, se puede también especificar para cual periodo escolar el Promedio está calculado. El promedio está calculado usando la "Escala base de calificaciones"  especificada en la configuración de la institución.
 </p>
 <p>
 	El servicio Calcular el Promedio calcula el promedio ponderado por cada curso multiplicando el dato promedio de la calificación ponderada por el número de créditos. Luego, el divide este dato por el número especifico como escala base de calificaciones. El promedio no ponderado se calcula de la misma manera sino que utiliza la calificación que no es ponderada. Después de calcular el promedio por cada curso, el servicio calcula el promedio del periodo a calificar. El programador clasifica estos datos para determinar el puesto en la clase. Si mas de un estudiante tiene el mismo promedio, ellos van a compartir el mismo puesto.
@@ -1284,6 +1391,9 @@ HTML;
 <p>
 	Para eliminar cualquier tipo de calificación, haga clic sobre el icono eliminar (-) al lado de la calificación que quiere eliminar. Se le preguntará si desea confirmar la eliminación.
 </p>
+<p>
+	Para agregar o modificar una escala de calificaciones, haga clic sobre la pestaña más (+) primero. Para cada escala de calificaciones, debería ajustar el valor de la escala, la calificación mínima de aprobación (mínimo para obtener los créditos), así que varios mínimos de promedio para los cuadros de honor.
+</p>
 HTML;
 
 	$help['Grades/ReportCardComments.php'] = <<<HTML
@@ -1309,7 +1419,7 @@ HTML;
 	<i>Códigos de Comentarios</i> le permite crear escalas de comentarios que muestran menús desplegables de códigos de calificaciones en el programa Entrar Calificaciones Finales. Luego, estos códigos estarán expuestos junto con el comentario asociado en el Boletín de Calificaciones.
 </p>
 <p>
-	Para crear una nueva Escala de Comentarios, haga clic sobre la pestaña con el icono (+). Nombre su escala de comentarios, agregue un comentario opcional y luego presione "Guardar". Una nueva pestaña con el nombre de la nueva Escala de Comentarios aparecerá. Haga clic sobre la pestaña de la escala de comentarios para seleccionarla y luego se podrá agregar, uno por uno, los códigos de la escala de comentarios llenando su "Título" (entre aquí el código), "Nombre Corto" y "Comentario" (lo cual aparecerá en el Boletín de Calificaciones).
+	Para crear una nueva Escala de Comentarios, haga clic sobre la pestaña con el icono (+). Nombre su escala de comentarios, agregue un comentario opcional y luego presione "Guardar". Una nueva pestaña con el nombre de la nueva Escala de Comentarios aparecerá. Haga clic sobre la pestaña de la escala de comentarios para seleccionarla y luego se podrá agregar, uno por uno, los códigos de la escala de comentarios llenando su "Título" (entre aquí el código), "Nombre Corto" y "Comentario" (leyenda del código, la cual aparecerá en el Boletín de Calificaciones).
 </p>
 HTML;
 
@@ -1343,20 +1453,44 @@ HTML;
 </p>
 HTML;
 
+	$help['Grades/MassCreateAssignments.php'] = <<<HTML
+<p>
+	<i>Tareas para Varias Clases</i> le permite crear tareas para varios clases a la vez. Existen tipos de tarea y tareas.
+</p>
+<p>
+	Usted tendrá probablemente tipos de tarea llamados «Trabajo», «Quiz», o «Previa». Los tipos de tarea se crean para cada clase de un mismo curso.
+</p>
+<p>
+	Para agregar un tipo de tarea, haga clic sobre el icono «+» en la columna tipo de tarea. Luego, llene los datos en los campos arriba de la lista. Seleccione los cursos deseados en la lista en la parte inferior de la pantalla y presione el botón «Crear el Tipo de Tarea para los Cursos Seleccionados».
+</p>
+<p>
+	Si define el "Porcentaje de la Calificación Final", los docentes lo podrán ver solamente si han marcado la casilla "Ponderar Calificaciones" en la Configuración de sus Libro de Calificaciones.
+</p>
+<p>
+	Para agregar una tarea, haga clic sobre el tipo de tarea deseado en la columna tipo de tarea. Luego, llene los datos en los campos arriba de la lista. Seleccione las clases deseadas en la lista en la parte inferior de la pantalla y presione el botón «Crear la Tarea para las Clases Seleccionadas».
+</p>
+<p>
+	Si entra 0 "Puntos", podrá dar Puntos Extra a los Estudiantes.
+</p>
+<p>
+	Si marca la casilla «Permitir Entrega de Tarea», los Estudiantes (o Padres) pueden entregar la tarea (subir un archivo o/y dejar un mensaje). Las entregas están abiertas desde la fecha de asignación hasta la fecha de plazo. Si ninguna fecha de plazo ha sido definida, las entregas están abiertas hasta el fin del bimestre. Luego, los docentes podran consultar las entregas en el programa "Calificaciones".
+</p>
+HTML;
+
 elseif ( User( 'PROFILE' ) === 'teacher' ) :
 
 	$help['Grades/InputFinalGrades.php'] = <<<HTML
 <p>
-	<i>Entrar Calificaciones Finales</i> le permite entrar las calificaciones del bimestre, semestre para todos sus estudiantes en la clase actual. Por defecto, el servicio lista los estudiantes en su primera clase para el bimestre actual. Usted puede cambiar el bimestre en el menú desplegable en el marco izquierdo. Usted también puede seleccionar el semestre actual en el menú desplegable en la parte superior de la pantalla.
+	<i>Entrar Calificaciones Finales</i> le permite entrar las calificaciones del bimestre, semestre o período intermedio para todos sus estudiantes en la clase actual. Por defecto, el servicio lista los estudiantes en su primera clase para el bimestre actual. Usted puede cambiar el bimestre en el menú desplegable en el marco izquierdo. Usted también puede seleccionar el semestre o período intermedio actual en el menú desplegable en la parte superior de la pantalla.
 </p>
 <p>
 	Una vez que esté en el periodo a calificar deseado, usted puede entrar las calificaciones de los estudiantes seleccionando la calificación para cada estudiante y entrar comentarios si lo desea. Una vez que todos los grados y comentarios están entrados, presione el botón «Guardar» en la parte superior de la pantalla.
 </p>
 <p>
-	Si usted usa el Libro de Calificaciones, RosarioSIS puede calcular cada calificación del bimestre haciendo clic sobre el enlace «Usar la Calificaciones del Libro de Calificaciones» de arriba.
+	Si usted usa el Libro de Calificaciones, RosarioSIS puede calcular cada calificación del bimestre haciendo clic sobre el enlace Obtener la Calificaciones del Libro de Calificaciones.» de arriba.
 </p>
 <p>
-	Si el mensaje «Usted no puede editar estas calificaciones.» aparece, usted no puede entrar las calificaciones finales ese día porque este no se encuentra en el transcurso de publicación de la calificaciones configurado por el periodo a calificar. Ver el servicio Períodos a Calificar para conocer las fechas de publicación de calificaciones.
+	Si el periodo a calificar en el cual está es un Período Intermedio, cuando hace clic sobre el enlace «Obtener las Calificaciones del Libro de Calificaciones.», se tendrán en cuenta solamente las calificaciones de las Tareas que tienen Fecha de Plazo dentro del Periódo Intermedio ó las que no tienen Fecha de Plazo.
 </p>
 HTML;
 
@@ -1371,10 +1505,10 @@ HTML;
 
 	$help['Grades/Assignments.php'] = <<<HTML
 <p>
-	<i>Libro de Calificaciones - Tareas</i> le permite configurar sus tareas. Hay tipos de tareas y tareas.
+	<i>Tareas</i> le permite configurar sus tareas. Existen tipos de tarea y tareas.
 </p>
 <p>
-	Usted tendrá probablemente tipos de tareas llamados «Trabajo», «Quiz», o «Previa». Los tipos de tareas se crean para cada curso que usted tiene.
+	Usted tendrá probablemente tipos de tarea llamados «Trabajo», «Quiz», o «Previa». Los tipos de tarea se crean para cada clase de un mismo curso.
 </p>
 <p>
 	Para agregar un tipo de tarea o una tarea, haga clic sobre el icono «+» en la columna deseada. Luego, llene los datos en los campos arriba de las listas y presione el botón «Guardar».
@@ -1417,6 +1551,15 @@ HTML;
 </p>
 <p>
 	Los reportes serán automáticamente creados en el formato imprimible PDF cuando usted presione el botón «Crear Reportes de Progreso para los Estudiantes Seleccionados».
+</p>
+HTML;
+
+	$help['Grades/AnomalousGrades.php'] = <<<HTML
+<p>
+	<i>Calificaciones con Anomalía</i> en un reporte que lo ayudará a hacer seguimiento de las calificaciones faltantes, inapropriadas, y los excusados. Las calificaciones que aparecen en el reporte NO son problematicas, pero de pronto QUISIERA revisarlas. Las calificaciones faltantes, negativas, los excusados, o las calificaciones con crédito extra o que exceden 100% son mostradas. La columna "Problema" indica la razon por la cual la calificación es irregular.
+</p>
+<p>
+	Usted puede seleccionar la clase usando el menú desplegable del menú izquierdo. Usted puede tambien seleccionar cual tipo de calificación con anomalía quiere que reporte muestra.
 </p>
 HTML;
 
@@ -1507,7 +1650,10 @@ HTML;
 	$help['Attendance/AddAbsences.php'] = <<<HTML
 <p>
 	<i>Agregar Ausencias</i> le permite agregar una ausencia a un grupo de estudiantes de una vez.
-</p>Primero, busca estudiantes. Note que usted puede buscar para estudiantes que están tomando un curso específico o están en una actividad especial.
+</p>
+<p>
+	Primero, busca estudiantes. Note que usted puede buscar para estudiantes que están tomando un curso específico o están en una actividad especial.
+</p>
 <p>
 	Desde los resultados de la búsqueda, usted puede seleccionar cualquier número de estudiantes. Usted puede seleccionar todos los estudiantes de la lista marcando la casilla en el encabezado de la lista. Usted también puede especificar las horas, el código de ausencia, la razón de la ausencia, y la fecha. Finalmente, presione el botón «Guardar» en la parte superior de la pantalla.
 </p>
@@ -1617,6 +1763,27 @@ elseif ( User( 'PROFILE' ) === 'teacher' ) :
 </p>
 <p>
 	Una vez que está en la clase correcta, usted puede tomar la asistencia seleccionando el código de asistencia para cada estudiante. Una vez que usted ha tomado la asistencia para todos sus estudiantes, presione el botón «Guardar» en la parte superior de la pantalla.
+</p>
+
+HTML;
+	$help['Attendance/DailySummary.php'] = <<<HTML
+<p>
+	<i>Gráfico de Asistencia</i> es un reporte que muestra la asistencia diaria de cualquier número de estudiantes para cada día de un transcurso.
+</p>
+<p>
+	Después de buscar por estudiantes, usted puede cambiar el periodo con las fechas en los menús desplegables en la parte superior de la pantalla. La lista muestra el dato de asistencia diaria de cada estudiante para cada día con un código de color. Rojo significa ausente todo el día, amarillo significa ausente medio día y verde significa presente todo el día.
+</p>
+<p>
+	Usted puede ver los registros de asistencia para cada hora, para cualquier estudiante haciendo clic sobre el nombre del estudiante. Aquí, el código está en la casilla de color.
+</p>
+HTML;
+
+	$help['Attendance/StudentSummary.php'] = <<<HTML
+<p>
+	<i>Resumen de la Ausencia</i> es un reporte que muestra los días por lo cuales un estudiante tiene una ausencia.
+</p>
+<p>
+	Después de seleccionar un estudiante, usted puede cambiar el periodo con las fechas en los menús desplegables en la parte superior de la pantalla y presionando el botón «Ir». La lista muestra las ausencias del estudiante para cada hora de cada día con ausencia. Una cruz roja indica una ausencia por la hora correspondiente.
 </p>
 HTML;
 

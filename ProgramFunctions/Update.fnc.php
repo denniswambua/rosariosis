@@ -25,6 +25,17 @@ function Update()
 
 	$to_version = ROSARIO_VERSION;
 
+	/**
+	 * Check if Update() version < ROSARIO_VERSION.
+	 *
+	 * Prevent DB version update if new Update.fnc.php file has NOT been uploaded YET.
+	 * Update must be run once both new Warehouse.php & Update.fnc.php files are uploaded.
+	 */
+	if ( version_compare( '3.4.1', ROSARIO_VERSION, '<' ) )
+	{
+		return false;
+	}
+
 	// Check if version in DB >= ROSARIO_VERSION.
 	if ( version_compare( $from_version, $to_version, '>=' ) )
 	{
@@ -35,12 +46,44 @@ function Update()
 
 	switch ( true )
 	{
-		case version_compare( $from_version, '2.9-alpha', '<' ):
+		case version_compare( $from_version, '2.9-alpha', '<' ) :
 
-			if ( function_exists( '_update29alpha' ) )
-			{
-				$return = _update29alpha();
-			}
+			$return = _update29alpha();
+
+
+		case version_compare( $from_version, '2.9.2', '<' ) :
+
+			$return = _update292();
+
+
+		case version_compare( $from_version, '2.9.5', '<' ) :
+
+			$return = _update295();
+
+
+		case version_compare( $from_version, '2.9.12', '<' ) :
+
+			$return = _update2912();
+
+
+		case version_compare( $from_version, '2.9.13', '<' ) :
+
+			$return = _update2913();
+
+
+		case version_compare( $from_version, '2.9.14', '<' ) :
+
+			$return = _update2914();
+
+
+		case version_compare( $from_version, '3.0', '<' ) :
+
+			$return = _update30();
+
+
+		case version_compare( $from_version, '3.1', '<' ) :
+
+			$return = _update31();
 	}
 
 	// Update version in DB CONFIG table.
@@ -49,6 +92,31 @@ function Update()
 		WHERE TITLE='VERSION'" ) );
 
 	return $return;
+}
+
+
+/**
+ * Is function called by Update()?
+ *
+ * Local function
+ *
+ * @example _isCallerUpdate( debug_backtrace() );
+ *
+ * @since 2.9.13
+ *
+ * @param  array   $callers debug_backtrace().
+ *
+ * @return boolean          Exit with error message if not called by Update().
+ */
+function _isCallerUpdate( $callers )
+{
+	if ( ! isset( $callers[1]['function'] )
+		|| $callers[1]['function'] !== 'Update' )
+	{
+		exit( 'Error: the update functions must be called by Update() only!' );
+	}
+
+	return true;
 }
 
 
@@ -70,13 +138,7 @@ function Update()
  */
 function _update29alpha()
 {
-	$callers = debug_backtrace();
-
-	if ( ! isset( $callers[1]['function'] )
-		|| $callers[1]['function'] !== 'Update' )
-	{
-		return false;
-	}
+	_isCallerUpdate( debug_backtrace() );
 
 	$return = true;
 
@@ -242,6 +304,394 @@ function _update29alpha()
 	{
 		DBQuery( "INSERT INTO profile_exceptions VALUES (0, 'Grades/StudentAssignments.php', 'Y', NULL);
 			INSERT INTO profile_exceptions VALUES (3, 'Grades/StudentAssignments.php', 'Y', NULL);" );
+	}
+
+	return $return;
+}
+
+
+/**
+ * Update to version 2.9.2
+ *
+ * 1. Add GP_PASSING_VALUE to REPORT_CARD_GRADE_SCALES table
+ *
+ * Local function
+ *
+ * @since 2.9.2
+ *
+ * @return boolean false if update failed or if not called by Update(), else true
+ */
+function _update292()
+{
+	_isCallerUpdate( debug_backtrace() );
+
+	$return = true;
+
+
+	/**
+	 * 1. Add GP_PASSING_VALUE to REPORT_CARD_GRADE_SCALES table
+	 * & Set minimum passing grade to '0' for already present scales.
+	 */
+	$gppassingvalue_column_exists = DBGet( DBQuery( "SELECT 1 FROM pg_attribute
+		WHERE attrelid = (SELECT oid FROM pg_class WHERE relname = 'report_card_grade_scales')
+		AND attname = 'gp_passing_value';" ) );
+
+	if ( ! $gppassingvalue_column_exists )
+	{
+		DBQuery( "ALTER TABLE ONLY report_card_grade_scales
+			ADD COLUMN gp_passing_value numeric(10,3);
+			UPDATE report_card_grade_scales
+			SET gp_passing_value=0;" );
+	}
+
+	return $return;
+}
+
+
+/**
+ * Update to version 2.9.5
+ *
+ * 1. Add LIMIT_EXISTING_CONTACTS_ADDRESSES to CONFIG table.
+ *
+ * Local function
+ *
+ * @since 2.9.5
+ *
+ * @return boolean false if update failed or if not called by Update(), else true
+ */
+function _update295()
+{
+	_isCallerUpdate( debug_backtrace() );
+
+	$return = true;
+
+
+	/**
+	 * 1. Add LIMIT_EXISTING_CONTACTS_ADDRESSES to CONFIG table.
+	 */
+	$limit_existing_contacts_addresses_field_added = DBGet( DBQuery( "SELECT 1 FROM CONFIG
+		WHERE TITLE='LIMIT_EXISTING_CONTACTS_ADDRESSES'" ) );
+
+	if ( ! $limit_existing_contacts_addresses_field_added )
+	{
+		DBQuery( "INSERT INTO config VALUES (0, 'LIMIT_EXISTING_CONTACTS_ADDRESSES', NULL);" );
+	}
+
+	return $return;
+}
+
+
+/**
+ * Update to version 2.9.12
+ *
+ * 1. Add THEME_FORCE to CONFIG table.
+ *
+ * Local function
+ *
+ * @since 2.9.12
+ *
+ * @return boolean false if update failed or if not called by Update(), else true
+ */
+function _update2912()
+{
+	_isCallerUpdate( debug_backtrace() );
+
+	$return = true;
+
+	/**
+	 * 1. Add THEME_FORCE to CONFIG table.
+	 */
+	$theme_force_field_added = DBGet( DBQuery( "SELECT 1 FROM CONFIG
+		WHERE TITLE='THEME_FORCE'" ) );
+
+	if ( ! $theme_force_field_added )
+	{
+		DBQuery( "INSERT INTO config VALUES (0, 'THEME_FORCE', NULL);" );
+	}
+
+	return $return;
+}
+
+
+/**
+ * Update to version 2.9.13
+ *
+ * Admin Schools restriction.
+ * 1. Add Users/User.php&category_id=1&schools to profile_exceptions table.
+ * 2. Add Users/User.php&category_id=1&schools to staff_exceptions table.
+ *
+ * Local function
+ *
+ * @since 2.9.13
+ *
+ * @return boolean false if update failed or if not called by Update(), else true
+ */
+function _update2913()
+{
+	_isCallerUpdate( debug_backtrace() );
+
+	$return = true;
+
+	/**
+	 * 1. Add Users/User.php&category_id=1&schools to profile_exceptions table.
+	 */
+	$admin_profiles_RET = DBGet( DBQuery( "SELECT id
+		FROM profile_exceptions, user_profiles
+		WHERE profile='admin'" ) );
+
+	foreach ( (array) $admin_profiles_RET as $admin_profile )
+	{
+		$profile_id = $admin_profile['ID'];
+
+		$as_profile_exceptions_exists = DBGet( DBQuery( "SELECT 1
+			FROM profile_exceptions
+			WHERE profile_id='" . $profile_id . "'
+			AND modname='Users/User.php&category_id=1&schools'" ) );
+
+		if ( ! $as_profile_exceptions_exists )
+		{
+			DBQuery( "INSERT INTO profile_exceptions
+				VALUES ('" . $profile_id . "', 'Users/User.php&category_id=1&schools', 'Y', 'Y');" );
+		}
+	}
+
+	/**
+	 * 2. Add Users/User.php&category_id=1&schools to staff_exceptions table.
+	 */
+	$as_staff_exceptions_exists = DBGet( DBQuery( "SELECT 1
+		FROM staff_exceptions
+		WHERE modname='Users/User.php&category_id=1&schools'" ) );
+
+	// Check if we have staff_exceptions.
+	$staff_exceptions_user_ids = DBGet( DBQuery( "SELECT user_id
+		FROM staff_exceptions
+		WHERE modname='Users/User.php&category_id=1'" ) );
+
+	if ( ! $as_staff_exceptions_exists
+		&& $staff_exceptions_user_ids )
+	{
+		foreach ( (array) $staff_exceptions_user_ids as $user_id )
+		{
+			DBQuery( "INSERT INTO staff_exceptions
+				VALUES ('" . $user_id['USER_ID'] . "', 'Users/User.php&category_id=1&schools', 'Y', 'Y');" );
+		}
+	}
+
+	return $return;
+}
+
+
+/**
+ * Update to version 2.9.14
+ *
+ * Add School Field types.
+ * 1. Add SELECT_OPTIONS column to SCHOOL_FIELDS table.
+ * Admin User Profile restriction.
+ * 2. Add Users/User.php&category_id=1&user_profile to profile_exceptions table.
+ * 3. Add Users/User.php&category_id=1&user_profile to staff_exceptions table.
+ *
+ * Local function
+ *
+ * @since 2.9.14
+ *
+ * @return boolean false if update failed or if not called by Update(), else true
+ */
+function _update2914()
+{
+	_isCallerUpdate( debug_backtrace() );
+
+	$return = true;
+
+	/**
+	 * 1. Add SELECT_OPTIONS column to SCHOOL_FIELDS table.
+	 */
+	$select_options_column_exists = DBGet( DBQuery( "SELECT 1 FROM pg_attribute
+		WHERE attrelid = (SELECT oid FROM pg_class WHERE relname = 'school_fields')
+		AND attname = 'select_options';" ) );
+
+	if ( ! $select_options_column_exists )
+	{
+		DBQuery( "ALTER TABLE ONLY school_fields
+			ADD COLUMN select_options character varying(10000);" );
+	}
+
+	/**
+	 * 2. Add Users/User.php&category_id=1&user_profile to profile_exceptions table.
+	 */
+	$admin_profiles_RET = DBGet( DBQuery( "SELECT id
+		FROM user_profiles
+		WHERE profile='admin'" ) );
+
+	foreach ( (array) $admin_profiles_RET as $admin_profile )
+	{
+		$profile_id = $admin_profile['ID'];
+
+		$up_profile_exceptions_exists = DBGet( DBQuery( "SELECT 1
+			FROM profile_exceptions
+			WHERE profile_id='" . $profile_id . "'
+			AND modname='Users/User.php&category_id=1&user_profile'" ) );
+
+		if ( ! $up_profile_exceptions_exists )
+		{
+			DBQuery( "INSERT INTO profile_exceptions
+				VALUES ('" . $profile_id . "', 'Users/User.php&category_id=1&user_profile', 'Y', 'Y');" );
+		}
+	}
+
+	/**
+	 * 3. Add Users/User.php&category_id=1&user_profile to staff_exceptions table.
+	 */
+	$up_staff_exceptions_exists = DBGet( DBQuery( "SELECT 1
+		FROM staff_exceptions
+		WHERE modname='Users/User.php&category_id=1&user_profile'" ) );
+
+	// Check if we have staff_exceptions.
+	$staff_exceptions_user_ids = DBGet( DBQuery( "SELECT user_id
+		FROM staff_exceptions
+		WHERE modname='Users/User.php&category_id=1'" ) );
+
+	if ( ! $up_staff_exceptions_exists
+		&& $staff_exceptions_user_ids )
+	{
+		foreach ( (array) $staff_exceptions_user_ids as $user_id )
+		{
+			DBQuery( "INSERT INTO staff_exceptions
+				VALUES ('" . $user_id['USER_ID'] . "', 'Users/User.php&category_id=1&user_profile', 'Y', 'Y');" );
+		}
+	}
+
+	return $return;
+}
+
+
+/**
+ * Update to version 3.0
+ *
+ * Add Access Log.
+ * 1. Add ACCESS_LOG table.
+ * Will not grant access to the program to Admins.
+ * Go to Users > User Profiles for that.
+ *
+ * Local function
+ *
+ * @since 3.0
+ *
+ * @return boolean false if update failed or if not called by Update(), else true
+ */
+function _update30()
+{
+	_isCallerUpdate( debug_backtrace() );
+
+	$return = true;
+
+	/**
+	 * 1. Add ACCESS_LOG table.
+	 */
+	$access_log_table_exists = DBGet( DBQuery( "SELECT 1
+		FROM pg_catalog.pg_tables
+		WHERE tablename  = 'access_log'" ) );
+
+	if ( ! $access_log_table_exists )
+	{
+		DBQuery( "CREATE TABLE access_log (
+			syear numeric(4,0),
+			username character varying(100),
+			profile character varying(30),
+			login_time timestamp(0) without time zone,
+			ip_address character varying(50),
+			user_agent text,
+			status character varying(50)
+		);" );
+	} else {
+
+		// Add user_agent column.
+		$user_agent_column_exists = DBGet( DBQuery( "SELECT 1 FROM pg_attribute
+			WHERE attrelid = (SELECT oid FROM pg_class WHERE relname = 'access_log')
+			AND attname = 'user_agent';" ) );
+
+		if ( ! $user_agent_column_exists )
+		{
+			DBQuery( "ALTER TABLE ONLY access_log
+				ADD COLUMN user_agent text;" );
+		}
+	}
+
+	return $return;
+}
+
+
+/**
+ * Update to version 3.1
+ *
+ * Fix SQL error when entering (Unweighted) GPA Value > 99.99
+ * 1. REPORT_CARD_GRADES table:
+ * Change gpa_value & unweighted_gp columns type to numeric
+ *
+ * 2. REPORT_CARD_GRADE_SCALES table:
+ * Change hhr_gpa_value & hr_gpa_value & hrs_gpa_value columns type to numeric
+ * Was numeric(4,2) which would prevent to enter values like 100 (or above).
+ *
+ * Add Mass Create Assignments program.
+ * 3. Add Grades/MassCreateAssignments.php to profile_exceptions table.
+ *
+ * Local function
+ *
+ * @since 3.1
+ *
+ * @return boolean false if update failed or if not called by Update(), else true
+ */
+function _update31()
+{
+	_isCallerUpdate( debug_backtrace() );
+
+	$return = true;
+
+	/**
+	 * 1. REPORT_CARD_GRADES table:
+	 * Change gpa_value & unweighted_gp columns type to numeric
+	 * Was numeric(4,2) which would prevent to enter values like 100.
+	 */
+	DBQuery( "ALTER TABLE report_card_grades
+		ALTER COLUMN gpa_value TYPE numeric;" );
+
+	DBQuery( "ALTER TABLE report_card_grades
+		ALTER COLUMN unweighted_gp TYPE numeric;" );
+
+	/**
+	 * 2. REPORT_CARD_GRADE_SCALES table:
+	 * Change hhr_gpa_value & hr_gpa_value & hrs_gpa_value columns type to numeric
+	 * Was numeric(4,2) which would prevent to enter values like 100 (or above).
+	 */
+	DBQuery( "ALTER TABLE report_card_grade_scales
+		ALTER COLUMN hhr_gpa_value TYPE numeric;" );
+
+	DBQuery( "ALTER TABLE report_card_grade_scales
+		ALTER COLUMN hr_gpa_value TYPE numeric;" );
+
+	DBQuery( "ALTER TABLE report_card_grade_scales
+		ALTER COLUMN hrs_gpa_value TYPE numeric;" );
+
+	/**
+	 * 3. Add Grades/MassCreateAssignments.php to profile_exceptions table.
+	 */
+	$admin_profiles_RET = DBGet( DBQuery( "SELECT id
+		FROM user_profiles
+		WHERE profile='admin'" ) );
+
+	foreach ( (array) $admin_profiles_RET as $admin_profile )
+	{
+		$profile_id = $admin_profile['ID'];
+
+		$mca_profile_exceptions_exists = DBGet( DBQuery( "SELECT 1
+			FROM profile_exceptions
+			WHERE profile_id='" . $profile_id . "'
+			AND modname='Grades/MassCreateAssignments.php'" ) );
+
+		if ( ! $mca_profile_exceptions_exists )
+		{
+			DBQuery( "INSERT INTO profile_exceptions
+				VALUES ('" . $profile_id . "', 'Grades/MassCreateAssignments.php', 'Y', 'Y');" );
+		}
 	}
 
 	return $return;

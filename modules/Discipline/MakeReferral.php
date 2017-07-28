@@ -1,6 +1,7 @@
 <?php
 
 require_once 'ProgramFunctions/MarkDownHTML.fnc.php';
+require_once 'ProgramFunctions/TipMessage.fnc.php';
 
 DrawHeader( ProgramTitle() );
 
@@ -52,7 +53,8 @@ if ( isset( $_POST['day_values'], $_POST['month_values'], $_POST['year_values'] 
 }
 
 if ( isset( $_POST['values'] )
-	&& count( $_POST['values'] ) )
+	&& count( $_POST['values'] )
+	&& UserStudentID() )
 {
 	$sql = "INSERT INTO DISCIPLINE_REFERRALS ";
 
@@ -94,7 +96,7 @@ if ( isset( $_POST['values'] )
 				$value = SanitizeMarkDown( $_POST['values'][ $column ] );
 			}
 
-			$fields .= $column.',';
+			$fields .= DBEscapeIdentifier( $column ) . ',';
 			if ( !is_array($value))
 				$values .= "'".str_replace('&quot;','"',$value)."',";
 			else
@@ -116,7 +118,7 @@ if ( isset( $_POST['values'] )
 
 	$values .= "'" . DBDate() . "',";
 
-	$sql .= '(' . mb_substr($fields,0,-1) . ') values(' . mb_substr($values,0,-1) . ')';
+	$sql .= '(' . mb_substr( $fields, 0, -1 ) . ') values(' . mb_substr( $values, 0, -1 ) . ')';
 
 	if ( $go)
 	{
@@ -140,10 +142,11 @@ if ( isset( $_POST['values'] )
 		$note[] = _('That discipline incident has been referred to an administrator.');
 	}
 
-	unset($_REQUEST['values']);
-	unset($_SESSION['_REQUEST_vars']['values']);
-	unset($_REQUEST['student_id']);
-	unset($_SESSION['student_id']);
+	// Unset values & student ID & redirect URL.
+	RedirectURL( 'values', 'student_id' );
+
+	// Unset current student ID.
+	unset( $_SESSION['student_id'] );
 }
 
 echo ErrorMessage( $error );
@@ -176,7 +179,10 @@ if (UserStudentID() && $_REQUEST['student_id'])
 		FROM STUDENTS
 		WHERE STUDENT_ID='" . UserStudentID() . "'" ) );
 
-	echo '<tr><td>' . NoInput( $student_name_RET[1]['FULL_NAME'], _( 'Student' ) ) . '</td></tr>';
+	echo '<tr><td>' . NoInput(
+		MakeStudentPhotoTipMessage( UserStudentID(), $student_name_RET[1]['FULL_NAME'] ),
+		_( 'Student' )
+	) . '</td></tr>';
 
 	echo '<tr><td>';
 
@@ -241,16 +247,32 @@ if (UserStudentID() && $_REQUEST['student_id'])
 
 	$value = $allow_na = $div = false;
 
-	// multiple select input
-	$extra = 'multiple title="' . _( 'Hold the CTRL key down to select multiple options' ) . '"';
+	// Chosen Multiple select inputs.
+	$extra = 'multiple';
 
 	echo '<table><tr class="st"><td>';
 
-	echo SelectInput( $value, 'emails[]', _( 'Administrators' ), $emailadmin_options, $allow_na, $extra, $div );
+	echo ChosenSelectInput(
+		$value,
+		'emails[]',
+		_( 'Administrators' ),
+		$emailadmin_options,
+		$allow_na,
+		$extra,
+		$div
+	);
 
 	echo '</td><td>';
 
-	echo SelectInput( $value, 'emails[]', _( 'Teachers' ), $emailteacher_options, $allow_na, $extra, $div );
+	echo ChosenSelectInput(
+		$value,
+		'emails[]',
+		_( 'Teachers' ),
+		$emailteacher_options,
+		$allow_na,
+		$extra,
+		$div
+	);
 
 	echo '</td></tr></table></td></tr>';
 
@@ -327,10 +349,16 @@ if (UserStudentID() && $_REQUEST['student_id'])
 				{
 					$i++;
 
-					if ( $i%3==0)
+					if ( $i % 3 == 0 )
+					{
 						echo '</tr><tr class="st">';
+					}
 
-					echo '<td><label><input type="checkbox" name="values[CATEGORY_'.$category['ID'].'][]" value="'.str_replace('"','&quot;',$option).'" />&nbsp;'.$option.'</label></td>';
+					echo '<td><label>
+						<input type="checkbox" name="values[CATEGORY_' . $category['ID'] . '][]"
+							value="' . htmlspecialchars( $option, ENT_QUOTES ) .'" />&nbsp;' .
+						( $option != '' ? $option : '-' ) .
+					'</label></td>';
 				}
 
 				echo '</tr></table>';
@@ -354,7 +382,11 @@ if (UserStudentID() && $_REQUEST['student_id'])
 					if ( $i%3==0)
 						echo '</tr><tr class="st">';
 
-					echo '<td><label><input type="radio" name="values[CATEGORY_'.$category['ID'].']" value="'.str_replace('"','&quot;',$option).'">&nbsp;'.$option.'</label></td>';
+					echo '<td><label>
+						<input type="radio" name="values[CATEGORY_' . $category['ID'] . ']"
+							value="' . htmlspecialchars( $option, ENT_QUOTES ) . '">&nbsp;' .
+						( $option != '' ? $option : '-' ) .
+					'</label></td>';
 				}
 
 				echo '</tr></table>';

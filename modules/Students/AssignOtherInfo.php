@@ -2,7 +2,10 @@
 
 require_once 'ProgramFunctions/Fields.fnc.php';
 
-if ( $_REQUEST['modfunc'] === 'save' )
+DrawHeader( ProgramTitle() );
+
+if ( $_REQUEST['modfunc'] === 'save'
+	&& AllowEdit() )
 {
 	// Add eventual Dates to $_REQUEST['values'].
 	if ( isset( $_POST['day_values'], $_POST['month_values'], $_POST['year_values'] ) )
@@ -114,13 +117,9 @@ if ( $_REQUEST['modfunc'] === 'save' )
 	else
 		$error[] = _('You must choose at least one field and one student');
 
-	unset($_REQUEST['modfunc']);
-	unset($_REQUEST['values']);
-	unset($_SESSION['_REQUEST_vars']['modfunc']);
-	unset($_SESSION['_REQUEST_vars']['values']);
+	// Unset modfunc & values & redirect URL.
+	RedirectURL( array( 'modfunc', 'values' ) );
 }
-
-DrawHeader(ProgramTitle());
 
 echo ErrorMessage( $error );
 
@@ -168,7 +167,7 @@ if ( ! $_REQUEST['modfunc'] )
 			echo '<option value="'.$category['ID'].'"'.($_REQUEST['category_id']==$category['ID']?' selected':'').'>'.ParseMLField($category['TITLE']).'</option>';
 		echo '</select>';
 
-		echo '</div><table class="widefat cellspacing-0 center col1-align-right">';
+		echo '</div><table class="widefat center col1-align-right">';
 
 		if ( isset( $fields_RET['text'] ) )
 		{
@@ -247,8 +246,8 @@ if ( ! $_REQUEST['modfunc'] )
 			}
 
 			// Get autos / edits pull-down edited options.
-			if ( $col['TYPE'] === 'autos'
-				|| $col['TYPE'] === 'edits' )
+			if ( $field['TYPE'] === 'autos'
+				|| $field['TYPE'] === 'edits' )
 			{
 				$sql_options = "SELECT DISTINCT s." . $col_name . ",upper(s." . $col_name . ") AS SORT_KEY
 					FROM STUDENTS s,STUDENT_ENROLLMENT sse
@@ -414,7 +413,7 @@ function _makeDateInput( $column )
 
 function _makeSelectInput( $column, $options )
 {
-	return SelectInput( '', 'values[' . $column . ']', '', $options, _( 'N/A' ), "style='max-width:190px;'" );
+	return SelectInput( '', 'values[' . $column . ']', '', $options, 'N/A', "style='max-width:190px;'" );
 }
 
 function _makeCheckboxInput( $column )

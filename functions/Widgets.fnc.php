@@ -66,7 +66,7 @@ function Widgets( $item, &$myextra = null )
 				return '<a onclick="switchMenu(this); return false;" href="#" class="switchMenu">
 					<b>' . $title . '</b></a>
 					<br />
-					<table class="widefat width-100p cellspacing-0 col1-align-right hide">';
+					<table class="widefat width-100p col1-align-right hide">';
 			};
 
 			$widget_wrap_footer = '</table>';
@@ -261,7 +261,7 @@ function Widgets( $item, &$myextra = null )
 						AND w_ss.SYEAR=ssm.SYEAR
 						AND w_ss.SCHOOL_ID=ssm.SCHOOL_ID
 						AND w_ss.COURSE_PERIOD_ID='" . $_REQUEST['w_course_period_id'] . "'
-						AND ('".DBDate()."'
+						AND ('" . DBDate() . "'
 							BETWEEN w_ss.START_DATE
 							AND w_ss.END_DATE
 							OR w_ss.END_DATE IS NULL)";
@@ -306,7 +306,8 @@ function Widgets( $item, &$myextra = null )
 					WHERE c.COURSE_ID='" . $_REQUEST['request_course_id'] . "'" ) );
 
 				// Request.
-				if ( ! $_REQUEST['not_request_course'] )
+				if ( ! isset( $_REQUEST['missing_request_course'] )
+					|| ! $_REQUEST['missing_request_course'] )
 				{
 					$extra['FROM'] .= ",SCHEDULE_REQUESTS sr";
 
@@ -731,8 +732,13 @@ function Widgets( $item, &$myextra = null )
 					WHERE SCHOOL_ID='" . UserSchool() . "'
 					AND SYEAR='" . UserSyear() . "'"), array(), array( 'ID' ) );
 
-				foreach ( (array) $_REQUEST['letter_grade'] as $grade => $Y )
+				foreach ( (array) $_REQUEST['letter_grade'] as $grade => $yes )
 				{
+					if ( ! $yes )
+					{
+						continue;
+					}
+
 					$letter_grades .= ",'" . $grade . "'";
 
 					$LetterGradeSearchTerms .= $letter_grades_RET[ $grade ][1]['TITLE'].', ';
@@ -742,7 +748,7 @@ function Widgets( $item, &$myextra = null )
 
 				if ( ! $extra['NoSearchTerms'] )
 				{
-					$_ROSARIO['SearchTerms'] = $LetterGradeSearchTerms;
+					$_ROSARIO['SearchTerms'] .= $LetterGradeSearchTerms;
 				}
 
 				$extra['WHERE'] .= " AND " . ( $_REQUEST['letter_grade_exclude'] == 'Y' ? 'NOT ' : '' ) . "EXISTS
@@ -1299,7 +1305,7 @@ function Widgets( $item, &$myextra = null )
 				{
 					case 'text':
 
-						$extra['search'] .= '<input type="text" name="discipline[' . $category['ID'] . ']" />';
+						$extra['search'] .= '<input type="text" name="discipline[' . $category['ID'] . ']" size="24" maxlength="255" />';
 
 						if ( $_REQUEST['discipline'][$category['ID']] )
 						{
@@ -1321,7 +1327,7 @@ function Widgets( $item, &$myextra = null )
 
 						if ( $_REQUEST['discipline'][$category['ID']] )
 						{
-							$extra['WHERE'] .= " AND dr.CATEGORY_" . $category['ID'] . " = 'Y' ";
+							$extra['WHERE'] .= " AND dr.CATEGORY_" . $category['ID'] . "='Y' ";
 
 							if ( ! $extra['NoSearchTerms'] )
 							{
@@ -1672,7 +1678,7 @@ function Widgets( $item, &$myextra = null )
 			<table class="cellspacing-0"><tr><td>
 			<label class="sizep2">&lt; <input type="radio" name="fsa_bal_ge" value="" checked /></label>
 			</td><td rowspan="2">
-			<input type="text" name="fsa_balance" size="10"' . ( $value ? ' value="' . $value . '"' : '' ) . ' />
+			<input type="text" name="fsa_balance" size="9" maxlength="9"' . ( $value ? ' value="' . $value . '"' : '' ) . ' />
 			</td></tr><tr><td>
 			<label class="sizep2">&ge; <input type="radio" name="fsa_bal_ge" value="Y" /></label>
 			</td></tr></table>

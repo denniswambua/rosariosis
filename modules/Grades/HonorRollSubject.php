@@ -23,8 +23,6 @@ if ( $_REQUEST['modfunc'] === 'save' )
 
 		$mp_RET = DBGet(DBQuery("SELECT TITLE,END_DATE FROM SCHOOL_MARKING_PERIODS WHERE MP='QTR' AND MARKING_PERIOD_ID='".UserMP()."'"));
 
-		$school_info_RET = DBGet(DBQuery("SELECT TITLE,PRINCIPAL FROM SCHOOLS WHERE ID='".UserSchool()."' AND SYEAR='".UserSyear()."'"));
-
 		$extra['SELECT'] .= ",(SELECT SORT_ORDER FROM SCHOOL_GRADELEVELS WHERE ID=ssm.GRADE_ID) AS SORT_ORDER";
 
 		$extra['SELECT'] .= ",(SELECT st.FIRST_NAME||coalesce(' '||st.MIDDLE_NAME||' ',' ')||st.LAST_NAME
@@ -89,7 +87,7 @@ if ( $_REQUEST['modfunc'] === 'save' )
 			$student['LAST_NAME'],
 			$student['MIDDLE_NAME'],
 			$student['GRADE_ID'],
-			$school_info_RET[1]['TITLE'],
+			SchoolInfo( 'TITLE' ),
 			$_REQUEST['subject']),$honor_roll_text);
 
 			echo '<tr><td>'.$honor_roll_text.'</td></tr></table>';
@@ -98,7 +96,10 @@ if ( $_REQUEST['modfunc'] === 'save' )
 			echo '<tr><td><span style="font-size:x-large;">'.$student['TEACHER'].'</span><br /><span style="font-size:medium;">'._('Teacher').'</span></td>';
 			echo '<td><span style="font-size:x-large;">'.$mp_RET[1]['TITLE'].'</span><br /><span style="font-size:medium;">'._('Marking Period').'</span></td></tr>';
 
-			echo '<tr><td><span style="font-size:x-large;">'.$school_info_RET[1]['PRINCIPAL'].'</span><br /><span style="font-size:medium;">'._('Principal').'</span></td>';
+			echo '<tr><td><span style="font-size:x-large;">' .
+				SchoolInfo( 'PRINCIPAL' ) . '</span><br />
+				<span style="font-size:medium;">' . _( 'Principal' ) . '</span></td>';
+
 			echo '<td><span style="font-size:x-large;">' .
 				ProperDate( $mp_RET[1]['END_DATE'] ) .
 				'</span><br />
@@ -129,15 +130,18 @@ if ( ! $_REQUEST['modfunc'] )
 			AND STAFF_ID IN (0,'" . User( 'STAFF_ID' ) . "')" ), array(), array( 'STAFF_ID' ) );
 
 		$extra['extra_header_left'] = '<table><tr class="st">
-		<td style="vertical-align: top;">'._('Text').'</td><td>' .
+		<td class="valign-top">' . _( 'Text' ) . '</td>
+		<td class="width-100p">' .
 		TinyMCEInput(
 			( isset( $templates[ User( 'STAFF_ID' ) ] ) ?
 				$templates[ User( 'STAFF_ID' ) ][1]['TEMPLATE'] :
 				$templates[0][1]['TEMPLATE'] ),
-			'honor_roll_text'
+			'honor_roll_text',
+			'',
+			'class="tinymce-horizontal"'
 		) . '</td></tr>';
 
-		$extra['extra_header_left'] .= '<tr class="st"><td style="vertical-align: top;">'._('Substitutions').':</td><td><table><tr class="st">';
+		$extra['extra_header_left'] .= '<tr class="st"><td class="valign-top">'._('Substitutions').':</td><td><table><tr class="st">';
 		$extra['extra_header_left'] .= '<td>__FULL_NAME__</td><td>= '._('Last, First M').'</td><td>&nbsp;</td>';
 		$extra['extra_header_left'] .= '<td>__LAST_NAME__</td><td>= '._('Last Name').'</td></tr>';
 

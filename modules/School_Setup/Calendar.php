@@ -55,22 +55,29 @@ if ( $_REQUEST['modfunc'] === 'create'
 		WHERE ac.SYEAR='" . UserSyear() . "'
 		AND s.STAFF_ID='" . User( 'STAFF_ID' ) . "'
 		AND (s.SCHOOLS IS NULL OR position(','||ac.SCHOOL_ID||',' IN s.SCHOOLS)>0)
-		ORDER BY " . db_case( array( 'ac.SCHOOL_ID', "'" . UserSchool() . "'", 0, 'ac.SCHOOL_ID' ) ) . ",ac.DEFAULT_CALENDAR ASC,ac.TITLE" ), array(), array( 'CALENDAR_ID' ) );
+		ORDER BY " . db_case( array( 'ac.SCHOOL_ID', "'" . UserSchool() . "'", 0, 'ac.SCHOOL_ID' ) ) . ",ac.DEFAULT_CALENDAR ASC,ac.TITLE" ) );
 
 	// Prepare table for Copy Calendar & add ' (Default)' mention.
 	$copy_calendar_options = array();
 
-	foreach ( (array) $title_RET as $id => $title )
+	$recreate_calendar = false;
+
+	foreach ( (array) $title_RET as $title )
 	{
-		$copy_calendar_options[ $id ] = $title[1]['TITLE'];
+		$copy_calendar_options[ $title['CALENDAR_ID'] ] = $title['TITLE'];
 
 		if ( AllowEdit()
-			&& $title[1]['DEFAULT_CALENDAR'] === 'Y'
-			&& $title[1]['SCHOOL_ID'] === UserSchool() )
+			&& $title['DEFAULT_CALENDAR'] === 'Y'
+			&& $title['SCHOOL_ID'] === UserSchool() )
 		{
-			$default_calendar = $title[1];
+			$copy_calendar_options[ $title['CALENDAR_ID'] ] .= ' (' . _( 'Default' ) . ')';
+		}
 
-			$copy_calendar_options[ $id ] .= ' (' . _( 'Default' ) . ')';
+		if ( AllowEdit()
+			&& isset( $_REQUEST['calendar_id'] )
+			&& $title['CALENDAR_ID'] == $_REQUEST['calendar_id'] )
+		{
+			$recreate_calendar = $title;
 		}
 	}
 
@@ -80,9 +87,9 @@ if ( $_REQUEST['modfunc'] === 'create'
 
 	// Title.
 	$message .= TextInput(
-		( $_REQUEST['calendar_id'] ? $default_calendar['TITLE'] : '' ),
+		( $recreate_calendar ? $recreate_calendar['TITLE'] : '' ),
 		'title',
-		'<span class="legend-red">' . _( 'Title' ) . '</span>',
+		_( 'Title' ),
 		'required',
 		$div
 	);
@@ -91,7 +98,7 @@ if ( $_REQUEST['modfunc'] === 'create'
 
 	// Default.
 	$message .= CheckboxInput(
-		$_REQUEST['calendar_id'] && $default_calendar['DEFAULT_CALENDAR'] == 'Y',
+		$recreate_calendar && $recreate_calendar['DEFAULT_CALENDAR'] == 'Y',
 		'default',
 		_( 'Default Calendar for this School' ),
 		'',
@@ -117,34 +124,34 @@ if ( $_REQUEST['modfunc'] === 'create'
 	$message .= '<table class="width-100p valign-top"><tr class="st"><td>' . _( 'From' ) . ' ';
 
 	$message .= DateInput(
-		$_REQUEST['calendar_id'] && $default_calendar['START_DATE'] ?
-			$default_calendar['START_DATE'] :
+		$recreate_calendar && $recreate_calendar['START_DATE'] ?
+			$recreate_calendar['START_DATE'] :
 			$fy['START_DATE'],
 		'min',
 		'',
 		$div,
 		true,
-		!( $_REQUEST['calendar_id'] && $default_calendar['START_DATE'] )
+		!( $recreate_calendar && $recreate_calendar['START_DATE'] )
 	);
 
 	// to date
 	$message .= '</td><td>' . _( 'To' )  . ' ';
 	$message .= DateInput(
-		$_REQUEST['calendar_id'] && $default_calendar['END_DATE'] ?
-			$default_calendar['END_DATE'] :
+		$recreate_calendar && $recreate_calendar['END_DATE'] ?
+			$recreate_calendar['END_DATE'] :
 			$fy['END_DATE'],
 		'max',
 		'',
 		$div,
 		true,
-		!( $_REQUEST['calendar_id'] && $default_calendar['END_DATE'] )
+		!( $recreate_calendar && $recreate_calendar['END_DATE'] )
 	);
 
 	$message .= '</td></tr></table>';
 
 	$message .= '<table class="width-100p valign-top"><tr class="st"><td>';
 
-	// weekdays
+	// Weekdays.
 	$weekdays = array(
 		_( 'Sunday' ),
 		_( 'Monday' ),
@@ -161,11 +168,13 @@ if ( $_REQUEST['modfunc'] === 'create'
 	{
 		$value = 'Y';
 
-		// unckeck Saturday & Sunday
+		// Unckeck Saturday & Sunday.
 		if ( ( $id === 0
 				|| $id === 6 )
-			&& $_REQUEST['calendar_id'] )
+			&& ! $recreate_calendar )
+		{
 			$value = 'N';
+		}
 
 		$weekdays_inputs[] .= CheckboxInput(
 			$value,
@@ -183,7 +192,7 @@ if ( $_REQUEST['modfunc'] === 'create'
 	$message .= '<table class="width-100p"><tr class="st valign-top"><td>';
 
 	// minutes
-	$minutes_tip_text = ( $_REQUEST['calendar_id'] ?
+	$minutes_tip_text = ( $recreate_calendar ?
 		_( 'Default is Full Day if Copy Calendar is N/A.' ) . ' ' . _( 'Otherwise Default is minutes from the Copy Calendar' ) :
 		_( 'Default is Full Day' )
 	);
@@ -257,7 +266,18 @@ if ( $_REQUEST['modfunc'] === 'create'
 		// Copy Calendar
 		if ( $_REQUEST['copy_id'] )
 		{
-			$weekdays_list = '\'' . implode( '\',\'', array_keys( $_REQUEST['weekdays'] ) ) . '\'';
+			$weekdays_list = array();
+
+			// FJ remove empty weekdays.
+			foreach ( (array) $_REQUEST['weekdays'] as $weekday_id => $yes )
+			{
+				if ( $yes )
+				{
+					$weekdays_list[] = $weekday_id;
+				}
+			}
+
+			$weekdays_list = "'" . implode( "','", $weekdays_list ) . "'";
 
 			if ( $_REQUEST['calendar_id']
 				&& $_REQUEST['calendar_id'] === $_REQUEST['copy_id'] )
@@ -371,16 +391,8 @@ if ( $_REQUEST['modfunc'] === 'create'
 		// Set Current Calendar
 		$_REQUEST['calendar_id'] = $calendar_id;
 
-		unset( $_REQUEST['modfunc'] );
-		unset( $_SESSION['_REQUEST_vars']['modfunc'] );
-		unset( $_REQUEST['weekdays']);
-		unset( $_SESSION['_REQUEST_vars']['weekdays'] );
-		unset( $_REQUEST['title'] );
-		unset( $_SESSION['_REQUEST_vars']['title'] );
-		unset( $_REQUEST['minutes'] );
-		unset( $_SESSION['_REQUEST_vars']['minutes'] );
-		unset( $_REQUEST['copy_id'] );
-		unset( $_SESSION['_REQUEST_vars']['copy_id'] );
+		// Unset modfunc & weekdays & title & minutes & copy ID & redirect URL.
+		RedirectURL( array( 'modfunc', 'weekdays', 'title', 'minutes', 'copy_id' ) );
 	}
 }
 
@@ -402,9 +414,8 @@ if ( $_REQUEST['modfunc'] === 'delete_calendar'
 			AND SCHOOL_ID='" . UserSchool() . "'
 			AND DEFAULT_CALENDAR='Y'" ) );
 
-		unset( $_REQUEST['calendar_id'] );
-		unset( $_REQUEST['modfunc'] );
-		unset( $_SESSION['_REQUEST_vars']['modfunc'] );
+		// Unset modfunc & calendar ID & redirect URL.
+		RedirectURL( array( 'modfunc', 'calendar_id' ) );
 	}
 }
 
@@ -447,7 +458,7 @@ if ( ! isset( $_REQUEST['calendar_id'] )
 			$_REQUEST['calendar_id'] = $calendars_RET[1]['CALENDAR_ID'];
 		}
 		else
-			$error[] = _( 'There are no calendars setup yet.' );
+			$no_calendars_error[] = _( 'There are no calendars setup yet.' );
 	}
 }
 
@@ -485,7 +496,7 @@ if ( $_REQUEST['modfunc'] === 'detail' )
 
 				foreach ( (array) $_REQUEST['values'] as $column => $value )
 				{
-					$sql .= $column . "='" . $value . "',";
+					$sql .= DBEscapeIdentifier( $column ) . "='" . $value . "',";
 				}
 
 				$sql = mb_substr( $sql, 0, -1 ) . " WHERE ID='" . $_REQUEST['event_id'] . "'";
@@ -562,14 +573,15 @@ if ( $_REQUEST['modfunc'] === 'detail' )
 </script>
 			<?php
 
-			unset( $_REQUEST['values'] );
-			unset( $_SESSION['_REQUEST_vars']['values'] );
+			// Unset values & redirect URL.
+			RedirectURL( 'values' );
 		}
 	}
 	// Delete Event
-	elseif ( $_REQUEST['button'] == _( 'Delete' ) )
+	elseif ( $_REQUEST['button'] == _( 'Delete' )
+		&& ! isset( $_REQUEST['delete_cancel'] ) )
 	{
-		if ( DeletePrompt( _( 'Event' ) ) )
+		if ( DeletePrompt( _( 'Event' ), 'Delete', false ) )
 		{
 			DBQuery( "DELETE FROM CALENDAR_EVENTS
 				WHERE ID='" . $_REQUEST['event_id'] . "'" );
@@ -586,10 +598,8 @@ if ( $_REQUEST['modfunc'] === 'detail' )
 </script>
 			<?php
 
-			unset( $_REQUEST['values'] );
-			unset( $_SESSION['_REQUEST_vars']['values'] );
-			unset( $_REQUEST['button'] );
-			unset( $_SESSION['_REQUEST_vars']['button'] );
+			// Unset button & values & redirect URL.
+			RedirectURL( array( 'button', 'values' ) );
 		}
 	}
 	// Display Event / Assignment
@@ -602,7 +612,7 @@ if ( $_REQUEST['modfunc'] === 'detail' )
 			{
 				$RET = DBGet( DBQuery( "SELECT TITLE,DESCRIPTION,SCHOOL_DATE
 					FROM CALENDAR_EVENTS
-					WHERE ID='" . $_REQUEST['event_id'] . "'"), array() );
+					WHERE ID='" . $_REQUEST['event_id'] . "'" ) );
 
 				$title = $RET[1]['TITLE'];
 			}
@@ -661,7 +671,7 @@ if ( $_REQUEST['modfunc'] === 'detail' )
 			'</a></td></tr>';
 		}
 
-		//FJ add event repeat
+		// FJ add event repeat.
 		if ( $_REQUEST['event_id'] === 'new' )
 		{
 			echo '<tr><td>
@@ -670,13 +680,13 @@ if ( $_REQUEST['modfunc'] === 'detail' )
 			'</td></tr>';
 		}
 
-		//hook
+		// Hook.
 		do_action( 'School_Setup/Calendar.php|event_field' );
 
 
 		// FJ bugfix SQL bug value too long for type character varying(50).
 		echo '<tr><td>' .
-			TextInput( $RET[1]['TITLE'], 'values[TITLE]', _( 'Title' ), 'required maxlength="50"' ) .
+			TextInput( $RET[1]['TITLE'], 'values[TITLE]', _( 'Title' ), 'required length="17" maxlength="50"' ) .
 		'</td></tr>';
 
 		// FJ add course.
@@ -717,10 +727,8 @@ if ( $_REQUEST['modfunc'] === 'detail' )
 		if ( $_REQUEST['event_id'] )
 			echo '</form>';
 
-		unset( $_REQUEST['values'] );
-		unset( $_SESSION['_REQUEST_vars']['values'] );
-		unset( $_REQUEST['button'] );
-		unset( $_SESSION['_REQUEST_vars']['button'] );
+		// Unset button & values & redirect URL.
+		RedirectURL( array( 'button', 'values' ) );
 	}
 }
 
@@ -816,8 +824,10 @@ if ( ! $_REQUEST['modfunc'] )
 
 	$last = 31;
 
-	while( !checkdate( $_REQUEST['month'], $last, $_REQUEST['year'] ) )
+	while( ! checkdate( $_REQUEST['month'], $last, $_REQUEST['year'] ) )
+	{
 		$last--;
+	}
 
 	$first_day_month = date( 'Y-m-d', $time );
 
@@ -843,6 +853,12 @@ if ( ! $_REQUEST['modfunc'] )
 	{
 		foreach ( (array) $_REQUEST['minutes'] as $date => $minutes )
 		{
+			// Fix SQL error when all-day checked & minutes.
+			if ( isset( $_REQUEST['all_day'][ $date ] ) )
+			{
+				continue;
+			}
+
 			if ( $calendar_RET[ $date ] )
 			{
 				//if ( $minutes!='0' && $minutes!='')
@@ -879,11 +895,11 @@ if ( ! $_REQUEST['modfunc'] )
 			}
 		}
 
-		unset( $_REQUEST['minutes'] );
-		unset( $_SESSION['_REQUEST_vars']['minutes'] );
+		// Unset minutes & redirect URL.
+		RedirectURL( 'minutes' );
 	}
 
-	// Update All day school
+	// Update All day school.
 	if ( isset( $_REQUEST['all_day'] ) )
 	{
 		foreach ( (array) $_REQUEST['all_day'] as $date => $yes )
@@ -897,7 +913,6 @@ if ( ! $_REQUEST['modfunc'] )
 						WHERE SCHOOL_DATE='" . $date . "'
 						AND SYEAR='" . UserSyear() . "'
 						AND SCHOOL_ID='" . UserSchool() . "'
-						AND CALENDAR_ID='" . $_REQUEST['calendar_id'] . "'
 						AND CALENDAR_ID='" . $_REQUEST['calendar_id'] . "'" );
 				}
 				else
@@ -919,8 +934,8 @@ if ( ! $_REQUEST['modfunc'] )
 			$update_calendar = true;
 		}
 
-		unset( $_REQUEST['all_day'] );
-		unset( $_SESSION['_REQUEST_vars']['all_day'] );
+		// Unset all day & redirect URL.
+		RedirectURL( 'all_day' );
 	}
 
 	// Update Blocks
@@ -941,8 +956,8 @@ if ( ! $_REQUEST['modfunc'] )
 			}
 		}
 
-		unset( $_REQUEST['blocks'] );
-		unset( $_SESSION['_REQUEST_vars']['blocks'] );
+		// Unset blocks & redirect URL.
+		RedirectURL( 'blocks' );
 	}
 
 	// Update Calendar RET
@@ -1017,6 +1032,12 @@ if ( ! $_REQUEST['modfunc'] )
 		);
 	}
 
+	if ( isset( $no_calendars_error ) )
+	{
+		// No calendars, die.
+		echo ErrorMessage( $no_calendars_error, 'fatal' );
+	}
+
 	echo '<br />';
 
 	// Get Events
@@ -1044,10 +1065,11 @@ if ( ! $_REQUEST['modfunc'] )
 	}
 	elseif ( User( 'PROFILE' ) === 'teacher' )
 	{
-		$assignments_SQL = "SELECT ASSIGNMENT_ID AS ID,a.DUE_DATE AS SCHOOL_DATE,a.TITLE,CASE WHEN a.ASSIGNED_DATE<=CURRENT_DATE OR a.ASSIGNED_DATE IS NULL THEN 'Y' ELSE NULL END AS ASSIGNED
+		$assignments_SQL = "SELECT ASSIGNMENT_ID AS ID,a.DUE_DATE AS SCHOOL_DATE,a.TITLE,
+				CASE WHEN a.ASSIGNED_DATE<=CURRENT_DATE OR a.ASSIGNED_DATE IS NULL THEN 'Y' ELSE NULL END AS ASSIGNED
 			FROM GRADEBOOK_ASSIGNMENTS a
 			WHERE a.STAFF_ID='" . User( 'STAFF_ID' ) . "'
-			AND a.DUE_DATE BETWEEN '".$first_day_month."' AND '" . $last_day_month . "'";
+			AND a.DUE_DATE BETWEEN '" . $first_day_month . "' AND '" . $last_day_month . "'";
 
 	}
 

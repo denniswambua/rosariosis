@@ -111,7 +111,10 @@ function TextInput( $value, $name, $title = '', $extra = '', $div = true )
 			$extra .= $value != '' ? ' size="' . min( mb_strlen( $value ), 32 ) . '"' : ' size="10"';
 		}
 
-		$input = '<input type="text" id="' . $id . '" name="' . $name . '" ' .
+		// Specify input type via $extra (email,...).
+		$type = mb_strpos( $extra, 'type=' ) === false ? 'type="text"' : '';
+
+		$input = '<input ' . $type . ' id="' . $id . '" name="' . $name . '" ' .
 			( $value || $value === '0' ? 'value="' . htmlspecialchars( $value, ENT_QUOTES ) . '"' : '' ) .
 			' ' . $extra . ' />' . $ftitle;
 
@@ -287,7 +290,7 @@ function TextAreaInput( $value, $name, $title = '', $extra = '', $div = true, $t
 		}
 		elseif ( $type === 'tinymce' )
 		{
-			$display_val = $value;
+			$display_val = '<div class="tinymce-html">' . $value . '</div>';
 		}
 		else
 			$display_val = nl2br( $value );
@@ -347,13 +350,15 @@ function TextAreaInput( $value, $name, $title = '', $extra = '', $div = true, $t
 /**
  * TinyMCE Input (HTML editor)
  *
- * Note: if you will pass additional CSS classes in the `$extra` paramenter
+ * Note: if you will pass additional CSS classes in the `$extra` parameter
+ * Add the `tinymce-horizontal` class for Horizontal PDF.
  * Do not forget the `tinymce` class required to trigger TinyMCE.
  *
  * @todo Fix <label>, see http://stackoverflow.com/questions/4258701/tinymce-accessibility-label-for
  * @todo Allow passing options to TinyMCE (plugins, ...)
  *
  * @example TinyMCEInput( $RET[1]['TEMPLATE'], 'tinymce_textarea' )
+ * @example TinyMCEInput( $html, 'tinymce_horizontal', _( 'Horizontal PDF' ), 'class="tinymce-horizontal"' )
  *
  * @uses TextAreaInput()
  *
@@ -380,12 +385,45 @@ function TinyMCEInput( $value, $name, $title = '', $extra = '' )
 
 	$type = 'tinymce';
 
+	$wrapper = '';
+
 	if ( mb_strpos( (string) $extra, 'class=' ) === false )
 	{
 		$extra = 'class="tinymce" ' . $extra;
 	}
+	else
+	{
+		// If has .tinymce-horizontal class, add wrapper, needed here.
+		if ( mb_strpos( (string) $extra, 'tinymce-horizontal' ) !== false )
+		{
+			$extra = str_replace(
+				'tinymce-horizontal',
+				'',
+				$extra
+			);
+
+			$wrapper = '<div class="tinymce-horizontal">';
+		}
+
+		$extra = str_replace(
+			array( 'class="', "class='" ),
+			array( 'class="tinymce ', "class='tinymce " ),
+			$extra
+		);
+	}
+
+	if ( mb_strpos( (string) $extra, 'required' ) !== false )
+	{
+		// Remove required attribute, TinyMCE bug.
+		$extra = str_replace( 'required', '', $extra );
+	}
 
 	$textarea = TextAreaInput( $value, $name, $title, $extra , $div, $type );
+
+	if ( $wrapper )
+	{
+		$textarea = $wrapper . $textarea . '</div>';
+	}
 
 	$tinymce_js = '';
 
@@ -427,9 +465,9 @@ function TinyMCEInput( $value, $name, $title = '', $extra = '' )
 <script src="assets/js/tinymce/tinymce.min.js"></script>
 <script>
 	tinymce.init({
-		selector:'.tinymce',
-		plugins : 'link image pagebreak paste table textcolor colorpicker code fullscreen hr media lists',
-		toolbar: "bold italic underline bullist numlist alignleft aligncenter alignright alignjustify link image forecolor backcolor code fullscreen",
+		selector: '.tinymce',
+		plugins: 'link image uploadimage pagebreak paste table textcolor colorpicker code fullscreen hr media lists',
+		toolbar: "bold italic underline bullist numlist alignleft aligncenter alignright alignjustify link image uploadimage forecolor backcolor code fullscreen",
 		menu: {
 			// file: {title: 'File', items: 'newdocument'},
 			edit: {title: 'Edit', items: 'undo redo | cut copy paste pastetext'},
@@ -437,13 +475,22 @@ function TinyMCEInput( $value, $name, $title = '', $extra = '' )
 			// view: {title: 'View', items: 'visualaid'},
 			format: {title: 'Format', items: 'formats | removeformat'}
 		},
-		pagebreak_separator : '<div style="page-break-after: always;"></div>',
-		language : <?php echo json_encode( $tinymce_language ); ?>,
-		directionality : <?php echo json_encode( $tinymce_directionality ); ?>
+		paste_data_images: true,
+		images_upload_handler: function (blobInfo, success, failure) {
+			success("data:" + blobInfo.blob().type + ";base64," + blobInfo.base64());
+		},
+		pagebreak_separator: '<div style="page-break-after: always;"></div>',
+		language: <?php echo json_encode( $tinymce_language ); ?>,
+		directionality : <?php echo json_encode( $tinymce_directionality ); ?>,
+		relative_urls: false,
+		// verify_html: false,
+		remove_script_host: false
 	});
 </script><!-- /TinyMCE -->
 
 		<?php $tinymce_js = ob_get_clean();
+
+		$js_included = true;
 	}
 
 	return $tinymce_js . $textarea;
@@ -525,7 +572,8 @@ function CheckboxInput( $value, $name, $title = '', $checked = '', $new = false,
 	{
 		$id = GetInputID( $name );
 
-		$checkbox = '<label class="checkbox-label">
+		$checkbox = '<input type="hidden" name="' . $name . '" value="" />' . // Save unchecked value!
+			'<label class="checkbox-label">
 			<input type="checkbox" name="' . $name . '" id="' . $id . '" value="Y"' . $checked . ' ' . $extra . ' />&nbsp;' .
 			$title . '</label>';
 
@@ -538,7 +586,6 @@ function CheckboxInput( $value, $name, $title = '', $checked = '', $new = false,
 		{
 			$return = InputDivOnclick(
 				$id,
-				'<input type="hidden" name="' . $name . '" value="" />' . // Save unchecked value!
 				$checkbox,
 				( $value ?
 					( $yes === 'Yes' ? _( 'Yes' ) : $yes ) :
@@ -790,6 +837,106 @@ function MLSelectInput( $value, $name, $title = '', $options, $allow_na = 'N/A',
 			$display_val = ParseMLField( $display_val, $locale );
 
 		$return = $display_val . $ftitle;
+	}
+
+	return $return;
+}
+
+
+/**
+ * SelectInput() wrapper which adds jQuery Chosen.
+ *
+ * Chosen is a library for making long, unwieldy select boxes more friendly.
+ * @link https://github.com/harvesthq/chosen
+ *
+ * @since 2.9.5
+ *
+ * @example ChosenSelectInput( $value, 'values[' . $id . '][' . $name . ']', '', $options, 'N/A', $extra )
+ *
+ * @uses SelectInput() to generate the Select input
+ *
+ * @param  string         $value    Input value.
+ * @param  string         $name     Input name.
+ * @param  string         $title    Input title (optional). Defaults to ''.
+ * @param  array          $options  Input options: array( option_value => option_text ).
+ * @param  string|boolean $allow_na Allow N/A (empty value); set to false to disallow (optional). Defaults to N/A.
+ * @param  string         $extra    Extra HTML attributes added to the input.
+ * @param  boolean        $div      Is input wrapped into <div onclick>? (optional). Defaults to true.
+ *
+ * @return string         Input HTML
+ */
+function ChosenSelectInput( $value, $name, $title = '', $options = array(), $allow_na = 'N/A', $extra = '', $div = true )
+{
+	static $chosen_included = false;
+
+	$js = '';
+
+	if ( ! $chosen_included
+		&& AllowEdit()
+		&& ! isset( $_REQUEST['_ROSARIO_PDF'] ) )
+	{
+
+		ob_start();	?>
+		<!-- Chosen -->
+		<script src="assets/js/jquery-chosen/chosen.jquery.min.js"></script>
+		<link rel="stylesheet" href="assets/js/jquery-chosen/chosen.min.css">
+		<script>
+			$(document).ready(function(){
+				$('.chosen-select').chosen('.chosen-select');
+			});
+		</script>
+		<?php $chosen_included = true;
+
+		$js = ob_get_clean();
+	}
+
+	// Right to left direction.
+	$RTL_languages = array( 'ar', 'he', 'dv', 'fa', 'ur' );
+
+	$chosen_rtl = in_array( mb_substr( $_SESSION['locale'], 0, 2 ), $RTL_languages ) ? ' chosen-rtl' : '';
+
+	if ( ! $extra
+		|| mb_strpos( $extra, 'class=' ) === false )
+	{
+		$extra .= ' class="chosen-select' . $chosen_rtl . '"';
+	}
+	elseif ( mb_strpos( $extra, 'class=' ) !== false )
+	{
+		$extra = str_replace(
+			array( 'class="', "class='" ),
+			array( 'class="chosen-select' . $chosen_rtl . ' ', "class='chosen-select" . $chosen_rtl . ' ' ),
+			$extra
+		);
+	}
+
+	// Translate default "Select Some Options" multiple placeholder.
+	if ( mb_strpos( $extra, 'multiple' ) !== false
+		&& mb_strpos( $extra, 'data-placeholder=' ) === false )
+	{
+		$extra .= ' data-placeholder="' . htmlspecialchars( _( 'Select some Options' ), ENT_QUOTES ) . '"';
+	}
+
+	$return = $js . SelectInput(
+		$value,
+		$name,
+		$title,
+		$options,
+		$allow_na,
+		$extra,
+		$div
+	);
+
+	if ( $value != ''
+		&& $div
+		&& AllowEdit()
+		&& ! isset( $_REQUEST['_ROSARIO_PDF'] ) )
+	{
+		$id = GetInputID( $name );
+
+		// On InputDivOnClick(), call Chosen.
+		$return .= '<script>$("#div' . $id . '").on("click", function(){
+			$("#' . $id . '").chosen();
+		});</script>';
 	}
 
 	return $return;
@@ -1107,13 +1254,9 @@ function FormatInputTitle( $title, $id = '', $required = false, $break = '<br />
 		return '';
 	}
 
-	// Check if span override
-	if ( mb_stripos( $title, '<span ' ) === false )
-	{
-		$class = $required && AllowEdit() ? 'legend-red' : 'legend-gray';
+	$class = $required && AllowEdit() ? 'legend-red' : 'legend-gray';
 
-		$title = '<span class="' . $class . '">' . $title . '</span>';
-	}
+	$title = '<span class="' . $class . '">' . $title . '</span>';
 
 	// Add label only if id attribute given
 	if ( $id !== '' )

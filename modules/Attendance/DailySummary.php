@@ -38,24 +38,33 @@ if ( empty( $end_date ) )
 	$end_date = DBDate();
 }
 
-if ( $_REQUEST['attendance'] && $_POST['attendance'] && AllowEdit())
+if ( $_REQUEST['attendance']
+	&& $_POST['attendance']
+	&& AllowEdit() )
 {
-	foreach ( (array) $_REQUEST['attendance'] as $student_id => $values)
+	foreach ( (array) $_REQUEST['attendance'] as $student_id => $values )
 	{
 		foreach ( (array) $values as $school_date => $columns)
 		{
 			$sql = "UPDATE ATTENDANCE_PERIOD SET ADMIN='Y',";
 
-			foreach ( (array) $columns as $column => $value)
-				$sql .= $column."='".$value."',";
+			foreach ( (array) $columns as $column => $value )
+			{
+				$sql .= DBEscapeIdentifier( $column ) . "='" . $value . "',";
+			}
 
 			$sql = mb_substr($sql,0,-1) . " WHERE SCHOOL_DATE='".$school_date."' AND PERIOD_ID='".$_REQUEST['period_id']."' AND STUDENT_ID='".$student_id."'";
 			DBQuery($sql);
 			UpdateAttendanceDaily($student_id,$school_date);
 		}
 	}
-	$current_RET = DBGet(DBQuery("SELECT ATTENDANCE_TEACHER_CODE,ATTENDANCE_CODE,ATTENDANCE_REASON,STUDENT_ID,ADMIN,COURSE_PERIOD_ID FROM ATTENDANCE_PERIOD WHERE SCHOOL_DATE='".$date."'"),array(),array('STUDENT_ID','COURSE_PERIOD_ID'));
-	unset($_REQUEST['attendance']);
+	$current_RET = DBGet( DBQuery( "SELECT ATTENDANCE_TEACHER_CODE,ATTENDANCE_CODE,
+		ATTENDANCE_REASON,STUDENT_ID,ADMIN,COURSE_PERIOD_ID
+		FROM ATTENDANCE_PERIOD
+		WHERE SCHOOL_DATE='" . $date . "'" ), array(), array( 'STUDENT_ID', 'COURSE_PERIOD_ID' ) );
+
+	// Unset attendance & redirect URL.
+	RedirectURL( 'attendance' );
 }
 
 //FJ bugfix bug when Back to Student Search
@@ -101,8 +110,13 @@ if ( $_REQUEST['search_modfunc'] || $_REQUEST['student_id'] || User('PROFILE')==
 	else
 		$period_select .= '<option value="PERIOD"'.($_REQUEST['period_id']?' selected':'').'>'._('By Period').'</option>';
 	$period_select .= '</select>';
-	echo '<form action="'.$PHP_tmp_SELF.'" method="POST">';
-	DrawHeader(_('Timeframe').': '.PrepareDate($start_date,'_start').' '._('to').' '.PrepareDate($end_date,'_end').' : '.$period_select.' : <input type="submit" value="'._('Go').'" />');
+
+	echo '<form action="' . $PHP_tmp_SELF . '" method="GET">';
+
+	DrawHeader( _( 'Timeframe' ) . ': ' . PrepareDate( $start_date, '_start' ) . ' ' .
+		_( 'to' ) . ' ' . PrepareDate( $end_date, '_end' ) . ' : ' .
+		$period_select . ' : ' . Buttons( _( 'Go' ) )
+	);
 }
 
 $cal_RET = DBGet(DBQuery("SELECT DISTINCT SCHOOL_DATE,'_'||to_char(SCHOOL_DATE,'yyyymmdd') AS SHORT_DATE FROM ATTENDANCE_CALENDAR WHERE SCHOOL_ID='".UserSchool()."' AND SCHOOL_DATE BETWEEN '".$start_date."' AND '".$end_date."' ORDER BY SCHOOL_DATE"));
@@ -178,8 +192,8 @@ if ( $_REQUEST['student_id'] || User('PROFILE')=='parent')
 	{
 		$school_date = ProperDate( $value['SCHOOL_DATE'], 'short' );
 
-		// 2 digits year to gain space.
-		$school_date = str_replace( date( 'Y' ), date( 'y' ), $school_date );
+		// Remove year to gain space.
+		$school_date = str_replace( date( 'Y' ), '', $school_date );
 
 		$columns[ $value['SHORT_DATE'] ] = ( isset( $_REQUEST['LO_save'] ) ?
 			strip_tags( $school_date ) :
@@ -198,10 +212,11 @@ else
 		$att_sql = "SELECT ad.STATE_VALUE,SCHOOL_DATE,'_'||to_char(ad.SCHOOL_DATE,'yyyymmdd') AS SHORT_DATE
 		FROM ATTENDANCE_DAY ad,STUDENT_ENROLLMENT ssm
 		WHERE ad.STUDENT_ID=ssm.STUDENT_ID
-		AND (('".DBDate()."' BETWEEN ssm.START_DATE AND ssm.END_DATE OR ssm.END_DATE IS NULL) AND '".DBDate()."'>=ssm.START_DATE)
-		AND ssm.SCHOOL_ID='".UserSchool()."'
-		AND ad.SCHOOL_DATE BETWEEN '".$start_date."'
-		AND '".$end_date."'
+		AND (('" . DBDate() . "' BETWEEN ssm.START_DATE AND ssm.END_DATE OR ssm.END_DATE IS NULL)
+			AND '" . DBDate() . "'>=ssm.START_DATE)
+		AND ssm.SCHOOL_ID='" . UserSchool() . "'
+		AND ad.SCHOOL_DATE BETWEEN '" . $start_date . "'
+		AND '" . $end_date . "'
 		AND ad.STUDENT_ID=";
 	}
 	else
@@ -209,8 +224,8 @@ else
 		$att_sql = "SELECT ap.ATTENDANCE_CODE,ap.SCHOOL_DATE,'_'||to_char(ap.SCHOOL_DATE,'yyyymmdd') AS SHORT_DATE
 		FROM ATTENDANCE_PERIOD ap,STUDENT_ENROLLMENT ssm
 		WHERE ap.STUDENT_ID=ssm.STUDENT_ID
-		AND ap.SCHOOL_DATE BETWEEN '".$start_date."'
-		AND '".$end_date."'
+		AND ap.SCHOOL_DATE BETWEEN '" . $start_date . "'
+		AND '" . $end_date . "'
 		AND ap.STUDENT_ID=";
 	}
 
@@ -249,13 +264,22 @@ function _makeColor($value,$column)
 	//FJ add translation:
 	$attendance_codes_locale = array('P' => _('Present'),'A' => _('Absent'),'H' => _('Half Day'));
 
-	if ( ! $att_RET[$THIS_RET['STUDENT_ID']])
-		$att_RET[$THIS_RET['STUDENT_ID']] = DBGet(DBQuery($att_sql.$THIS_RET['STUDENT_ID']),array(),array('SHORT_DATE'));
-
-	if ( $_REQUEST['period_id'])
+	if ( ! $att_RET[ $THIS_RET['STUDENT_ID'] ] )
 	{
-		if ( ! $attendance_codes)
-			$attendance_codes = DBGet(DBQuery("SELECT ID,DEFAULT_CODE,STATE_CODE,SHORT_NAME FROM ATTENDANCE_CODES WHERE SYEAR='".UserSyear()."' AND SCHOOL_ID='".UserSchool()."' AND TABLE_NAME='0'"),array(),array('ID'));
+		$att_RET[ $THIS_RET['STUDENT_ID'] ] = DBGet( DBQuery( $att_sql .
+			"'" . $THIS_RET['STUDENT_ID'] . "'" ), array(), array( 'SHORT_DATE' ) );
+	}
+
+	if ( $_REQUEST['period_id'] )
+	{
+		if ( ! $attendance_codes )
+		{
+			$attendance_codes = DBGet( DBQuery( "SELECT ID,DEFAULT_CODE,STATE_CODE,SHORT_NAME
+				FROM ATTENDANCE_CODES
+				WHERE SYEAR='" . UserSyear() . "'
+				AND SCHOOL_ID='" . UserSchool() . "'
+				AND TABLE_NAME='0'" ), array(), array( 'ID' ) );
+		}
 
 		$ac = $att_RET[$THIS_RET['STUDENT_ID']][ $column ][1]['ATTENDANCE_CODE'];
 		if ( $attendance_codes[ $ac ][1]['DEFAULT_CODE']=='Y')

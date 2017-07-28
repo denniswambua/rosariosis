@@ -89,9 +89,10 @@ if ( $_REQUEST['modfunc'] === 'save' )
 	}
 	else
 	{
-		$error[] = _('You must choose at least one user');
-		unset($_SESSION['_REQUEST_vars']['modfunc']);
-		unset($_REQUEST['modfunc']);
+		$error[] = _( 'You must choose at least one user' );
+
+		// Unset modfunc & redirect URL.
+		RedirectURL( 'modfunc' );
 	}
 }
 

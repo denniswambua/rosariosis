@@ -2,15 +2,17 @@
 
 DrawHeader(ProgramTitle());
 
-if ( $_REQUEST['modfunc']=='update')
+if ( $_REQUEST['modfunc'] === 'update' )
 {
-	if ( $_REQUEST['values'] && $_POST['values'] && AllowEdit())
+	if ( $_REQUEST['values']
+		&& $_POST['values']
+		&& AllowEdit() )
 	{
 		if ( $_REQUEST['tab_id'])
 		{
 			foreach ( (array) $_REQUEST['values'] as $id => $columns)
 			{
-		//FJ fix SQL bug invalid sort order
+				// FJ fix SQL bug invalid sort order.
 				if (empty($columns['SORT_ORDER']) || is_numeric($columns['SORT_ORDER']))
 				{
 					if ( $id!='new')
@@ -21,7 +23,7 @@ if ( $_REQUEST['modfunc']=='update')
 							$sql = "UPDATE FOOD_SERVICE_MENUS SET ";
 
 						foreach ( (array) $columns as $column => $value)
-							$sql .= $column."='".$value."',";
+							$sql .= DBEscapeIdentifier( $column ) . "='" . $value . "',";
 
 						if ( $_REQUEST['tab_id']!='new')
 							$sql = mb_substr($sql,0,-1) . " WHERE CATEGORY_ID='".$id."'";
@@ -29,7 +31,8 @@ if ( $_REQUEST['modfunc']=='update')
 							$sql = mb_substr($sql,0,-1) . " WHERE MENU_ID='".$id."'";
 						DBQuery($sql);
 					}
-					else
+					// New: check for Title
+					elseif ( $columns['TITLE'] )
 					{
 						if ( $_REQUEST['tab_id']!='new')
 						{
@@ -48,11 +51,11 @@ if ( $_REQUEST['modfunc']=='update')
 						foreach ( (array) $columns as $column => $value)
 							if ( !empty($value) || $value=='0')
 							{
-								$fields .= $column.',';
-								$values .= '\''.$value.'\',';
+								$fields .= DBEscapeIdentifier( $column ) . ',';
+								$values .= "'" . $value . "',";
 								$go = true;
 							}
-						$sql .= '(' . mb_substr($fields,0,-1) . ') values(' . mb_substr($values,0,-1) . ')';
+						$sql .= '(' . mb_substr( $fields, 0, -1 ) . ') values(' . mb_substr( $values, 0, -1 ) . ')';
 
 						if ( $go)
 							DBQuery($sql);
@@ -63,10 +66,13 @@ if ( $_REQUEST['modfunc']=='update')
 			}
 		}
 	}
-	unset($_REQUEST['modfunc']);
+
+	// Unset modfunc & redirect URL.
+	RedirectURL( 'modfunc' );
 }
 
-if ( $_REQUEST['modfunc']=='remove' && AllowEdit())
+if ( $_REQUEST['modfunc'] === 'remove'
+	&& AllowEdit() )
 {
 	if ( $_REQUEST['tab_id']!='new')
 	{
@@ -79,24 +85,23 @@ if ( $_REQUEST['modfunc']=='remove' && AllowEdit())
 			DBQuery( "DELETE FROM FOOD_SERVICE_CATEGORIES
 				WHERE CATEGORY_ID='" . $_REQUEST['category_id'] . "'" );
 
-			$_REQUEST['modfunc'] = false;
+			// Unset modfunc & category ID & redirect URL.
+			RedirectURL( array( 'modfunc', 'category_id' ) );
 		}
 	}
-	else
+	elseif ( DeletePrompt( _( 'Meal' ) ) )
 	{
-		if ( DeletePrompt( _( 'Meal' ) ) )
-		{
-			DBQuery( "DELETE FROM FOOD_SERVICE_MENU_ITEMS
-				WHERE MENU_ID='" . $_REQUEST['menu_id'] . "'" );
+		DBQuery( "DELETE FROM FOOD_SERVICE_MENU_ITEMS
+			WHERE MENU_ID='" . $_REQUEST['menu_id'] . "'" );
 
-			DBQuery( "DELETE FROM FOOD_SERVICE_CATEGORIES
-				WHERE MENU_ID='" . $_REQUEST['menu_id'] . "'" );
+		DBQuery( "DELETE FROM FOOD_SERVICE_CATEGORIES
+			WHERE MENU_ID='" . $_REQUEST['menu_id'] . "'" );
 
-			DBQuery( "DELETE FROM FOOD_SERVICE_MENUS
-				WHERE MENU_ID='" . $_REQUEST['menu_id'] . "'" );
+		DBQuery( "DELETE FROM FOOD_SERVICE_MENUS
+			WHERE MENU_ID='" . $_REQUEST['menu_id'] . "'" );
 
-			$_REQUEST['modfunc'] = false;
-		}
+		// Unset modfunc & menu ID & redirect URL.
+		RedirectURL( array( 'modfunc', 'menu_id' ) );
 	}
 }
 
@@ -139,34 +144,70 @@ if ( ! $_REQUEST['modfunc'] )
 	if ( $_REQUEST['tab_id']!='new')
 	{
 		$sql = 'SELECT * FROM FOOD_SERVICE_CATEGORIES WHERE MENU_ID=\''.$_REQUEST['tab_id'].'\' AND SCHOOL_ID=\''.UserSchool().'\' ORDER BY SORT_ORDER';
-		$functions = array('TITLE' => 'makeTextInput','SORT_ORDER' => 'makeTextInput');
 
-		$LO_columns = array('TITLE'=>sprintf(_('%s Category'),$menus_RET[$_REQUEST['tab_id']][1]['TITLE']),'SORT_ORDER' => _('Sort Order'));
+		$functions = array(
+			'TITLE' => '_makeTextInput',
+			'SORT_ORDER' => '_makeTextInput',
+		);
 
-		$link['add']['html'] = array('TITLE'=>makeTextInput('','TITLE'),'SORT_ORDER'=>makeTextInput('','SORT_ORDER'));
-		$link['remove']['link'] = 'Modules.php?modname='.$_REQUEST['modname'].'&modfunc=remove&tab_id='.$_REQUEST['tab_id'].'&category_id='.$_REQUEST['category_id'];
-		$link['remove']['variables'] = array('category_id' => 'CATEGORY_ID');
-		$link['add']['html']['remove'] = button('add');
+		$LO_columns = array(
+			'TITLE' => sprintf( _( '%s Category' ), $menus_RET[ $_REQUEST['tab_id'] ][1]['TITLE'] ),
+			'SORT_ORDER' => _( 'Sort Order' ),
+		);
 
-		$tabs[] = array('title'=>button('add', '', '', 'smaller'),'link' => 'Modules.php?modname='.$_REQUEST['modname'].'&tab_id=new');
+		$link['add']['html'] = array(
+			'TITLE' => _makeTextInput( '', 'TITLE' ),
+			'SORT_ORDER' => _makeTextInput( '', 'SORT_ORDER' ),
+		);
 
-		$singular = sprintf(_('%s Category'), $menus_RET[$_REQUEST['tab_id']][1]['TITLE']);
-		$plural = sprintf(_('%s Categories'), $menus_RET[$_REQUEST['tab_id']][1]['TITLE']);
+		$link['remove']['link'] = 'Modules.php?modname=' . $_REQUEST['modname'] .
+			'&modfunc=remove&tab_id=' . $_REQUEST['tab_id'] .
+			'&category_id=' . $_REQUEST['category_id'];
+
+		$link['remove']['variables'] = array( 'category_id' => 'CATEGORY_ID' );
+
+		$link['add']['html']['remove'] = button( 'add' );
+
+		$tabs[] = array(
+			'title' => button( 'add', '', '', 'smaller' ),
+			'link' => 'Modules.php?modname=' . $_REQUEST['modname'] . '&tab_id=new',
+		);
+
+		$singular = sprintf( _( '%s Category' ), $menus_RET[ $_REQUEST['tab_id'] ][1]['TITLE'] );
+
+		$plural = sprintf( _( '%s Categories' ), $menus_RET[ $_REQUEST['tab_id'] ][1]['TITLE'] );
 	}
 	else
 	{
 		$sql = 'SELECT * FROM FOOD_SERVICE_MENUS WHERE SCHOOL_ID=\''.UserSchool().'\' ORDER BY SORT_ORDER';
-		$functions = array('TITLE' => 'makeTextInput','SORT_ORDER' => 'makeTextInput');
-		$LO_columns = array('TITLE' => _('Meal'),'SORT_ORDER' => _('Sort Order'));
 
-		$link['add']['html'] = array('TITLE'=>makeTextInput('','TITLE'),'SORT_ORDER'=>makeTextInput('','SORT_ORDER'));
-		$link['remove']['link'] = 'Modules.php?modname='.$_REQUEST['modname'].'&modfunc=remove&tab_id=new';
-		$link['remove']['variables'] = array('menu_id' => 'MENU_ID');
-		$link['add']['html']['remove'] = button('add');
+		$functions = array(
+			'TITLE' => '_makeTextInput',
+			'SORT_ORDER' => '_makeTextInput',
+		);
 
-		$tabs[] = array('title'=>button('add', '', '', 'smaller'),'link' => 'Modules.php?modname='.$_REQUEST['modname'].'&tab_id=new');
+		$LO_columns = array(
+			'TITLE' => _( 'Meal' ),
+			'SORT_ORDER' => _( 'Sort Order' ),
+		);
+
+		$link['add']['html'] = array(
+			'TITLE' => _makeTextInput( '', 'TITLE' ),
+			'SORT_ORDER' => _makeTextInput( '', 'SORT_ORDER' ),
+		);
+
+		$link['remove']['link'] = 'Modules.php?modname=' . $_REQUEST['modname'] . '&modfunc=remove&tab_id=new';
+
+		$link['remove']['variables'] = array( 'menu_id' => 'MENU_ID' );
+
+		$link['add']['html']['remove'] = button( 'add' );
+
+		$tabs[] = array( 'title' => button( 'add', '', '', 'smaller' ),
+			'link' => 'Modules.php?modname=' . $_REQUEST['modname'] . '&tab_id=new',
+		);
 	}
-	$LO_ret = DBGet(DBQuery($sql),$functions);
+
+	$LO_ret = DBGet( DBQuery( $sql ), $functions );
 
 	echo '<form action="Modules.php?modname='.$_REQUEST['modname'].'&modfunc=update&tab_id='.$_REQUEST['tab_id'].'" method="POST">';
 	DrawHeader('',SubmitButton(_('Save')));
@@ -184,22 +225,40 @@ if ( ! $_REQUEST['modfunc'] )
 	echo '</form>';
 }
 
-function makeTextInput($value,$name)
-{	global $THIS_RET;
+function _makeTextInput( $value, $name )
+{
+	global $THIS_RET;
 
-	if ( $THIS_RET['CATEGORY_ID'])
+	if ( $THIS_RET['CATEGORY_ID'] )
+	{
 		$id = $THIS_RET['CATEGORY_ID'];
-	elseif ( $THIS_RET['MENU_ID'])
+	}
+	elseif ( $THIS_RET['MENU_ID'] )
+	{
 		$id = $THIS_RET['MENU_ID'];
+	}
 	else
+	{
 		$id = 'new';
+	}
 
-	if ( $name=='TITLE')
+	if ( $name === 'TITLE' )
+	{
 		$extra = 'size=20 maxlength=25';
-	elseif ( $name=='SORT_ORDER')
-		$extra = 'size=6 maxlength=8';
-	else
-		$extra = 'size=8 maxlength=8';
 
-	return TextInput($value,'values['.$id.']['.$name.']','',$extra);
+		if ( $id !== 'new' )
+		{
+			$extra .= ' required';
+		}
+	}
+	elseif ( $name === 'SORT_ORDER' )
+	{
+		$extra = 'size=6 maxlength=8';
+	}
+	else
+	{
+		$extra = 'size=8 maxlength=8';
+	}
+
+	return TextInput( $value, 'values[' . $id . '][' . $name . ']', '', $extra );
 }

@@ -133,14 +133,14 @@ function ProperDateTime( $datetime, $length = 'long' )
 
 	$locale_time = strftime( '%X', $time );
 
+	$date = mb_substr( $datetime, 0, 10 );
+
 	if ( $length === 'short'
 		&& DBDate() === $date )
 	{
 		// Today: only time!
 		return $locale_time;
 	}
-
-	$date = mb_substr( $datetime, 0, 10 );
 
 	return ProperDate( $date, $length ) . ' ' . $locale_time;
 }
@@ -265,7 +265,9 @@ function PrepareDate( $date, $name_attr = '', $allow_na = true, $options = array
 		$extraY .= $e;
 	}
 
-	$_ROSARIO['PrepareDate']++;
+	$_ROSARIO['PrepareDate'] = isset( $_ROSARIO['PrepareDate'] ) ?
+		++$_ROSARIO['PrepareDate'] :
+		1;
 
 	// Required fields.
 	if ( $options['required'] )
@@ -403,6 +405,8 @@ function PrepareDate( $date, $name_attr = '', $allow_na = true, $options = array
 /**
  * Explode a ISO or Oracle date
  *
+ * @todo use strtotime()?
+ *
  * @param  string $date Postgres or Oracle date.
  *
  * @return array  array( 'year' => '4_digits_year', 'month' => 'numeric_month', 'day' => 'day' )
@@ -417,7 +421,7 @@ function ExplodeDate( $date )
 	{
 		$year = mb_substr( $date, 7, 2 );
 
-		$year = ( $year < 50 && $year > 0 ? '20' : '19' ) . $year;
+		$year = ( $year < 30 ? '20' : '19' ) . $year;
 
 		$month = MonthNWSwitch( mb_substr( $date, 3, 3 ), 'tonum' );
 
@@ -432,6 +436,30 @@ function ExplodeDate( $date )
 
 		$day = mb_substr( $date, 8, 2 );
 
+		if ( ! is_numeric( $year )
+			&& is_numeric( mb_substr( $date, 6, 4 ) ) )
+		{
+			if ( mb_substr( $date, 2, 1 ) === '/' )
+			{
+				// US Format: MM/DD/YYYY.
+				$year = mb_substr( $date, 6, 4 );
+
+				$month = mb_substr( $date, 0, 2 );
+
+				$day = mb_substr( $date, 3, 2 );
+			}
+
+			if ( mb_substr( $date, 2, 1 ) === '-'
+				|| $month > 12 )
+			{
+				// European Format: DD-MM-YYYY.
+				$year = mb_substr( $date, 6, 4 );
+
+				$month = mb_substr( $date, 3, 2 );
+
+				$day = mb_substr( $date, 0, 2 );
+			}
+		}
 	}
 	// Oracle with 4-digits year DD-MMM-YYYY.
 	elseif ( mb_strlen( $date ) === 11 )
@@ -439,6 +467,18 @@ function ExplodeDate( $date )
 		$year = mb_substr( $date, 7, 4 );
 
 		$month = MonthNWSwitch( mb_substr( $date, 3, 3 ), 'tonum' );
+
+		$day = mb_substr( $date, 0, 2 );
+	}
+	// Short European Format: DD-MM-YY.
+	elseif ( mb_strlen( $date ) === 8 )
+	{
+		$year = mb_substr( $date, 6, 2 );
+
+		// Add 19 or 20 to complete 4 digits year.
+		$year .= 30 >= $year ? '19' : '20';
+
+		$month = mb_substr( $date, 3, 2 );
 
 		$day = mb_substr( $date, 0, 2 );
 	}

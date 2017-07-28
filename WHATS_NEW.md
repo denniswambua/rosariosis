@@ -2,17 +2,129 @@
 
 ## RosarioSIS Student Information System
 
+New in 3.4
+----------
+
+New [PDF Header Footer](https://github.com/francoisjacquet/PDF_Header_Footer) plugin
+
+[New translations](locale/REFERENCE.md) (37% completed)
+
+- Afrikaans (South Africa)
+- Arabic (Saudi Arabia)
+- Belarusian (Belarus)
+- Czech (Czech Republic)
+- Greek (Greece)
+- Estonian (Estonia)
+- Finnish (Finland)
+- Irish (Ireland)
+- Galician
+- Croatian (Croatia)
+- Hungarian (Hungary)
+- Indonesian (Indonesia)
+- Icelandic (Iceland)
+- Lithuanian (Lithuania)
+- Latvian (Latvia)
+- Macedonian (Macedonia)
+- Dutch (Netherlands)
+- Norwegian Nynorsk (Norway)
+- Polish (Poland)
+- Romanian (Romania)
+- Slovak (Slovakia)
+- Slovenian (Slovenia)
+- Albanian (Albania)
+- Serbian (Cyrillic, Bosnia)
+- Swedish (Sweden)
+- Thai (Thailand)
+- Ukrainian (Ukraine)
+- Vietnamese (Vietnam)
+- Walloon (Belgium)
+- Chinese (Traditional, Taiwan)
+
+
+New in 3.3
+----------
+
+New File Uploads folder in `assets/FileUploads/`.
+
+.jpg, .png, .gif formats are now accepted for Student / User photos.
+The 2MB size limit was removed.
+
+Automatically resize & compress uploaded images.
+[PNGQuant](INSTALL.md#optional-variables) can be used for PNG compression.
+
+Up to 4x speed & memory gain (DBGet core function)
+
+Usability improvements
+
+
+New in 3.2
+----------
+
+Scheduling
+
+- Requests: Students & Parents can Edit
+
+
+New in 3.1
+----------
+
+Grades
+
+- Mass Create Assignments
+
+
+New in 3.0
+----------
+
+School Setup
+
+- Access Log
+- Marking Periods
+	- Access granted to parents & students
+
+Users
+
+- My Preferences
+	- Student Fields: search Username
+
+Performance
+
+- 90% gain when updating Side menu
+- Cache system ([ETag](https://en.wikipedia.org/wiki/HTTP_ETag))
+
+Upload images in text editor (TinyMCE)
+
+
 New in 2.9
 ----------
+Students
+
+- (Custom) Registration (for parents or students to register their contacts)
+
+School Setup
+
+- Configuration
+	- Limit Existing Contacts & Addresses to current school
+	- Force Default Theme
+
 Users
 
 - My Preferences
 	- Export Listings in XML format
+	- User Fields: search Email Address & Phone
+
+Scheduling
+
+- Group Schedule
+	- Schedule multiple courses
 
 Grades
 
 - Student Assignments
 	- Submit Assignment
+
+- Grading Scales
+	- Minimum Passing Grade
 
 Student Billing & Accounting
 
@@ -23,6 +135,10 @@ Password Reset feature
 [MarkDown](https://github.com/francoisjacquet/rosariosis/wiki/Markdown-Cheatsheet) support for Large text fields
 
 Automatic database upgrade
+
+French help
+
+Khmer / Cambodian translation
 
 
 New in 2.8

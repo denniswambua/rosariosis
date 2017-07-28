@@ -1,11 +1,16 @@
 <?php
 
+DrawHeader( ProgramTitle() );
+
 if (count($_REQUEST['mp_arr']))
 {
-        foreach ( (array) $_REQUEST['mp_arr'] as $mp)
-                $mp_list .= ",'".$mp."'";
-        $mp_list = mb_substr($mp_list,1);
-        $last_mp = $mp;
+	foreach ( (array) $_REQUEST['mp_arr'] as $mp )
+	{
+		$mp_list .= ",'".$mp."'";
+	}
+
+	$mp_list = mb_substr($mp_list,1);
+	$last_mp = $mp;
 }
 
 //Widgets('course');
@@ -14,7 +19,7 @@ if (count($_REQUEST['mp_arr']))
 //Widgets('letter_grade');
 
 
-if ( $_REQUEST['delete']=='true')
+if ( $_REQUEST['delete'] === 'true' )
 {
 	//DeletePrompt(_('Duplicate Attendance Record'));
 	if ( !empty($_REQUEST['deletecheck']))
@@ -82,12 +87,19 @@ if ( $_REQUEST['delete']=='true')
 	else
 		$error[] = _('You must choose at least one student.');
 
-	unset($_REQUEST['delete']);
+	if ( $note
+		|| $error )
+	{
+		// Unset delete & redirect URL.
+		RedirectURL( 'delete' );
+	}
 }
 
-if (isset($_REQUEST['search_modfunc']) && $_REQUEST['search_modfunc']=='list' && $_REQUEST['delete']!='true')
+if ( isset( $_REQUEST['search_modfunc'] )
+	&& $_REQUEST['search_modfunc'] === 'list'
+	&& $_REQUEST['delete'] !== 'true' )
 {
-	$RET = GetStuList($extra);
+	$RET = GetStuList( $extra );
 
 	if (isset($_REQUEST['page']))
 	{
@@ -182,8 +194,6 @@ if (isset($_REQUEST['search_modfunc']) && $_REQUEST['search_modfunc']=='list' &&
 
 		$result1 = GetStuList($extra);
 
-		DrawHeader(ProgramTitle());
-
 		echo ErrorMessage( $error );
 
 		echo ErrorMessage( $note, 'note' );
@@ -199,7 +209,8 @@ if (isset($_REQUEST['search_modfunc']) && $_REQUEST['search_modfunc']=='list' &&
 			$totalpages = $num_rows/$rows_per_page;
 			$totalpages = ceil($totalpages);
 
-			echo '<span class="center">'._('Page').': ';
+			echo '<br />';
+			echo '<div class="center">'._('Page').': ';
 			$first = 0;
 			$ii = 1;
 			for ( $i=0;$i<$totalpages;$i++)
@@ -219,14 +230,12 @@ if (isset($_REQUEST['search_modfunc']) && $_REQUEST['search_modfunc']=='list' &&
 			}
 
 			echo sprintf(_('of %d pages.'), $totalpages);
+			echo '</div>';
 		}
 
-
-		echo '<br />';
-		//FJ css WPadmin
-		echo '<br />&nbsp;<br /><table class="widefat cellspacing-0 rt center">';
+		echo '<br /><table class="widefat rt center">';
 		echo '<thead><tr><th class="column_heading"><input type="checkbox" value="Y" name="controller" onclick="checkAll(this.form,this.checked,\'deletecheck\');" /> &nbsp</th>';
-		//FJ add translation
+
 		echo '<th>'._('Student').' ('.sprintf(_('%s ID'),Config('NAME')).')</th>';
 		echo '<th>'._('Course').' ('._('Course Period ID').')</th>';
 		echo '<th>'._('Course Start Date').'</th>';
@@ -281,7 +290,14 @@ if (isset($_REQUEST['search_modfunc']) && $_REQUEST['search_modfunc']=='list' &&
 						   $yellow = 0;
 					}
 
-					echo '<tr><td><input type="checkbox" name="deletecheck['.$count.']" value="'.$count.'"></td><td><span class="size-1">'.$first.' '.$last.' ('.$studentid.')</td><td><span class="size-1">'.$short_name.' ('.$courseid.')</td><td><span class="size-1">'.$start.' &nbsp</td><td><span class="size-1">'.$end.' &nbsp</td><td><span class="size-1">'.$schooldate.'</td></tr>';
+					echo '<tr>
+						<td><input type="checkbox" name="deletecheck[' . $count . ']" value="' . $count . '"></td>
+						<td>' . $first . ' ' . $last . ' (' . $studentid . ')</td>
+						<td>' . $short_name . ' (' .$courseid . ')</td>
+						<td>' . ProperDate( $start ) . '</td>
+						<td>' . ProperDate( $end ) . '</td>
+						<td>' . ProperDate( $schooldate ) . '</td>
+					</tr>';
 
 					$count++;
 				}
@@ -311,7 +327,14 @@ if (isset($_REQUEST['search_modfunc']) && $_REQUEST['search_modfunc']=='list' &&
 						   $yellow = 0;
 					}
 
-					echo '<tr><td><input type="checkbox" name="deletecheck['.$count.']" value="'.$count.'"></td><td><span class="size-1">'.$first.' '.$last.' ('.$studentid.')</td><td><span class="size-1">'.$short_name.' ('.$courseid.')</td><td><span class="size-1">'.$start.' &nbsp</td><td><span class="size-1">'.$end.' &nbsp</td><td><span class="size-1">'.$schooldate.'</td></tr>';
+					echo '<tr>
+						<td><input type="checkbox" name="deletecheck[' . $count . ']" value="' . $count . '"></td>
+						<td>' . $first . ' ' . $last . ' (' . $studentid . ')</td>
+						<td>' . $short_name . ' (' . $courseid . ')</td>
+						<td>' . ProperDate( $start ) . '</td>
+						<td>' . ProperDate( $end ) . '</td>
+						<td>' . ProperDate( $schooldate ) . '</td>
+					</tr>';
 
 					$count++;
 				}
@@ -349,23 +372,23 @@ if (isset($_REQUEST['search_modfunc']) && $_REQUEST['search_modfunc']=='list' &&
 
 		echo '</form>';
 		$RET = " ";
-
 	}
 	else
 	{
-		unset($_REQUEST['search_modfunc']);
-		$error[] = _('No Students were found.');
+		// Unset search modfunc & redirect URL.
+		RedirectURL( 'search_modfunc' );
+
+		$error[] = _( 'No Students were found.' );
 	}
 }
 
-if ( !isset($_REQUEST['search_modfunc']) && $_REQUEST['delete']!='true')
+if ( ! $_REQUEST['search_modfunc']
+	&& $_REQUEST['delete'] !== 'true' )
 {
 	echo ErrorMessage( $error );
 
-	DrawHeader(ProgramTitle());
-
 	$extra['new'] = true;
-	Search('student_id',$extra);
+	Search( 'student_id', $extra );
 }
 
 function _makeTeacher($teacher,$column)

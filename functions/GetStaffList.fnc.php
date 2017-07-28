@@ -1,206 +1,333 @@
 <?php
 
-function GetStaffList(& $extra)
-{	global $profiles_RET;
+function GetStaffList( &$extra = array() )
+{
+	global $profiles_RET;
 
-	$functions = array('PROFILE' => 'makeProfile');
-	switch (User('PROFILE'))
+	$functions = array( 'PROFILE' => 'makeProfile' );
+
+	if ( User( 'PROFILE' ) !== 'admin'
+		&& User( 'PROFILE' ) !== 'teacher' )
 	{
-		case 'admin':
-		case 'teacher':
-
-			//FJ fix Advanced Search
-			if ( isset( $_REQUEST['advanced'] )
-				&& $_REQUEST['advanced'] === 'Y' )
-			{
-				StaffWidgets( 'all', $extra );
-			}
-
-			$extra['WHERE'] .= appendStaffSQL( '', $extra );
-
-			$extra['WHERE'] .= CustomFields( 'where', 'staff', $extra );
-
-			if ( $_REQUEST['expanded_view']=='true')
-			{
-				$select = ',LAST_LOGIN';
-				$extra['columns_after']['LAST_LOGIN'] = _('Last Login');
-				$functions['LAST_LOGIN'] = 'makeLogin';
-
-				//FJ add failed login to expanded view
-				$select .= ',FAILED_LOGIN';
-				$extra['columns_after']['FAILED_LOGIN'] = _('Failed Login');
-				$functions['FAILED_LOGIN'] = 'makeLogin';
-
-				$view_fields_RET = DBGet(DBQuery("SELECT cf.ID,cf.TYPE,cf.TITLE
-				FROM STAFF_FIELDS cf
-				WHERE ((SELECT VALUE FROM PROGRAM_USER_CONFIG WHERE TITLE=cast(cf.ID AS TEXT) AND PROGRAM='StaffFieldsView' AND USER_ID='".User('STAFF_ID')."')='Y'".($extra['staff_fields']['view']?" OR cf.ID IN (".$extra['staff_fields']['view'].")":'').")
-				ORDER BY cf.SORT_ORDER,cf.TITLE"));
-
-				foreach ( (array) $view_fields_RET as $field )
-				{
-					$field_key = 'CUSTOM_' . $field['ID'];
-					$extra['columns_after'][ $field_key ] = $field['TITLE'];
-
-					if ( $field['TYPE'] === 'date' )
-					{
-						$functions[ $field_key ] = 'ProperDate';
-					}
-					elseif ( $field['TYPE'] === 'numeric' )
-					{
-						$functions[ $field_key ] = 'removeDot00';
-					}
-					elseif ( $field['TYPE'] === 'codeds' )
-					{
-						$functions[ $field_key ] = 'StaffDeCodeds';
-					}
-					elseif ( $field['TYPE'] === 'exports' )
-					{
-						$functions[ $field_key ] = 'StaffDeCodeds';
-					}
-					elseif ( $field['TYPE'] === 'radio' )
-					{
-						$functions[ $field_key ] = 'makeCheckbox';
-					}
-					elseif ( $field['TYPE'] === 'textarea' )
-					{
-						$functions[ $field_key ] = 'makeTextarea';
-					}
-
-					$select .= ',s.' . $field_key;
-				}
-
-				$extra['SELECT'] .= $select;
-			}
-			else
-			{
-				if ( ! $extra['columns_after'])
-					$extra['columns_after'] = array();
-
-				if ( $extra['staff_fields']['view'])
-				{
-					$view_fields_RET = DBGet(DBQuery("SELECT cf.ID,cf.TYPE,cf.TITLE FROM STAFF_FIELDS cf WHERE cf.ID IN (".$extra['staff_fields']['view'].") ORDER BY cf.SORT_ORDER,cf.TITLE"));
-
-					foreach ( (array) $view_fields_RET as $field )
-					{
-						$field_key = 'CUSTOM_' . $field['ID'];
-						$extra['columns_after'][ $field_key ] = $field['TITLE'];
-
-						if ( $field['TYPE'] === 'date' )
-						{
-							$functions[ $field_key ] = 'ProperDate';
-						}
-						elseif ( $field['TYPE'] === 'numeric' )
-						{
-							$functions[ $field_key ] = 'removeDot00';
-						}
-						elseif ( $field['TYPE'] === 'codeds' )
-						{
-							$functions[ $field_key ] = 'StaffDeCodeds';
-						}
-						elseif ( $field['TYPE'] === 'exports' )
-						{
-							$functions[ $field_key ] = 'StaffDeCodeds';
-						}
-						elseif ( $field['TYPE'] === 'radio' )
-						{
-							$functions[ $field_key ] = 'makeCheckbox';
-						}
-						elseif ( $field['TYPE'] === 'textarea' )
-						{
-							$functions[ $field_key ] = 'makeTextarea';
-						}
-					}
-
-					$extra['SELECT'] .= $select;
-				}
-			}
-			if (User('PROFILE')!='admin')
-			{
-				$extra['WHERE'] .= " AND (s.STAFF_ID='".User('STAFF_ID')."' OR s.PROFILE='parent' AND exists(SELECT '' FROM STUDENTS_JOIN_USERS _sju,STUDENT_ENROLLMENT _sem,SCHEDULE _ss WHERE _sju.STAFF_ID=s.STAFF_ID AND _sem.STUDENT_ID=_sju.STUDENT_ID AND _sem.SYEAR='".UserSYEAR()."' AND _ss.STUDENT_ID=_sem.STUDENT_ID AND _ss.COURSE_PERIOD_ID='".UserCoursePeriod()."'";
-				if ( $_REQUEST['include_inactive']!='Y')
-					$extra['WHERE'] .= " AND _ss.MARKING_PERIOD_ID IN (".GetAllMP('QTR',UserMP()).") AND ('".DBDate()."'>=_sem.START_DATE AND ('".DBDate()."'<=_sem.END_DATE OR _sem.END_DATE IS NULL)) AND ('".DBDate()."'>=_ss.START_DATE AND ('".DBDate()."'<=_ss.END_DATE OR _ss.END_DATE IS NULL))";
-				$extra['WHERE'] .= "))";
-			}
-
-			$profiles_RET = DBGet(DBQuery("SELECT * FROM USER_PROFILES"),array(),array('ID'));
-			$sql = "SELECT
-					s.LAST_NAME||', '||s.FIRST_NAME||' '||COALESCE(s.MIDDLE_NAME,' ') AS FULL_NAME,
-					s.PROFILE,s.PROFILE_ID,s.STAFF_ID,s.SCHOOLS ".$extra['SELECT']."
-				FROM
-					STAFF s ".$extra['FROM']."
-				WHERE
-					s.SYEAR='".UserSyear()."'";
-
-			if ( $_REQUEST['_search_all_schools']!='Y')
-				$sql .= " AND (s.SCHOOLS LIKE '%,".UserSchool().",%' OR s.SCHOOLS IS NULL OR s.SCHOOLS='') ";
-
-			$sql .= $extra['WHERE'].' ';
-
-			// it would be easier to sort on full_name but postgres sometimes yields strange results
-			$sql .= 'ORDER BY s.LAST_NAME,s.FIRST_NAME,s.MIDDLE_NAME';
-
-			if ( $extra['functions'])
-				$functions += $extra['functions'];
-
-			return DBGet(DBQuery($sql),$functions);
-		break;
+		// Parents cannot get Staff lists.
+		return;
 	}
+
+	if ( isset( $_REQUEST['advanced'] )
+		&& $_REQUEST['advanced'] === 'Y' )
+	{
+		// Advanced Search: all Widgets.
+		StaffWidgets( 'all', $extra );
+	}
+
+	if ( ! isset( $extra['SELECT'] ) )
+	{
+		$extra['SELECT'] = '';
+	}
+
+	if ( ! isset( $extra['FROM'] ) )
+	{
+		$extra['FROM'] = '';
+	}
+
+	if ( ! isset( $extra['WHERE'] ) )
+	{
+		$extra['WHERE'] = '';
+	}
+
+	$extra['WHERE'] .= appendStaffSQL( '', $extra );
+
+	$extra['WHERE'] .= CustomFields( 'where', 'staff', $extra );
+
+	// Expanded View.
+	if ( isset( $_REQUEST['expanded_view'] )
+		&& $_REQUEST['expanded_view'] === 'true' )
+	{
+		$select = ',LAST_LOGIN';
+		$extra['columns_after']['LAST_LOGIN'] = _( 'Last Login' );
+		$functions['LAST_LOGIN'] = 'makeLogin';
+
+		//FJ add failed login to expanded view
+		$select .= ',FAILED_LOGIN';
+		$extra['columns_after']['FAILED_LOGIN'] = _( 'Failed Login' );
+		$functions['FAILED_LOGIN'] = 'makeLogin';
+
+		$view_fields_RET = DBGet( DBQuery( "SELECT cf.ID,cf.TYPE,cf.TITLE
+			FROM STAFF_FIELDS cf
+			WHERE ((SELECT VALUE
+				FROM PROGRAM_USER_CONFIG
+				WHERE TITLE=cast(cf.ID AS TEXT)
+				AND PROGRAM='StaffFieldsView'
+				AND USER_ID='" . User('STAFF_ID') . "')='Y'" .
+				( $extra['staff_fields']['view'] ?
+					" OR cf.ID IN (" . $extra['staff_fields']['view'] . ")" :
+					''
+				) .
+			")
+			ORDER BY cf.SORT_ORDER,cf.TITLE" ) );
+
+		foreach ( (array) $view_fields_RET as $field )
+		{
+			$field_key = 'CUSTOM_' . $field['ID'];
+			$extra['columns_after'][ $field_key ] = $field['TITLE'];
+
+			$functions[ $field_key ] = makeFieldTypeFunction( $field['TYPE'], 'STAFF' );
+
+			$select .= ',s.' . $field_key;
+		}
+
+		// User Fields: search Email Address & Phone.
+		$view_other_RET = DBGet( DBQuery( "SELECT TITLE,VALUE
+			FROM PROGRAM_USER_CONFIG
+			WHERE PROGRAM='StaffFieldsView'
+			AND TITLE IN ('EMAIL','PHONE')
+			AND USER_ID='" . User( 'STAFF_ID' ) . "'"), array(), array( 'TITLE' ) );
+
+		if ( $view_other_RET['EMAIL'][1]['VALUE'] === 'Y' )
+		{
+			$extra['columns_after']['EMAIL'] = _( 'Email Address' );
+
+			$functions['EMAIL'] = 'makeEmail';
+
+			$select .= ',s.EMAIL';
+		}
+
+		if ( $view_other_RET['PHONE'][1]['VALUE'] === 'Y' )
+		{
+			$extra['columns_after']['PHONE'] = _( 'Phone Number' );
+
+			$functions['PHONE'] = 'makePhone';
+
+			$select .= ',s.PHONE';
+		}
+
+		$extra['SELECT'] .= $select;
+	}
+	else
+	{
+		if ( empty( $extra['columns_after'] ) )
+		{
+			$extra['columns_after'] = array();
+		}
+
+		if ( ! empty( $extra['staff_fields']['view'] ) )
+		{
+			$view_fields_RET = DBGet( DBQuery( "SELECT cf.ID,cf.TYPE,cf.TITLE
+				FROM STAFF_FIELDS cf
+				WHERE cf.ID IN (" . $extra['staff_fields']['view'] . ")
+				ORDER BY cf.SORT_ORDER,cf.TITLE" ) );
+
+			foreach ( (array) $view_fields_RET as $field )
+			{
+				$field_key = 'CUSTOM_' . $field['ID'];
+				$extra['columns_after'][ $field_key ] = $field['TITLE'];
+
+				$functions[ $field_key ] = makeFieldTypeFunction( $field['TYPE'], 'STAFF' );
+			}
+
+			$extra['SELECT'] .= $select;
+		}
+	}
+
+	if ( User( 'PROFILE' ) !== 'admin' )
+	{
+		$extra['WHERE'] .= " AND (s.STAFF_ID='" . User( 'STAFF_ID' ) . "'
+			OR s.PROFILE='parent'
+			AND exists(SELECT ''
+				FROM STUDENTS_JOIN_USERS _sju,STUDENT_ENROLLMENT _sem,SCHEDULE _ss
+				WHERE _sju.STAFF_ID=s.STAFF_ID
+				AND _sem.STUDENT_ID=_sju.STUDENT_ID
+				AND _sem.SYEAR='" . UserSyear() . "'
+				AND _ss.STUDENT_ID=_sem.STUDENT_ID
+				AND _ss.COURSE_PERIOD_ID='" . UserCoursePeriod() . "'";
+
+		if ( $_REQUEST['include_inactive'] !== 'Y' )
+		{
+			$extra['WHERE'] .= " AND _ss.MARKING_PERIOD_ID IN (" . GetAllMP( 'QTR', UserMP() ) . ")
+				AND ('" . DBDate() . "'>=_sem.START_DATE
+				AND ('" . DBDate() . "'<=_sem.END_DATE OR _sem.END_DATE IS NULL))
+				AND ('" . DBDate() . "'>=_ss.START_DATE
+					AND ('" . DBDate() . "'<=_ss.END_DATE OR _ss.END_DATE IS NULL))";
+		}
+
+		$extra['WHERE'] .= '))';
+	}
+
+	$profiles_RET = DBGet( DBQuery( "SELECT * FROM USER_PROFILES" ), array(), array( 'ID' ) );
+
+	$sql = "SELECT s.LAST_NAME||', '||s.FIRST_NAME||' '||COALESCE(s.MIDDLE_NAME,' ') AS FULL_NAME,
+			s.PROFILE,s.PROFILE_ID,s.STAFF_ID,s.SCHOOLS " . $extra['SELECT'] .
+			" FROM STAFF s " . $extra['FROM'] .
+			" WHERE	s.SYEAR='" . UserSyear() . "'";
+
+	if ( ! isset( $_REQUEST['_search_all_schools'] )
+		|| $_REQUEST['_search_all_schools'] !== 'Y' )
+	{
+		$sql .= " AND (s.SCHOOLS LIKE '%," . UserSchool() . ",%' OR s.SCHOOLS IS NULL OR s.SCHOOLS='') ";
+	}
+	// Search All Schools: if user is not assigned to "All Schools".
+	elseif ( trim( User( 'SCHOOLS' ), ',' ) )
+	{
+		// Restrict Search All Schools to user schools.
+		$sql_schools_like = explode( ',', trim( User( 'SCHOOLS' ), ',' ) );
+
+		$sql_schools_like = implode( ",%' OR s.SCHOOLS LIKE '%,", $sql_schools_like );
+
+		$sql_schools_like = "s.SCHOOLS LIKE '%," . $sql_schools_like . ",%'";
+
+		$sql .= " AND (" . $sql_schools_like . " OR s.SCHOOLS IS NULL OR s.SCHOOLS='') ";
+	}
+
+	// Extra WHERE.
+	$sql .= $extra['WHERE'] . ' ';
+
+	// ORDER BY.
+	// It would be easier to sort on full_name but postgres sometimes yields strange results.
+	$sql .= 'ORDER BY s.LAST_NAME,s.FIRST_NAME,s.MIDDLE_NAME';
+
+	if ( isset( $extra['functions'] ) )
+	{
+		// Extra functions.
+		$functions += (array) $extra['functions'];
+	}
+
+	return DBGet( DBQuery( $sql ), $functions );
 }
 
-function appendStaffSQL($sql,$extra)
-{	global $_ROSARIO;
 
-	if ( $_REQUEST['usrid'])
+/**
+ * Append:
+ * - User ID(s)
+ * - Last Name
+ * - First Name
+ * - Profile
+ * - Username
+ * Search terms to Students SQL WHERE part
+ *
+ * @example $extra['WHERE'] .= appendStaffSQL( '', $extra );
+ *
+ * @global $_ROSARIO sets $_ROSARIO['SearchTerms']
+ *
+ * @uses SearchField()
+ *
+ * @param  string $sql   Staff SQL query.
+ * @param  array  $extra Extra for SQL request (optional). Defaults to empty array.
+ *
+ * @return string Appended SQL WHERE part
+ */
+function appendStaffSQL( $sql, $extra = array() )
+{
+	global $_ROSARIO;
+
+	$no_search_terms = isset( $extra['NoSearchTerms'] ) && $extra['NoSearchTerms'];
+
+	if ( isset( $_REQUEST['usrid'] )
+		&& $_REQUEST['usrid'] )
 	{
-//FJ allow comma separated list of staff IDs
-		$usrid_array = explode(',', $_REQUEST['usrid']);
+		// FJ allow comma separated list of staff IDs
+		$usrid_array = explode( ',', $_REQUEST['usrid'] );
+
 		$usrids = array();
-		foreach ($usrid_array as $usrid)
+
+		foreach ( $usrid_array as $usrid )
 		{
-			if (is_numeric($usrid))
+			if ( is_numeric( $usrid ) )
+			{
 				$usrids[] = $usrid;
+			}
 		}
-		if ( !empty($usrids))
+
+		if ( $usrids )
 		{
-			$usrids = implode(',', $usrids);
-			//$sql .= " AND s.STAFF_ID='".$_REQUEST['usrid']."'";
-			$sql .= " AND s.STAFF_ID IN (".$usrids.")";
+			$usrids = implode( ',', $usrids );
 
-			if ( ! $extra['NoSearchTerms'])
-				$_ROSARIO['SearchTerms'] .= '<b>'._('User ID').': </b>'.$usrids.'<br />';
+			$sql .= " AND s.STAFF_ID IN (" . $usrids . ")";
+
+			if ( ! $no_search_terms )
+			{
+				$_ROSARIO['SearchTerms'] .= '<b>' . _( 'User ID' ) . ':</b> ' . $usrids . '<br />';
+			}
 		}
 	}
 
-	if ( $_REQUEST['last'])
+	// Last Name.
+	if ( isset( $_REQUEST['last'] )
+		&& $_REQUEST['last'] !== '' )
 	{
-		$sql .= " AND UPPER(s.LAST_NAME) LIKE '".mb_strtoupper($_REQUEST['last'])."%'";
+		$last_name = array(
+			'COLUMN' => 'LAST_NAME',
+			'VALUE' => $_REQUEST['last'],
+			'TITLE' => _( 'Last Name' ),
+			'TYPE' => 'text',
+			'SELECT_OPTIONS' => null,
+		);
 
-		if ( ! $extra['NoSearchTerms'])
-			$_ROSARIO['SearchTerms'] .= '<b>'._('Last Name starts with').': </b>'.str_replace("''", "'", $_REQUEST['last']).'<br />';
+		$sql .= SearchField( $last_name, 'where', 'staff', $extra );
 	}
 
-	if ( $_REQUEST['first'])
+	// First Name.
+	if ( isset( $_REQUEST['first'] )
+		&& $_REQUEST['first'] !== '' )
 	{
-		$sql .= " AND UPPER(s.FIRST_NAME) LIKE '".mb_strtoupper($_REQUEST['first'])."%'";
+		$first_name = array(
+			'COLUMN' => 'FIRST_NAME',
+			'VALUE' => $_REQUEST['first'],
+			'TITLE' => _( 'First Name' ),
+			'TYPE' => 'text',
+			'SELECT_OPTIONS' => null,
+		);
 
-		if ( ! $extra['NoSearchTerms'])
-			$_ROSARIO['SearchTerms'] .= '<b>'._('First Name starts with').': </b>'.str_replace("''", "'", $_REQUEST['first']).'<br />';
+		$sql .= SearchField( $first_name, 'where', 'staff', $extra );
 	}
 
-	if ( $_REQUEST['profile'])
+	// Profile.
+	if ( isset( $_REQUEST['profile'] )
+		&& $_REQUEST['profile'] !== '' )
 	{
-		$sql .= " AND s.PROFILE='".$_REQUEST['profile']."'";
+		if ( User( 'PROFILE' ) == 'admin' )
+		{
+			$options = array(
+				'admin' => _( 'Administrator' ),
+				'teacher' => _( 'Teacher' ),
+				'parent' => _( 'Parent' ),
+				'none' => _( 'No Access' ),
+			);
+		}
+		else
+		{
+			$options = array(
+				'teacher' => _( 'Teacher' ),
+				'parent' => _( 'Parent' ),
+			);
+		}
 
-		if ( ! $extra['NoSearchTerms'])
-			$_ROSARIO['SearchTerms'] .= '<b>'._('Profile').': </b>'._(UCFirst($_REQUEST['profile'])).'<br />';
+		if ( $extra['profile'] )
+		{
+			$options = array( $extra['profile'] => $options[ $extra['profile'] ] );
+		}
+
+		if ( isset( $options[ $_REQUEST['profile'] ] ) )
+		{
+			$sql .= " AND s.PROFILE='" . $_REQUEST['profile'] . "' ";
+
+			$_ROSARIO['SearchTerms'] .= '<b>' . _( 'Profile' ) . ':</b> ' .
+				$options[ $_REQUEST['profile'] ] . '<br />';
+		}
 	}
 
-	if ( $_REQUEST['username'])
+	// Username.
+	if ( isset( $_REQUEST['username'] )
+		&& $_REQUEST['username'] !== '' )
 	{
-		$sql .= " AND UPPER(s.USERNAME) LIKE '".mb_strtoupper($_REQUEST['username'])."%'";
+		$username = array(
+			'COLUMN' => 'USERNAME',
+			'VALUE' => $_REQUEST['username'],
+			'TITLE' => _( 'Username' ),
+			'TYPE' => 'text',
+			'SELECT_OPTIONS' => null,
+		);
 
-		if ( ! $extra['NoSearchTerms'])
-			$_ROSARIO['SearchTerms'] .= '<b>'._('UserName starts with').': </b>'.str_replace("''", "'", $_REQUEST['username']).'<br />';
+		$sql .= SearchField( $username, 'where', 'staff', $extra );
 	}
 
 	return $sql;
@@ -227,23 +354,23 @@ function makeProfile($value)
 	return $return;
 }
 
-function makeLogin($value,$title='LAST_LOGIN')
+function makeLogin( $value, $column = 'LAST_LOGIN' )
 {
-	//FJ add failed login to expanded view
-	if ( $title == 'LAST_LOGIN')
+	if ( $column === 'LAST_LOGIN' )
 	{
-		if (empty($value))
-			return button('x');
+		if ( empty( $value ) )
+		{
+			return button( 'x' );
+		}
 		else
-			return ProperDate(mb_substr($value,0,10)).mb_substr($value,10);
+		{
+			return ProperDateTime( $value, 'short' );
+		}
 	}
-	if ( $title == 'FAILED_LOGIN')
-	{
-		if (empty($value))
-			return '0';
-		else
-			return $value;
-	}
+
+	// FJ add failed login to expanded view.
+	// Column should be FAILED_LOGIN.
+	return empty( $value ) ? '0' : $value;
 }
 
 
